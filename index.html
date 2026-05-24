@@ -317,31 +317,18 @@ const senha=document.getElementById("senha").value.trim();
 
 if(usuario==="admin"&&senha==="teste01"){
 localStorage.setItem("gymcare_admin_logado","sim");
+
 document.getElementById("telaLogin").classList.add("oculto");
+document.getElementById("telaLogin").style.display="none";
+
 document.getElementById("telaAdmin").classList.remove("oculto");
+document.getElementById("telaAdmin").style.display="block";
+
+if(typeof carregarDados==="function"){
+carregarDados();
+}
+
 }else{
 document.getElementById("erroLogin").innerText="Usuário ou senha inválidos.";
 }
 }
-
-function sair(){
-localStorage.removeItem("gymcare_admin_logado");
-location.reload();
-}
-
-function fecharEtiquetaQR(){
-document.getElementById("modalEtiquetaQR").style.display="none";
-}
-
-function baixarEtiquetaQR(){
-alert("Download do QR será ativado na próxima etapa.");
-}
-
-if(localStorage.getItem("gymcare_admin_logado")==="sim"){
-document.getElementById("telaLogin").classList.add("oculto");
-document.getElementById("telaAdmin").classList.remove("oculto");
-}
-</script>
-
-</body>
-</html>
