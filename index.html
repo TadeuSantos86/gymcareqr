@@ -310,6 +310,38 @@ header{flex-direction:column;gap:10px}
 <button class="btn-cinza" onclick="fecharEtiquetaQR()">Fechar</button>
 </div>
 </div>
+<script>
+function entrarAdmin(){
+const usuario=document.getElementById("usuario").value.trim();
+const senha=document.getElementById("senha").value.trim();
+
+if(usuario==="admin"&&senha==="teste01"){
+localStorage.setItem("gymcare_admin_logado","sim");
+document.getElementById("telaLogin").classList.add("oculto");
+document.getElementById("telaAdmin").classList.remove("oculto");
+}else{
+document.getElementById("erroLogin").innerText="Usuário ou senha inválidos.";
+}
+}
+
+function sair(){
+localStorage.removeItem("gymcare_admin_logado");
+location.reload();
+}
+
+function fecharEtiquetaQR(){
+document.getElementById("modalEtiquetaQR").style.display="none";
+}
+
+function baixarEtiquetaQR(){
+alert("Download do QR será ativado na próxima etapa.");
+}
+
+if(localStorage.getItem("gymcare_admin_logado")==="sim"){
+document.getElementById("telaLogin").classList.add("oculto");
+document.getElementById("telaAdmin").classList.remove("oculto");
+}
 </script>
+
 </body>
 </html>
