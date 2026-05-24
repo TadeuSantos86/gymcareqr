@@ -10,7 +10,6 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
 body{background:#F3F4F6;color:#111827}
-
 .oculto{display:none!important}
 
 .login{max-width:420px;margin:80px auto;background:white;padding:30px;border-radius:18px;box-shadow:0 4px 15px rgba(0,0,0,.08)}
@@ -41,7 +40,9 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 .p-urgente{background:#fee2e2;color:#991b1b}
 .botoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
 .filtros{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .erro{color:#dc2626;font-weight:bold;margin-top:15px}
+.sucesso{color:#15803d;font-weight:bold;margin-top:15px}
 
 .timeline{margin-top:20px;border-left:4px solid #93D500;padding-left:18px}
 .evento{margin-bottom:18px;background:#f9fafb;padding:14px;border-radius:12px}
@@ -51,7 +52,7 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 @media(max-width:900px){
 header{flex-direction:column}
 .container{padding:20px}
-.grid,.filtros{grid-template-columns:1fr}
+.grid,.filtros,.form-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -88,7 +89,7 @@ header{flex-direction:column}
 
 <div class="container">
 <h2>Dashboard Administrativo</h2>
-<p>Controle operacional de equipamentos, chamados e histórico.</p>
+<p>Controle operacional de equipamentos, chamados, cadastro e histórico.</p>
 
 <div class="cards">
 <div class="card"><h3>Equipamentos</h3><div class="numero" id="totalEquipamentos">0</div></div>
@@ -96,6 +97,64 @@ header{flex-direction:column}
 <div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div>
 <div class="card"><h3>Urgentes / Alta</h3><div class="numero" id="urgentes">0</div></div>
 </div>
+
+<div class="bloco">
+<h2>Cadastrar novo equipamento</h2>
+
+<div class="form-grid">
+<div>
+<label>Nome</label>
+<input type="text" id="novoNome" placeholder="Ex: Esteira 02">
+</div>
+
+<div>
+<label>Categoria</label>
+<select id="novaCategoria">
+<option>Cardio</option>
+<option>Musculação</option>
+<option>Funcional</option>
+<option>Cross</option>
+<option>Outro</option>
+</select>
+</div>
+
+<div>
+<label>Marca</label>
+<input type="text" id="novaMarca" placeholder="Ex: Movement">
+</div>
+
+<div>
+<label>Modelo</label>
+<input type="text" id="novoModelo" placeholder="Ex: RT250">
+</div>
+
+<div>
+<label>Número de série</label>
+<input type="text" id="novoSerie" placeholder="Ex: MOV-002">
+</div>
+
+<div>
+<label>Localização</label>
+<input type="text" id="novaLocalizacao" placeholder="Ex: Área Cardio">
+</div>
+
+<div>
+<label>ID discreto</label>
+<input type="text" id="novoCodigo" placeholder="Ex: EQ-002">
+</div>
+
+<div>
+<label>Próxima revisão</label>
+<input type="date" id="novaProximaRevisao">
+</div>
+</div>
+
+<button class="btn-verde" onclick="cadastrarEquipamento()">Cadastrar equipamento</button>
+<p class="sucesso" id="sucessoCadastro"></p>
+<p class="erro" id="erroCadastro"></p>
+</div>
+
+<br>
 
 <div class="grid">
 
@@ -223,6 +282,95 @@ document.getElementById("emManutencao").innerText=equipamentosGlobais.filter(e=>
 document.getElementById("urgentes").innerText=chamadosGlobais.filter(c=>c.prioridade==="URGENTE"||c.prioridade==="ALTA").length;
 }
 
+async function cadastrarEquipamento(){
+document.getElementById("sucessoCadastro").innerText="";
+document.getElementById("erroCadastro").innerText="";
+
+const nome=document.getElementById("novoNome").value.trim();
+const categoria=document.getElementById("novaCategoria").value;
+const marca=document.getElementById("novaMarca").value.trim();
+const modelo=document.getElementById("novoModelo").value.trim();
+const numeroSerie=document.getElementById("novoSerie").value.trim();
+const localizacao=document.getElementById("novaLocalizacao").value.trim();
+const codigo=document.getElementById("novoCodigo").value.trim().toUpperCase();
+const proximaRevisao=document.getElementById("novaProximaRevisao").value;
+
+if(!nome){
+document.getElementById("erroCadastro").innerText="Informe o nome do equipamento.";
+return;
+}
+
+if(!codigo){
+document.getElementById("erroCadastro").innerText="Informe o ID discreto do equipamento.";
+return;
+}
+
+const {data:existe}=await supabaseClient
+.from("equipamentos")
+.select("id")
+.eq("codigo_publico",codigo)
+.maybeSingle();
+
+if(existe){
+document.getElementById("erroCadastro").innerText="Este ID discreto já está em uso.";
+return;
+}
+
+const {data:novo,error}=await supabaseClient
+.from("equipamentos")
+.insert([{
+academia_id:1,
+nome:nome,
+categoria:categoria,
+marca:marca,
+modelo:modelo,
+numero_serie:numeroSerie,
+localizacao:localizacao,
+status:"OPERACIONAL",
+ultima_revisao:null,
+proxima_revisao:proximaRevisao||null,
+codigo_publico:codigo,
+qr_code:"https://gymcareqr.vercel.app/equipamento.html?id="
+}])
+.select()
+.single();
+
+if(error){
+document.getElementById("erroCadastro").innerText=error.message;
+return;
+}
+
+const qrFinal="https://gymcareqr.vercel.app/equipamento.html?id="+novo.id;
+
+await supabaseClient
+.from("equipamentos")
+.update({qr_code:qrFinal})
+.eq("id",novo.id);
+
+await registrarHistorico(
+novo.id,
+null,
+"EQUIPAMENTO CADASTRADO",
+`Equipamento ${nome} cadastrado no sistema com ID discreto ${codigo}.`,
+"OPERACIONAL"
+);
+
+document.getElementById("sucessoCadastro").innerText="Equipamento cadastrado com sucesso.";
+
+limparFormularioEquipamento();
+carregarDashboard();
+}
+
+function limparFormularioEquipamento(){
+document.getElementById("novoNome").value="";
+document.getElementById("novaMarca").value="";
+document.getElementById("novoModelo").value="";
+document.getElementById("novoSerie").value="";
+document.getElementById("novaLocalizacao").value="";
+document.getElementById("novoCodigo").value="";
+document.getElementById("novaProximaRevisao").value="";
+}
+
 function classeStatus(status){
 if(status==="OPERACIONAL"||status==="FINALIZADO")return"status status-ok";
 if(status==="MANUTENCAO"||status==="EM MANUTENCAO")return"status status-andamento";
@@ -250,10 +398,13 @@ const div=document.createElement("div");
 div.className="item";
 div.innerHTML=`
 <h3>${eq.nome}</h3>
+<p><strong>Categoria:</strong> ${eq.categoria||"-"}</p>
 <p><strong>Marca:</strong> ${eq.marca||"-"}</p>
 <p><strong>Modelo:</strong> ${eq.modelo||"-"}</p>
 <p><strong>Local:</strong> ${eq.localizacao||"-"}</p>
+<p><strong>ID discreto:</strong> ${eq.codigo_publico||"-"}</p>
 <p><strong>QR:</strong> ${eq.qr_code||"-"}</p>
+<p><strong>Próxima revisão:</strong> ${eq.proxima_revisao||"-"}</p>
 <div class="${classeStatus(eq.status)}">${eq.status||"OPERACIONAL"}</div>
 <div class="botoes">
 <button class="btn-cinza" onclick="abrirHistorico(${eq.id}, '${eq.nome.replace(/'/g,"\\'")}')">Ver histórico</button>
@@ -321,39 +472,18 @@ if(!data)return"-";
 return new Date(data).toLocaleString("pt-BR");
 }
 
-async function registrarHistorico(
-equipamentoId,
-chamadoId,
-tipoEvento,
-descricao,
-status
-){
-
+async function registrarHistorico(equipamentoId,chamadoId,tipoEvento,descricao,status){
 try{
-
-await supabaseClient
-.from("historico_manutencao")
-.insert([{
+await supabaseClient.from("historico_manutencao").insert([{
 equipamento_id:equipamentoId,
 chamado_id:chamadoId,
 tipo_evento:tipoEvento,
 descricao:descricao,
 status:status
 }]);
-
-console.log(
-"Histórico registrado"
-);
-
 }catch(error){
-
-console.error(
-"Erro ao salvar histórico:",
-error
-);
-
+console.error("Erro ao salvar histórico:",error);
 }
-
 }
 
 async function alterarStatusChamado(chamadoId,equipamentoId,novoStatus){
