@@ -98,7 +98,11 @@ header{flex-direction:column}
 <div class="card"><h3>Urgentes / Alta</h3><div class="numero" id="urgentes">0</div></div>
 </div>
 
-<div class="bloco">
+<button class="btn-verde" onclick="toggleCadastroEquipamento()">+ Novo Equipamento</button>
+
+<br><br>
+
+<div id="formCadastroEquipamento" class="bloco oculto">
 <h2>Cadastrar novo equipamento</h2>
 
 <div class="form-grid">
@@ -150,6 +154,8 @@ header{flex-direction:column}
 </div>
 
 <button class="btn-verde" onclick="cadastrarEquipamento()">Cadastrar equipamento</button>
+<button class="btn-cinza" onclick="toggleCadastroEquipamento()">Cancelar</button>
+
 <p class="sucesso" id="sucessoCadastro"></p>
 <p class="erro" id="erroCadastro"></p>
 </div>
@@ -219,6 +225,11 @@ const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let equipamentosGlobais=[];
 let chamadosGlobais=[];
+
+function toggleCadastroEquipamento(){
+const form=document.getElementById("formCadastroEquipamento");
+form.classList.toggle("oculto");
+}
 
 function verificarLoginSalvo(){
 if(localStorage.getItem("gymcare_admin_logado")==="sim"){
@@ -358,6 +369,7 @@ null,
 document.getElementById("sucessoCadastro").innerText="Equipamento cadastrado com sucesso.";
 
 limparFormularioEquipamento();
+document.getElementById("formCadastroEquipamento").classList.add("oculto");
 carregarDashboard();
 }
 
