@@ -39,13 +39,17 @@ button{border:none;padding:11px 14px;border-radius:10px;cursor:pointer;font-weig
 
 <div id="telaLogin" class="login card">
   <h1>GymCare QR</h1>
-  <p>Login administrativo</p>
+  <p>Login administrativo temporário</p>
   <br>
-  <label>E-mail</label>
-  <input type="email" id="email" placeholder="email do gerente">
+
+  <label>Usuário</label>
+  <input type="text" id="usuario" placeholder="admin">
+
   <label>Senha</label>
-  <input type="password" id="senha" placeholder="senha">
+  <input type="password" id="senha" placeholder="teste01">
+
   <button class="btn-verde" onclick="entrarAdmin()">Entrar</button>
+
   <p class="erro" id="erroLogin"></p>
 </div>
 
@@ -56,6 +60,7 @@ button{border:none;padding:11px 14px;border-radius:10px;cursor:pointer;font-weig
     <h1 id="nomeAcademia">GymCare QR</h1>
     <p id="slogan">Dashboard administrativo</p>
   </div>
+
   <div>
     <p id="endereco"></p>
     <p id="horario"></p>
@@ -99,73 +104,33 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let equipamentosGlobais = [];
 let chamadosGlobais = [];
-let usuarioLogado = null;
 
-async function verificarSessao(){
-  const { data } = await supabaseClient.auth.getUser();
+function verificarLoginSalvo(){
+  const logado = localStorage.getItem("gymcare_admin_logado");
 
-  if(data && data.user){
-    await validarPerfilAdmin(data.user);
+  if(logado === "sim"){
+    document.getElementById("telaLogin").classList.add("oculto");
+    document.getElementById("telaAdmin").classList.remove("oculto");
+    carregarDashboard();
   }
 }
 
-async function entrarAdmin(){
-  document.getElementById("erroLogin").innerText = "";
+function entrarAdmin(){
+  const usuario = document.getElementById("usuario").value.trim();
+  const senha = document.getElementById("senha").value.trim();
 
-  const email = document.getElementById("email").value.trim();
-  const senha = document.getElementById("senha").value;
-
-  if(!email || !senha){
-    document.getElementById("erroLogin").innerText = "Informe e-mail e senha.";
-    return;
+  if(usuario === "admin" && senha === "teste01"){
+    localStorage.setItem("gymcare_admin_logado", "sim");
+    document.getElementById("telaLogin").classList.add("oculto");
+    document.getElementById("telaAdmin").classList.remove("oculto");
+    carregarDashboard();
+  }else{
+    document.getElementById("erroLogin").innerText = "Usuário ou senha inválidos.";
   }
-
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: senha
-  });
-
-  if(error){
-    document.getElementById("erroLogin").innerText = error.message;
-    return;
-  }
-
-  await validarPerfilAdmin(data.user);
 }
 
-async function validarPerfilAdmin(user){
-  const { data: usuario, error } = await supabaseClient
-    .from("usuarios")
-    .select("*")
-    .eq("email", user.email)
-    .maybeSingle();
-
-  if(error || !usuario){
-    document.getElementById("erroLogin").innerText = "Usuário não encontrado na tabela de permissões.";
-    await supabaseClient.auth.signOut();
-    return;
-  }
-
-  if(usuario.ativo !== true){
-    document.getElementById("erroLogin").innerText = "Usuário inativo.";
-    await supabaseClient.auth.signOut();
-    return;
-  }
-
-  if(usuario.perfil !== "gerente" && usuario.perfil !== "tecnico" && usuario.perfil !== "admin"){
-    document.getElementById("erroLogin").innerText = "Acesso negado. Apenas gerente, técnico ou admin.";
-    await supabaseClient.auth.signOut();
-    return;
-  }
-
-  usuarioLogado = usuario;
-  document.getElementById("telaLogin").classList.add("oculto");
-  document.getElementById("telaAdmin").classList.remove("oculto");
-  carregarDashboard();
-}
-
-async function sair(){
-  await supabaseClient.auth.signOut();
+function sair(){
+  localStorage.removeItem("gymcare_admin_logado");
   location.reload();
 }
 
@@ -238,6 +203,7 @@ function renderizarEquipamentos(){
   equipamentosGlobais.forEach(eq => {
     const div = document.createElement("div");
     div.className = "item";
+
     div.innerHTML = `
       <h3>${eq.nome}</h3>
       <p><strong>Marca:</strong> ${eq.marca || "-"}</p>
@@ -246,6 +212,7 @@ function renderizarEquipamentos(){
       <p><strong>QR:</strong> ${eq.qr_code || "-"}</p>
       <div class="${classeStatus(eq.status)}">${eq.status || "OPERACIONAL"}</div>
     `;
+
     lista.appendChild(div);
   });
 }
@@ -265,6 +232,7 @@ function renderizarChamados(){
 
     const div = document.createElement("div");
     div.className = "item";
+
     div.innerHTML = `
       <h3>Chamado #${chamado.id}</h3>
       <p><strong>Equipamento:</strong> ${nomeEquipamento}</p>
@@ -280,6 +248,7 @@ function renderizarChamados(){
         <button class="btn-cinza" onclick="alterarStatusChamado(${chamado.id}, ${chamado.equipamento_id}, 'ABERTO')">Reabrir</button>
       </div>
     `;
+
     lista.appendChild(div);
   });
 }
@@ -299,7 +268,10 @@ async function alterarStatusChamado(chamadoId, equipamentoId, novoStatus){
     if(erroChamado) throw erroChamado;
 
     let novoStatusEquipamento = "OPERACIONAL";
-    if(novoStatus === "EM MANUTENCAO") novoStatusEquipamento = "MANUTENCAO";
+
+    if(novoStatus === "EM MANUTENCAO"){
+      novoStatusEquipamento = "MANUTENCAO";
+    }
 
     const { error: erroEquipamento } = await supabaseClient
       .from("equipamentos")
@@ -315,7 +287,7 @@ async function alterarStatusChamado(chamadoId, equipamentoId, novoStatus){
   }
 }
 
-verificarSessao();
+verificarLoginSalvo();
 </script>
 
 </body>
