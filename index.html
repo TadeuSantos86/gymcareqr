@@ -3,239 +3,79 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Dashboard Admin | GymCare QR</title>
-
+<title>Admin | GymCare QR</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:Arial, sans-serif;
-}
-
-body{
-  background:#F3F4F6;
-  color:#111827;
-}
-
-header{
-  background:#323E48;
-  color:white;
-  padding:22px 40px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:20px;
-}
-
-.logo h1{
-  color:#93D500;
-  font-size:32px;
-}
-
-.logo p{
-  font-size:14px;
-}
-
-.info{
-  text-align:right;
-  font-size:14px;
-  line-height:1.5;
-}
-
-.container{
-  padding:35px;
-}
-
-.cards{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:20px;
-  margin:25px 0;
-}
-
-.card{
-  background:white;
-  border-radius:18px;
-  padding:24px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.08);
-}
-
-.card h3{
-  color:#374151;
-  margin-bottom:8px;
-}
-
-.numero{
-  font-size:36px;
-  font-weight:bold;
-  color:#93D500;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:25px;
-  align-items:start;
-}
-
-.bloco{
-  background:white;
-  border-radius:18px;
-  padding:25px;
-  box-shadow:0 4px 15px rgba(0,0,0,0.08);
-}
-
-.item{
-  border-bottom:1px solid #e5e7eb;
-  padding:18px 0;
-}
-
-.item:last-child{
-  border-bottom:none;
-}
-
-.item h3{
-  margin-bottom:8px;
-}
-
-.item p{
-  margin:5px 0;
-  font-size:14px;
-}
-
-.status{
-  display:inline-block;
-  padding:6px 12px;
-  border-radius:20px;
-  font-size:12px;
-  font-weight:bold;
-  margin-top:8px;
-}
-
-.status-ok{
-  background:#dcfce7;
-  color:#166534;
-}
-
-.status-alerta{
-  background:#fee2e2;
-  color:#991b1b;
-}
-
-.status-andamento{
-  background:#fef3c7;
-  color:#92400e;
-}
-
-.botoes{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  margin-top:12px;
-}
-
-button{
-  border:none;
-  padding:11px 14px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:bold;
-}
-
-.btn-verde{
-  background:#93D500;
-  color:#111827;
-}
-
-.btn-amarelo{
-  background:#facc15;
-  color:#111827;
-}
-
-.btn-vermelho{
-  background:#ef4444;
-  color:white;
-}
-
-.btn-cinza{
-  background:#e5e7eb;
-  color:#111827;
-}
-
-.erro{
-  color:#dc2626;
-  font-weight:bold;
-  margin-top:15px;
-}
-
-@media(max-width:900px){
-  header{
-    flex-direction:column;
-    align-items:flex-start;
-  }
-
-  .info{
-    text-align:left;
-  }
-
-  .container{
-    padding:20px;
-  }
-
-  .grid{
-    grid-template-columns:1fr;
-  }
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#F3F4F6;color:#111827}
+header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-content:space-between;align-items:center;gap:20px}
+.logo h1{color:#93D500;font-size:32px}
+.container{padding:35px}
+.card,.bloco{background:white;border-radius:18px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,.08)}
+.login{max-width:420px;margin:60px auto}
+input{width:100%;padding:14px;margin:10px 0 16px;border:1px solid #ddd;border-radius:10px;font-size:15px}
+button{border:none;padding:11px 14px;border-radius:10px;cursor:pointer;font-weight:bold}
+.btn-verde{background:#93D500;color:#111827}
+.btn-amarelo{background:#facc15;color:#111827}
+.btn-cinza{background:#e5e7eb;color:#111827}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin:25px 0}
+.numero{font-size:36px;font-weight:bold;color:#93D500}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:25px;align-items:start}
+.item{border-bottom:1px solid #e5e7eb;padding:18px 0}
+.item:last-child{border-bottom:none}
+.item p{margin:5px 0;font-size:14px}
+.status{display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:bold;margin-top:8px}
+.status-ok{background:#dcfce7;color:#166534}
+.status-alerta{background:#fee2e2;color:#991b1b}
+.status-andamento{background:#fef3c7;color:#92400e}
+.botoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.erro{color:#dc2626;font-weight:bold;margin-top:15px}
+.oculto{display:none}
+@media(max-width:900px){header{flex-direction:column;align-items:flex-start}.container{padding:20px}.grid{grid-template-columns:1fr}}
 </style>
 </head>
 
 <body>
+
+<div id="telaLogin" class="login card">
+  <h1>GymCare QR</h1>
+  <p>Login administrativo</p>
+  <br>
+  <label>E-mail</label>
+  <input type="email" id="email" placeholder="email do gerente">
+  <label>Senha</label>
+  <input type="password" id="senha" placeholder="senha">
+  <button class="btn-verde" onclick="entrarAdmin()">Entrar</button>
+  <p class="erro" id="erroLogin"></p>
+</div>
+
+<div id="telaAdmin" class="oculto">
 
 <header>
   <div class="logo">
     <h1 id="nomeAcademia">GymCare QR</h1>
     <p id="slogan">Dashboard administrativo</p>
   </div>
-
-  <div class="info">
+  <div>
     <p id="endereco"></p>
     <p id="horario"></p>
+    <br>
+    <button class="btn-cinza" onclick="sair()">Sair</button>
   </div>
 </header>
 
 <div class="container">
-
   <h2>Dashboard Administrativo</h2>
   <p>Controle de equipamentos, chamados e manutenção da academia</p>
 
   <div class="cards">
-    <div class="card">
-      <h3>Equipamentos</h3>
-      <div class="numero" id="totalEquipamentos">0</div>
-    </div>
-
-    <div class="card">
-      <h3>Chamados abertos</h3>
-      <div class="numero" id="chamadosAbertos">0</div>
-    </div>
-
-    <div class="card">
-      <h3>Em manutenção</h3>
-      <div class="numero" id="emManutencao">0</div>
-    </div>
-
-    <div class="card">
-      <h3>Finalizados</h3>
-      <div class="numero" id="chamadosFinalizados">0</div>
-    </div>
+    <div class="card"><h3>Equipamentos</h3><div class="numero" id="totalEquipamentos">0</div></div>
+    <div class="card"><h3>Chamados abertos</h3><div class="numero" id="chamadosAbertos">0</div></div>
+    <div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div>
+    <div class="card"><h3>Finalizados</h3><div class="numero" id="chamadosFinalizados">0</div></div>
   </div>
 
   <div class="grid">
-
     <div class="bloco">
       <h2>Equipamentos</h2>
       <div id="listaEquipamentos">Carregando...</div>
@@ -245,33 +85,99 @@ button{
       <h2>Chamados</h2>
       <div id="listaChamados">Carregando...</div>
     </div>
-
   </div>
 
   <p class="erro" id="erro"></p>
+</div>
 
 </div>
 
 <script>
 const SUPABASE_URL = "https://juwbkfhfmygduktuzqmu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
-
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let equipamentosGlobais = [];
 let chamadosGlobais = [];
+let usuarioLogado = null;
+
+async function verificarSessao(){
+  const { data } = await supabaseClient.auth.getUser();
+
+  if(data && data.user){
+    await validarPerfilAdmin(data.user);
+  }
+}
+
+async function entrarAdmin(){
+  document.getElementById("erroLogin").innerText = "";
+
+  const email = document.getElementById("email").value.trim();
+  const senha = document.getElementById("senha").value;
+
+  if(!email || !senha){
+    document.getElementById("erroLogin").innerText = "Informe e-mail e senha.";
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: senha
+  });
+
+  if(error){
+    document.getElementById("erroLogin").innerText = error.message;
+    return;
+  }
+
+  await validarPerfilAdmin(data.user);
+}
+
+async function validarPerfilAdmin(user){
+  const { data: usuario, error } = await supabaseClient
+    .from("usuarios")
+    .select("*")
+    .eq("email", user.email)
+    .maybeSingle();
+
+  if(error || !usuario){
+    document.getElementById("erroLogin").innerText = "Usuário não encontrado na tabela de permissões.";
+    await supabaseClient.auth.signOut();
+    return;
+  }
+
+  if(usuario.ativo !== true){
+    document.getElementById("erroLogin").innerText = "Usuário inativo.";
+    await supabaseClient.auth.signOut();
+    return;
+  }
+
+  if(usuario.perfil !== "gerente" && usuario.perfil !== "tecnico" && usuario.perfil !== "admin"){
+    document.getElementById("erroLogin").innerText = "Acesso negado. Apenas gerente, técnico ou admin.";
+    await supabaseClient.auth.signOut();
+    return;
+  }
+
+  usuarioLogado = usuario;
+  document.getElementById("telaLogin").classList.add("oculto");
+  document.getElementById("telaAdmin").classList.remove("oculto");
+  carregarDashboard();
+}
+
+async function sair(){
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
 
 async function carregarDashboard(){
   try{
     document.getElementById("erro").innerText = "";
 
-    const { data: academia, error: erroAcademia } = await supabaseClient
+    const { data: academia } = await supabaseClient
       .from("academias")
       .select("*")
       .eq("id", 1)
       .single();
-
-    if(erroAcademia) throw erroAcademia;
 
     if(academia){
       document.getElementById("nomeAcademia").innerText = academia.nome || "GymCare QR";
@@ -280,20 +186,20 @@ async function carregarDashboard(){
       document.getElementById("horario").innerText = academia.horario_funcionamento || "";
     }
 
-    const { data: equipamentos, error: erroEquipamentos } = await supabaseClient
+    const { data: equipamentos, error: erroEq } = await supabaseClient
       .from("equipamentos")
       .select("*")
       .eq("academia_id", 1)
       .order("id", { ascending:true });
 
-    if(erroEquipamentos) throw erroEquipamentos;
+    if(erroEq) throw erroEq;
 
-    const { data: chamados, error: erroChamados } = await supabaseClient
+    const { data: chamados, error: erroCham } = await supabaseClient
       .from("chamados")
       .select("*")
       .order("id", { ascending:false });
 
-    if(erroChamados) throw erroChamados;
+    if(erroCham) throw erroCham;
 
     equipamentosGlobais = equipamentos || [];
     chamadosGlobais = chamados || [];
@@ -308,25 +214,15 @@ async function carregarDashboard(){
 }
 
 function atualizarCards(){
-  const chamadosAbertos = chamadosGlobais.filter(c => c.status === "ABERTO").length;
-  const chamadosFinalizados = chamadosGlobais.filter(c => c.status === "FINALIZADO").length;
-  const emManutencao = equipamentosGlobais.filter(e => e.status === "MANUTENCAO").length;
-
   document.getElementById("totalEquipamentos").innerText = equipamentosGlobais.length;
-  document.getElementById("chamadosAbertos").innerText = chamadosAbertos;
-  document.getElementById("emManutencao").innerText = emManutencao;
-  document.getElementById("chamadosFinalizados").innerText = chamadosFinalizados;
+  document.getElementById("chamadosAbertos").innerText = chamadosGlobais.filter(c => c.status === "ABERTO").length;
+  document.getElementById("emManutencao").innerText = equipamentosGlobais.filter(e => e.status === "MANUTENCAO").length;
+  document.getElementById("chamadosFinalizados").innerText = chamadosGlobais.filter(c => c.status === "FINALIZADO").length;
 }
 
 function classeStatus(status){
-  if(status === "OPERACIONAL" || status === "FINALIZADO"){
-    return "status status-ok";
-  }
-
-  if(status === "MANUTENCAO" || status === "EM MANUTENCAO"){
-    return "status status-andamento";
-  }
-
+  if(status === "OPERACIONAL" || status === "FINALIZADO") return "status status-ok";
+  if(status === "MANUTENCAO" || status === "EM MANUTENCAO") return "status status-andamento";
   return "status status-alerta";
 }
 
@@ -342,16 +238,14 @@ function renderizarEquipamentos(){
   equipamentosGlobais.forEach(eq => {
     const div = document.createElement("div");
     div.className = "item";
-
     div.innerHTML = `
       <h3>${eq.nome}</h3>
       <p><strong>Marca:</strong> ${eq.marca || "-"}</p>
       <p><strong>Modelo:</strong> ${eq.modelo || "-"}</p>
       <p><strong>Local:</strong> ${eq.localizacao || "-"}</p>
-      <p><strong>QR Code:</strong> ${eq.qr_code || "-"}</p>
+      <p><strong>QR:</strong> ${eq.qr_code || "-"}</p>
       <div class="${classeStatus(eq.status)}">${eq.status || "OPERACIONAL"}</div>
     `;
-
     lista.appendChild(div);
   });
 }
@@ -361,7 +255,7 @@ function renderizarChamados(){
   lista.innerHTML = "";
 
   if(chamadosGlobais.length === 0){
-    lista.innerHTML = "<p>Nenhum chamado aberto.</p>";
+    lista.innerHTML = "<p>Nenhum chamado registrado.</p>";
     return;
   }
 
@@ -371,7 +265,6 @@ function renderizarChamados(){
 
     const div = document.createElement("div");
     div.className = "item";
-
     div.innerHTML = `
       <h3>Chamado #${chamado.id}</h3>
       <p><strong>Equipamento:</strong> ${nomeEquipamento}</p>
@@ -382,36 +275,22 @@ function renderizarChamados(){
       <div class="${classeStatus(chamado.status)}">${chamado.status}</div>
 
       <div class="botoes">
-        <button class="btn-amarelo" onclick="alterarStatusChamado(${chamado.id}, ${chamado.equipamento_id}, 'EM MANUTENCAO')">
-          Em manutenção
-        </button>
-
-        <button class="btn-verde" onclick="alterarStatusChamado(${chamado.id}, ${chamado.equipamento_id}, 'FINALIZADO')">
-          Finalizar
-        </button>
-
-        <button class="btn-cinza" onclick="alterarStatusChamado(${chamado.id}, ${chamado.equipamento_id}, 'ABERTO')">
-          Reabrir
-        </button>
+        <button class="btn-amarelo" onclick="alterarStatusChamado(${chamado.id}, ${chamado.equipamento_id}, 'EM MANUTENCAO')">Em manutenção</button>
+        <button class="btn-verde" onclick="alterarStatusChamado(${chamado.id}, ${chamado.equipamento_id}, 'FINALIZADO')">Finalizar</button>
+        <button class="btn-cinza" onclick="alterarStatusChamado(${chamado.id}, ${chamado.equipamento_id}, 'ABERTO')">Reabrir</button>
       </div>
     `;
-
     lista.appendChild(div);
   });
 }
 
 function formatarData(data){
   if(!data) return "-";
-
-  const d = new Date(data);
-
-  return d.toLocaleString("pt-BR");
+  return new Date(data).toLocaleString("pt-BR");
 }
 
 async function alterarStatusChamado(chamadoId, equipamentoId, novoStatus){
   try{
-    document.getElementById("erro").innerText = "";
-
     const { error: erroChamado } = await supabaseClient
       .from("chamados")
       .update({ status: novoStatus })
@@ -420,18 +299,7 @@ async function alterarStatusChamado(chamadoId, equipamentoId, novoStatus){
     if(erroChamado) throw erroChamado;
 
     let novoStatusEquipamento = "OPERACIONAL";
-
-    if(novoStatus === "EM MANUTENCAO"){
-      novoStatusEquipamento = "MANUTENCAO";
-    }
-
-    if(novoStatus === "ABERTO"){
-      novoStatusEquipamento = "OPERACIONAL";
-    }
-
-    if(novoStatus === "FINALIZADO"){
-      novoStatusEquipamento = "OPERACIONAL";
-    }
+    if(novoStatus === "EM MANUTENCAO") novoStatusEquipamento = "MANUTENCAO";
 
     const { error: erroEquipamento } = await supabaseClient
       .from("equipamentos")
@@ -447,7 +315,7 @@ async function alterarStatusChamado(chamadoId, equipamentoId, novoStatus){
   }
 }
 
-carregarDashboard();
+verificarSessao();
 </script>
 
 </body>
