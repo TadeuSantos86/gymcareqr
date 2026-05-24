@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solicitar Manutenção | GymCare QR</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#F3F4F6;color:#111827}
+header{background:#323E48;color:white;padding:25px;text-align:center}
+header h1{color:#93D500}
+.container{max-width:650px;margin:30px auto;padding:20px}
+.card{background:white;padding:25px;border-radius:18px;box-shadow:0 4px 15px rgba(0,0,0,.08);margin-bottom:20px}
+input,textarea,select{width:100%;padding:14px;margin-top:8px;margin-bottom:15px;border:1px solid #ddd;border-radius:10px;font-size:15px}
+button{width:100%;background:#93D500;border:none;padding:15px;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer}
+button:hover{opacity:.9}
+.status{display:inline-block;background:#22c55e;color:white;padding:7px 14px;border-radius:20px;margin-top:10px}
+.erro{color:#dc2626;font-weight:bold;margin-top:10px}
+.sucesso{color:#16a34a;font-weight:bold;margin-top:10px}
+.oculto{display:none}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>GymCare QR</h1>
+  <p>Solicitação de manutenção com login obrigatório</p>
+</header>
+
+<div class="container">
+
+  <div class="card" id="cardEquipamento">
+    <h2>Carregando equipamento...</h2>
+  </div>
+
+  <div class="card" id="cardLogin">
+    <h2>Login obrigatório</h2>
+    <p>Entre para solicitar manutenção deste equipamento.</p>
+
+    <label>E-mail</label>
+    <input type="email" id="email" placeholder="seuemail@exemplo.com">
+
+    <label>Senha</label>
+    <input type="password" id="senha" placeholder="Digite sua senha">
+
+    <button onclick="entrar()">Entrar</button>
+
+    <br><br>
+
+    <button onclick="cadastrar()">Criar cadastro</button>
+
+    <p class="erro" id="erroLogin"></p>
+  </div>
+
+  <div class="card oculto" id="cardChamado">
+    <h2>Solicitar manutenção</h2>
+
+    <label>Tipo do problema</label>
+    <select id="tipoProblema">
+      <option>Barulho estranho</option>
+      <option>Equipamento travando</option>
+      <option>Peça solta</option>
+      <option>Revisão preventiva</option>
+      <option>Risco de segurança</option>
+      <option>Outro</option>
+    </select>
+
+    <label>Descrição</label>
+    <textarea id="descricao" rows="5" placeholder="Descreva o problema encontrado"></textarea>
+
+    <button onclick="abrirChamado()">Enviar solicitação</button>
+
+    <p class="sucesso" id="sucessoChamado"></p>
+    <p class="erro" id="erroChamado"></p>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://juwbkfhfmygduktuzqmu.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const params = new URLSearchParams(window.location.search);
+const equipamentoId = params.get("id") || "1";
+
+let equipamentoAtual = null;
+let usuarioSistemaId = null;
+
+async function carregarEquipamento(){
+  const { data, error } = await supabaseClient
+    .from("equipamentos")
+    .select("*")
+    .eq("id", equipamentoId)
+    .single();
+
+  const card = document.getElementById("cardEquipamento");
+
+  if(error){
+    card.innerHTML = "<h2>Equipamento não encontrado</h2>";
+    return;
+  }
+
+  equipamentoAtual = data;
+
+  card.innerHTML = `
+    <h2>${data.nome}</h2>
+    <p><strong>Marca:</strong> ${data.marca || "-"}</p>
+    <p><strong>Modelo:</strong> ${data.modelo || "-"}</p>
+    <p><strong>Localização:</strong> ${data.localizacao || "-"}</p>
+    <p><strong>Última revisão:</strong> ${data.ultima_revisao || "-"}</p>
+    <p><strong>Próxima revisão:</strong> ${data.proxima_revisao || "-"}</p>
+    <div class="status">${data.status || "OPERACIONAL"}</div>
+  `;
+}
+
+async function verificarSessao(){
+  const { data } = await supabaseClient.auth.getUser();
+
+  if(data && data.user){
+    await garantirUsuarioSistema(data.user);
+    document.getElementById("cardLogin").classList.add("oculto");
+    document.getElementById("cardChamado").classList.remove("oculto");
+  }
+}
+
+async function garantirUsuarioSistema(user){
+  const email = user.email;
+
+  let { data: usuario } = await supabaseClient
+    .from("usuarios")
+    .select("*")
+    .eq("email", email)
+    .maybeSingle();
+
+  if(usuario){
+    usuarioSistemaId = usuario.id;
+    return;
+  }
+
+  const { data: novoUsuario, error } = await supabaseClient
+    .from("usuarios")
+    .insert([
+      {
+        academia_id: 1,
+        nome: email,
+        email: email,
+        perfil: "aluno",
+        ativo: true
+      }
+    ])
+    .select()
+    .single();
+
+  if(!error && novoUsuario){
+    usuarioSistemaId = novoUsuario.id;
+  }
+}
+
+async function entrar(){
+  document.getElementById("erroLogin").innerText = "";
+
+  const email = document.getElementById("email").value;
+  const senha = document.getElementById("senha").value;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: senha
+  });
+
+  if(error){
+    document.getElementById("erroLogin").innerText = error.message;
+    return;
+  }
+
+  await garantirUsuarioSistema(data.user);
+
+  document.getElementById("cardLogin").classList.add("oculto");
+  document.getElementById("cardChamado").classList.remove("oculto");
+}
+
+async function cadastrar(){
+  document.getElementById("erroLogin").innerText = "";
+
+  const email = document.getElementById("email").value;
+  const senha = document.getElementById("senha").value;
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: email,
+    password: senha
+  });
+
+  if(error){
+    document.getElementById("erroLogin").innerText = error.message;
+    return;
+  }
+
+  alert("Cadastro criado. Agora clique em Entrar.");
+}
+
+async function abrirChamado(){
+  document.getElementById("erroChamado").innerText = "";
+  document.getElementById("sucessoChamado").innerText = "";
+
+  const tipo = document.getElementById("tipoProblema").value;
+  const descricao = document.getElementById("descricao").value;
+
+  if(!descricao.trim()){
+    document.getElementById("erroChamado").innerText = "Descreva o problema antes de enviar.";
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("chamados")
+    .insert([
+      {
+        equipamento_id: equipamentoAtual.id,
+        usuario_id: usuarioSistemaId,
+        tipo_problema: tipo,
+        descricao: descricao.trim(),
+        prioridade: tipo === "Risco de segurança" ? "Alta" : "Normal",
+        status: "ABERTO"
+      }
+    ]);
+
+  if(error){
+    document.getElementById("erroChamado").innerText = error.message;
+    return;
+  }
+
+  document.getElementById("descricao").value = "";
+  document.getElementById("sucessoChamado").innerText = "Chamado enviado com sucesso.";
+}
+
+carregarEquipamento();
+verificarSessao();
+</script>
+
+</body>
+</html>
