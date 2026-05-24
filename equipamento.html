@@ -10,111 +10,110 @@
 
 <style>
 *{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:Arial,sans-serif;
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif
 }
 
 body{
-  background:#f3f4f6;
-  color:#111827;
-  padding:20px;
+background:#f3f4f6;
+padding:20px;
+color:#111827
 }
 
 .card{
-  max-width:700px;
-  margin:auto;
-  background:white;
-  border-radius:20px;
-  padding:30px;
-  box-shadow:0 5px 20px rgba(0,0,0,.08);
+max-width:700px;
+margin:auto;
+background:white;
+border-radius:20px;
+padding:30px;
+box-shadow:0 5px 20px rgba(0,0,0,.08)
 }
 
 h1{
-  color:#93D500;
-  margin-bottom:10px;
+color:#93D500;
+margin-bottom:10px
 }
 
 .subtitulo{
-  color:#6b7280;
-  margin-bottom:25px;
+color:#6b7280;
+margin-bottom:25px
 }
 
 .info{
-  background:#f9fafb;
-  border-radius:15px;
-  padding:18px;
-  margin-bottom:20px;
+background:#f9fafb;
+padding:18px;
+border-radius:14px;
+margin-bottom:20px
 }
 
 .info p{
-  margin:6px 0;
+margin:6px 0
 }
 
 label{
-  display:block;
-  margin-top:18px;
-  margin-bottom:8px;
-  font-weight:bold;
+display:block;
+margin-top:18px;
+margin-bottom:8px;
+font-weight:bold
 }
 
 input,
 select,
 textarea{
-  width:100%;
-  padding:14px;
-  border:1px solid #ddd;
-  border-radius:12px;
-  font-size:15px;
+width:100%;
+padding:14px;
+border:1px solid #ddd;
+border-radius:12px;
+font-size:15px
 }
 
 textarea{
-  resize:none;
-  min-height:120px;
+resize:none;
+min-height:120px
 }
 
 button{
-  margin-top:25px;
-  width:100%;
-  border:none;
-  padding:16px;
-  border-radius:14px;
-  background:#93D500;
-  color:#111827;
-  font-weight:bold;
-  font-size:16px;
-  cursor:pointer;
+width:100%;
+margin-top:25px;
+padding:16px;
+border:none;
+border-radius:14px;
+background:#93D500;
+font-size:16px;
+font-weight:bold;
+cursor:pointer
 }
 
 button:hover{
-  opacity:.95;
+opacity:.95
 }
 
 .msg{
-  margin-top:20px;
-  font-weight:bold;
-  text-align:center;
+margin-top:20px;
+text-align:center;
+font-weight:bold
 }
 
 .sucesso{
-  color:#15803d;
+color:#15803d
 }
 
 .erro{
-  color:#dc2626;
+color:#dc2626
 }
 
 .alerta{
-  background:#fef3c7;
-  color:#92400e;
-  border-radius:14px;
-  padding:14px;
-  margin-bottom:20px;
+background:#fef3c7;
+color:#92400e;
+padding:14px;
+border-radius:12px;
+margin-bottom:20px
 }
 
 .oculto{
-  display:none;
+display:none
 }
 </style>
 </head>
@@ -126,12 +125,13 @@ button:hover{
 <div id="loginArea">
 
 <h1>GymCare QR</h1>
+
 <p class="subtitulo">
-Faça login para solicitar manutenção
+Login do equipamento
 </p>
 
-<label>E-mail</label>
-<input type="email" id="email">
+<label>Usuário</label>
+<input type="text" id="usuario">
 
 <label>Senha</label>
 <input type="password" id="senha">
@@ -140,7 +140,7 @@ Faça login para solicitar manutenção
 Entrar
 </button>
 
-<p class="msg erro" id="erroLogin"></p>
+<p id="erroLogin" class="msg erro"></p>
 
 </div>
 
@@ -151,7 +151,7 @@ Carregando...
 </h1>
 
 <p class="subtitulo">
-Solicitação de manutenção do equipamento
+Solicitação de manutenção
 </p>
 
 <div class="info">
@@ -161,18 +161,20 @@ Solicitação de manutenção do equipamento
 <p><strong>Status:</strong> <span id="status"></span></p>
 </div>
 
-<div id="avisoChamado" class="alerta oculto">
-Já existe um chamado em andamento para este equipamento.
+<div id="avisoChamado"
+class="alerta oculto">
+
+Já existe uma solicitação em andamento para este equipamento.
 </div>
 
 <label>Tipo do problema</label>
 
 <select id="tipoProblema">
-<option value="Quebrado">Quebrado</option>
-<option value="Barulho estranho">Barulho estranho</option>
-<option value="Falha elétrica">Falha elétrica</option>
-<option value="Revisão preventiva">Revisão preventiva</option>
-<option value="Outro">Outro</option>
+<option>Quebrado</option>
+<option>Barulho estranho</option>
+<option>Falha elétrica</option>
+<option>Revisão preventiva</option>
+<option>Outro</option>
 </select>
 
 <label>Prioridade</label>
@@ -185,217 +187,253 @@ Já existe um chamado em andamento para este equipamento.
 </select>
 
 <label>Descrição</label>
+
 <textarea id="descricao"></textarea>
 
-<button id="btnAbrirChamado" onclick="abrirChamado()">
+<button id="btnAbrirChamado"
+onclick="abrirChamado()">
+
 Solicitar manutenção
+
 </button>
 
-<p class="msg" id="mensagem"></p>
+<p id="mensagem" class="msg"></p>
 
 </div>
 
 </div>
 
 <script>
-const SUPABASE_URL = "https://juwbkfhfmygduktuzqmu.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
+const SUPABASE_URL =
+"https://juwbkfhfmygduktuzqmu.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
 
 const supabaseClient =
-supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
 
 let equipamentoAtual = null;
-let usuarioLogado = null;
 
 function obterIdEquipamento(){
-  const params =
-  new URLSearchParams(window.location.search);
+const params =
+new URLSearchParams(window.location.search);
 
-  return params.get("id");
+return params.get("id");
 }
 
-async function fazerLogin(){
+function fazerLogin(){
 
-  const email =
-  document.getElementById("email").value.trim();
+const usuario =
+document.getElementById("usuario")
+.value.trim();
 
-  const senha =
-  document.getElementById("senha").value.trim();
+const senha =
+document.getElementById("senha")
+.value.trim();
 
-  document.getElementById("erroLogin")
-  .innerText = "";
+if(
+usuario === "equipamento01" &&
+senha === "teste01"
+){
 
-  const { data, error } =
-  await supabaseClient.auth.signInWithPassword({
-    email,
-    password: senha
-  });
+document.getElementById("loginArea")
+.classList.add("oculto");
 
-  if(error){
-    document.getElementById("erroLogin")
-    .innerText = "Login inválido.";
-    return;
-  }
+document.getElementById("painelEquipamento")
+.classList.remove("oculto");
 
-  usuarioLogado = data.user;
+carregarEquipamento();
 
-  document.getElementById("loginArea")
-  .classList.add("oculto");
+}else{
 
-  document.getElementById("painelEquipamento")
-  .classList.remove("oculto");
+document.getElementById("erroLogin")
+.innerText =
+"Usuário ou senha inválidos.";
 
-  carregarEquipamento();
+}
 }
 
 async function carregarEquipamento(){
 
-  const id = obterIdEquipamento();
+const id =
+obterIdEquipamento();
 
-  const { data, error } =
-  await supabaseClient
-  .from("equipamentos")
-  .select("*")
-  .eq("id", id)
-  .single();
+const { data, error } =
+await supabaseClient
+.from("equipamentos")
+.select("*")
+.eq("id", id)
+.single();
 
-  if(error || !data){
-    document.getElementById("mensagem")
-    .innerHTML =
-    "Equipamento não encontrado.";
-    return;
-  }
+if(error || !data){
 
-  equipamentoAtual = data;
+document.getElementById("mensagem")
+.innerHTML =
+"Equipamento não encontrado.";
 
-  document.getElementById("nomeEquipamento")
-  .innerText = data.nome;
+return;
+}
 
-  document.getElementById("marca")
-  .innerText = data.marca || "-";
+equipamentoAtual = data;
 
-  document.getElementById("modelo")
-  .innerText = data.modelo || "-";
+document.getElementById("nomeEquipamento")
+.innerText = data.nome;
 
-  document.getElementById("localizacao")
-  .innerText = data.localizacao || "-";
+document.getElementById("marca")
+.innerText = data.marca || "-";
 
-  document.getElementById("status")
-  .innerText = data.status || "OPERACIONAL";
+document.getElementById("modelo")
+.innerText = data.modelo || "-";
 
-  verificarChamadoAberto();
+document.getElementById("localizacao")
+.innerText = data.localizacao || "-";
+
+document.getElementById("status")
+.innerText =
+data.status || "OPERACIONAL";
+
+verificarChamadoAberto();
 }
 
 async function verificarChamadoAberto(){
 
-  const { data } =
-  await supabaseClient
-  .from("chamados")
-  .select("*")
-  .eq("equipamento_id", equipamentoAtual.id)
-  .in("status", ["ABERTO","EM MANUTENCAO"]);
+const { data } =
+await supabaseClient
+.from("chamados")
+.select("*")
+.eq("equipamento_id",
+equipamentoAtual.id)
+.in("status",
+["ABERTO","EM MANUTENCAO"]);
 
-  if(data && data.length > 0){
+if(data && data.length > 0){
 
-    document.getElementById("avisoChamado")
-    .classList.remove("oculto");
+document.getElementById(
+"avisoChamado"
+).classList.remove("oculto");
 
-    document.getElementById("btnAbrirChamado")
-    .disabled = true;
+document.getElementById(
+"btnAbrirChamado"
+).disabled = true;
 
-    document.getElementById("btnAbrirChamado")
-    .style.opacity = ".5";
-  }
+document.getElementById(
+"btnAbrirChamado"
+).style.opacity = ".5";
+}
 }
 
 async function abrirChamado(){
 
-  const tipoProblema =
-  document.getElementById("tipoProblema").value;
+const tipoProblema =
+document.getElementById(
+"tipoProblema"
+).value;
 
-  const prioridade =
-  document.getElementById("prioridade").value;
+const prioridade =
+document.getElementById(
+"prioridade"
+).value;
 
-  const descricao =
-  document.getElementById("descricao").value.trim();
+const descricao =
+document.getElementById(
+"descricao"
+).value.trim();
 
-  const { data: chamadoExistente } =
-  await supabaseClient
-  .from("chamados")
-  .select("*")
-  .eq("equipamento_id", equipamentoAtual.id)
-  .in("status", ["ABERTO","EM MANUTENCAO"]);
+const { data: existente } =
+await supabaseClient
+.from("chamados")
+.select("*")
+.eq("equipamento_id",
+equipamentoAtual.id)
+.in("status",
+["ABERTO",
+"EM MANUTENCAO"]);
 
-  if(chamadoExistente &&
-     chamadoExistente.length > 0){
+if(existente &&
+existente.length > 0){
 
-    document.getElementById("mensagem")
-    .innerHTML =
-    "Já existe um chamado aberto.";
+document.getElementById(
+"mensagem"
+).innerHTML =
+"Já existe um chamado em andamento.";
 
-    document.getElementById("mensagem")
-    .className = "msg erro";
+document.getElementById(
+"mensagem"
+).className =
+"msg erro";
 
-    return;
-  }
+return;
+}
 
-  const { error } =
-  await supabaseClient
-  .from("chamados")
-  .insert([{
-    equipamento_id:
-    equipamentoAtual.id,
+const { error } =
+await supabaseClient
+.from("chamados")
+.insert([{
+equipamento_id:
+equipamentoAtual.id,
 
-    tipo_problema:
-    tipoProblema,
+tipo_problema:
+tipoProblema,
 
-    prioridade:
-    prioridade,
+prioridade:
+prioridade,
 
-    descricao:
-    descricao,
+descricao:
+descricao,
 
-    status:
-    "ABERTO",
+status:
+"ABERTO"
+}]);
 
-    usuario_id:
-    usuarioLogado.id
-  }]);
+if(error){
 
-  if(error){
+document.getElementById(
+"mensagem"
+).innerHTML =
+error.message;
 
-    document.getElementById("mensagem")
-    .innerHTML =
-    error.message;
+document.getElementById(
+"mensagem"
+).className =
+"msg erro";
 
-    document.getElementById("mensagem")
-    .className = "msg erro";
+return;
+}
 
-    return;
-  }
+await supabaseClient
+.from("equipamentos")
+.update({
+status:"MANUTENCAO"
+})
+.eq("id",
+equipamentoAtual.id);
 
-  await supabaseClient
-  .from("equipamentos")
-  .update({
-    status:"MANUTENCAO"
-  })
-  .eq("id", equipamentoAtual.id);
+document.getElementById(
+"mensagem"
+).innerHTML =
+"Chamado aberto com sucesso.";
 
-  document.getElementById("mensagem")
-  .innerHTML =
-  "Chamado aberto com sucesso.";
+document.getElementById(
+"mensagem"
+).className =
+"msg sucesso";
 
-  document.getElementById("mensagem")
-  .className = "msg sucesso";
+document.getElementById(
+"btnAbrirChamado"
+).disabled = true;
 
-  document.getElementById("btnAbrirChamado")
-  .disabled = true;
+document.getElementById(
+"btnAbrirChamado"
+).style.opacity = ".5";
 
-  document.getElementById("btnAbrirChamado")
-  .style.opacity = ".5";
+document.getElementById(
+"avisoChamado"
+).classList.remove("oculto");
 
-  document.getElementById("avisoChamado")
-  .classList.remove("oculto");
 }
 </script>
 
