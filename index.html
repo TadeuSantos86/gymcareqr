@@ -321,14 +321,39 @@ if(!data)return"-";
 return new Date(data).toLocaleString("pt-BR");
 }
 
-async function registrarHistorico(equipamentoId,chamadoId,tipoEvento,descricao,status){
-await supabaseClient.from("historico_manutencao").insert([{
+async function registrarHistorico(
+equipamentoId,
+chamadoId,
+tipoEvento,
+descricao,
+status
+){
+
+try{
+
+await supabaseClient
+.from("historico_manutencao")
+.insert([{
 equipamento_id:equipamentoId,
 chamado_id:chamadoId,
 tipo_evento:tipoEvento,
 descricao:descricao,
 status:status
 }]);
+
+console.log(
+"Histórico registrado"
+);
+
+}catch(error){
+
+console.error(
+"Erro ao salvar histórico:",
+error
+);
+
+}
+
 }
 
 async function alterarStatusChamado(chamadoId,equipamentoId,novoStatus){
