@@ -18,6 +18,8 @@ button{border:none;padding:11px 14px;border-radius:10px;cursor:pointer;font-weig
 .btn-verde{background:#93D500}
 .btn-amarelo{background:#facc15}
 .btn-cinza{background:#e5e7eb}
+.btn-vermelho{background:#ef4444;color:white}
+.btn-azul{background:#dbeafe;color:#1d4ed8}
 
 header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-content:space-between;gap:20px}
 .logo h1{color:#93D500}
@@ -25,19 +27,24 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 .card,.bloco{background:white;border-radius:18px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,.08)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin:25px 0}
 .numero{font-size:36px;font-weight:bold;color:#93D500}
+
 .grid{display:grid;grid-template-columns:1fr 1.2fr;gap:25px}
 .item{border-bottom:1px solid #e5e7eb;padding:18px 0}
 .item:last-child{border-bottom:none}
 .item p{margin:5px 0;font-size:14px}
+
 .status{display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:bold;margin-top:8px}
 .status-ok{background:#dcfce7;color:#166534}
 .status-alerta{background:#fee2e2;color:#991b1b}
 .status-andamento{background:#fef3c7;color:#92400e}
+.status-desativado{background:#e5e7eb;color:#374151}
+
 .prioridade{display:inline-block;padding:5px 10px;border-radius:12px;font-size:12px;font-weight:bold;margin-left:5px}
 .p-baixa{background:#e5e7eb;color:#374151}
 .p-media{background:#dbeafe;color:#1d4ed8}
 .p-alta{background:#ffedd5;color:#c2410c}
 .p-urgente{background:#fee2e2;color:#991b1b}
+
 .botoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
 .filtros{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -46,8 +53,10 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 
 .timeline{margin-top:20px;border-left:4px solid #93D500;padding-left:18px}
 .evento{margin-bottom:18px;background:#f9fafb;padding:14px;border-radius:12px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:20px}
-.modal-box{background:white;border-radius:20px;max-width:700px;width:100%;padding:25px;max-height:85vh;overflow:auto}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:20px;z-index:999}
+.modal-box{background:white;border-radius:20px;max-width:760px;width:100%;padding:25px;max-height:85vh;overflow:auto}
+.qr-link{background:#f9fafb;padding:12px;border-radius:10px;word-break:break-all;font-size:14px}
 
 @media(max-width:900px){
 header{flex-direction:column}
@@ -89,10 +98,10 @@ header{flex-direction:column}
 
 <div class="container">
 <h2>Dashboard Administrativo</h2>
-<p>Controle operacional de equipamentos, chamados, cadastro e histórico.</p>
+<p>Controle operacional de equipamentos, chamados, edição, QR e histórico.</p>
 
 <div class="cards">
-<div class="card"><h3>Equipamentos</h3><div class="numero" id="totalEquipamentos">0</div></div>
+<div class="card"><h3>Equipamentos ativos</h3><div class="numero" id="totalEquipamentos">0</div></div>
 <div class="card"><h3>Chamados abertos</h3><div class="numero" id="chamadosAbertos">0</div></div>
 <div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div>
 <div class="card"><h3>Urgentes / Alta</h3><div class="numero" id="urgentes">0</div></div>
@@ -113,7 +122,7 @@ header{flex-direction:column}
 
 <div>
 <label>Categoria / Área</label>
-<input type="text" id="novaCategoria" placeholder="Ex: Cardio Premium, Sala Speed, Musculação Superior">
+<input type="text" id="novaCategoria" placeholder="Ex: Cardio Premium">
 </div>
 
 <div>
@@ -160,6 +169,19 @@ header{flex-direction:column}
 
 <div class="bloco">
 <h2>Equipamentos</h2>
+
+<label>Buscar equipamento</label>
+<input type="text" id="buscaEquipamento" placeholder="nome, categoria, ID ou localização" oninput="renderizarEquipamentos()">
+
+<label>Status</label>
+<select id="filtroStatusEquipamento" onchange="renderizarEquipamentos()">
+<option value="TODOS">Todos</option>
+<option value="OPERACIONAL">Operacional</option>
+<option value="MANUTENCAO">Manutenção</option>
+<option value="BLOQUEADO">Bloqueado</option>
+<option value="DESATIVADO">Desativado</option>
+</select>
+
 <div id="listaEquipamentos">Carregando...</div>
 </div>
 
@@ -212,6 +234,61 @@ header{flex-direction:column}
 </div>
 </div>
 
+<div id="modalEditar" class="modal oculto">
+<div class="modal-box">
+<h2>Editar equipamento</h2>
+
+<input type="hidden" id="editId">
+
+<label>Nome</label>
+<input type="text" id="editNome">
+
+<label>Categoria / Área</label>
+<input type="text" id="editCategoria">
+
+<label>Marca</label>
+<input type="text" id="editMarca">
+
+<label>Modelo</label>
+<input type="text" id="editModelo">
+
+<label>Número de série</label>
+<input type="text" id="editSerie">
+
+<label>Localização</label>
+<input type="text" id="editLocalizacao">
+
+<label>ID discreto</label>
+<input type="text" id="editCodigo">
+
+<label>Próxima revisão</label>
+<input type="date" id="editProximaRevisao">
+
+<label>Status</label>
+<select id="editStatus">
+<option value="OPERACIONAL">Operacional</option>
+<option value="MANUTENCAO">Manutenção</option>
+<option value="BLOQUEADO">Bloqueado</option>
+<option value="DESATIVADO">Desativado</option>
+</select>
+
+<button class="btn-verde" onclick="salvarEdicaoEquipamento()">Salvar alterações</button>
+<button class="btn-cinza" onclick="fecharEditar()">Cancelar</button>
+
+<p class="erro" id="erroEditar"></p>
+</div>
+</div>
+
+<div id="modalQR" class="modal oculto">
+<div class="modal-box">
+<h2 id="tituloQR">QR / Link do equipamento</h2>
+<p class="qr-link" id="linkQR"></p>
+<br>
+<button class="btn-verde" onclick="copiarLinkQR()">Copiar link</button>
+<button class="btn-cinza" onclick="fecharQR()">Fechar</button>
+<p class="sucesso" id="sucessoQR"></p>
+</div>
+</div>
 <script>
 const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
@@ -219,10 +296,10 @@ const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let equipamentosGlobais=[];
 let chamadosGlobais=[];
+let linkAtualQR="";
 
 function toggleCadastroEquipamento(){
-const form=document.getElementById("formCadastroEquipamento");
-form.classList.toggle("oculto");
+document.getElementById("formCadastroEquipamento").classList.toggle("oculto");
 }
 
 function verificarLoginSalvo(){
@@ -253,20 +330,16 @@ location.reload();
 }
 
 async function carregarDashboard(){
-try{
-document.getElementById("erro").innerText="";
+const {data:equipamentos}=await supabaseClient
+.from("equipamentos")
+.select("*")
+.eq("academia_id",1)
+.order("id",{ascending:true});
 
-const {data:academia}=await supabaseClient.from("academias").select("*").eq("id",1).single();
-
-if(academia){
-document.getElementById("nomeAcademia").innerText=academia.nome||"GymCare QR";
-document.getElementById("slogan").innerText=academia.slogan||"Dashboard administrativo";
-document.getElementById("endereco").innerText=academia.endereco||"";
-document.getElementById("horario").innerText=academia.horario_funcionamento||"";
-}
-
-const {data:equipamentos}=await supabaseClient.from("equipamentos").select("*").eq("academia_id",1).order("id",{ascending:true});
-const {data:chamados}=await supabaseClient.from("chamados").select("*").order("id",{ascending:false});
+const {data:chamados}=await supabaseClient
+.from("chamados")
+.select("*")
+.order("id",{ascending:false});
 
 equipamentosGlobais=equipamentos||[];
 chamadosGlobais=chamados||[];
@@ -274,22 +347,30 @@ chamadosGlobais=chamados||[];
 atualizarCards();
 renderizarEquipamentos();
 renderizarChamados();
-
-}catch(error){
-document.getElementById("erro").innerText="Erro ao carregar dashboard: "+error.message;
-}
 }
 
 function atualizarCards(){
-document.getElementById("totalEquipamentos").innerText=equipamentosGlobais.length;
-document.getElementById("chamadosAbertos").innerText=chamadosGlobais.filter(c=>c.status==="ABERTO").length;
-document.getElementById("emManutencao").innerText=equipamentosGlobais.filter(e=>e.status==="MANUTENCAO").length;
-document.getElementById("urgentes").innerText=chamadosGlobais.filter(c=>c.prioridade==="URGENTE"||c.prioridade==="ALTA").length;
+document.getElementById("totalEquipamentos").innerText=
+equipamentosGlobais.filter(e=>e.status!=="DESATIVADO").length;
+
+document.getElementById("chamadosAbertos").innerText=
+chamadosGlobais.filter(c=>c.status==="ABERTO").length;
+
+document.getElementById("emManutencao").innerText=
+equipamentosGlobais.filter(e=>e.status==="MANUTENCAO").length;
+
+document.getElementById("urgentes").innerText=
+chamadosGlobais.filter(c=>c.prioridade==="URGENTE"||c.prioridade==="ALTA").length;
+}
+
+function classeStatus(status){
+if(status==="OPERACIONAL")return"status status-ok";
+if(status==="MANUTENCAO")return"status status-andamento";
+if(status==="BLOQUEADO")return"status status-alerta";
+return"status status-desativado";
 }
 
 async function cadastrarEquipamento(){
-document.getElementById("sucessoCadastro").innerText="";
-document.getElementById("erroCadastro").innerText="";
 
 const nome=document.getElementById("novoNome").value.trim();
 const categoria=document.getElementById("novaCategoria").value.trim();
@@ -300,24 +381,9 @@ const localizacao=document.getElementById("novaLocalizacao").value.trim();
 const codigo=document.getElementById("novoCodigo").value.trim().toUpperCase();
 const proximaRevisao=document.getElementById("novaProximaRevisao").value;
 
-if(!nome){
-document.getElementById("erroCadastro").innerText="Informe o nome do equipamento.";
-return;
-}
-
-if(!codigo){
-document.getElementById("erroCadastro").innerText="Informe o ID discreto do equipamento.";
-return;
-}
-
-const {data:existe}=await supabaseClient
-.from("equipamentos")
-.select("id")
-.eq("codigo_publico",codigo)
-.maybeSingle();
-
-if(existe){
-document.getElementById("erroCadastro").innerText="Este ID discreto já está em uso.";
+if(!nome||!codigo){
+document.getElementById("erroCadastro").innerText=
+"Nome e ID discreto são obrigatórios.";
 return;
 }
 
@@ -325,17 +391,15 @@ const {data:novo,error}=await supabaseClient
 .from("equipamentos")
 .insert([{
 academia_id:1,
-nome:nome,
-categoria:categoria,
-marca:marca,
-modelo:modelo,
+nome,
+categoria,
+marca,
+modelo,
 numero_serie:numeroSerie,
-localizacao:localizacao,
+localizacao,
 status:"OPERACIONAL",
-ultima_revisao:null,
-proxima_revisao:proximaRevisao||null,
 codigo_publico:codigo,
-qr_code:"https://gymcareqr.vercel.app/equipamento.html?id="
+proxima_revisao:proximaRevisao||null
 }])
 .select()
 .single();
@@ -345,180 +409,174 @@ document.getElementById("erroCadastro").innerText=error.message;
 return;
 }
 
-const qrFinal="https://gymcareqr.vercel.app/equipamento.html?id="+novo.id;
+const qrFinal=`https://gymcareqr.vercel.app/equipamento.html?id=${novo.id}`;
 
 await supabaseClient
 .from("equipamentos")
 .update({qr_code:qrFinal})
 .eq("id",novo.id);
 
-await registrarHistorico(
-novo.id,
-null,
-"EQUIPAMENTO CADASTRADO",
-`Equipamento ${nome} cadastrado no sistema com ID discreto ${codigo}. Categoria/Área: ${categoria || "-"}.`,
-"OPERACIONAL"
-);
-
-document.getElementById("sucessoCadastro").innerText="Equipamento cadastrado com sucesso.";
-
-limparFormularioEquipamento();
-document.getElementById("formCadastroEquipamento").classList.add("oculto");
+toggleCadastroEquipamento();
 carregarDashboard();
 }
 
-function limparFormularioEquipamento(){
-document.getElementById("novoNome").value="";
-document.getElementById("novaCategoria").value="";
-document.getElementById("novaMarca").value="";
-document.getElementById("novoModelo").value="";
-document.getElementById("novoSerie").value="";
-document.getElementById("novaLocalizacao").value="";
-document.getElementById("novoCodigo").value="";
-document.getElementById("novaProximaRevisao").value="";
-}
-
-function classeStatus(status){
-if(status==="OPERACIONAL"||status==="FINALIZADO")return"status status-ok";
-if(status==="MANUTENCAO"||status==="EM MANUTENCAO")return"status status-andamento";
-return"status status-alerta";
-}
-
-function classePrioridade(p){
-if(p==="URGENTE")return"prioridade p-urgente";
-if(p==="ALTA")return"prioridade p-alta";
-if(p==="MEDIA")return"prioridade p-media";
-return"prioridade p-baixa";
-}
-
 function renderizarEquipamentos(){
+
+const busca=document.getElementById("buscaEquipamento").value.toLowerCase();
+const filtro=document.getElementById("filtroStatusEquipamento").value;
+
 const lista=document.getElementById("listaEquipamentos");
 lista.innerHTML="";
 
-if(equipamentosGlobais.length===0){
-lista.innerHTML="<p>Nenhum equipamento cadastrado.</p>";
-return;
-}
+const filtrados=equipamentosGlobais.filter(eq=>{
 
-equipamentosGlobais.forEach(eq=>{
+const matchBusca=
+(eq.nome||"").toLowerCase().includes(busca)||
+(eq.categoria||"").toLowerCase().includes(busca)||
+(eq.codigo_publico||"").toLowerCase().includes(busca)||
+(eq.localizacao||"").toLowerCase().includes(busca);
+
+const matchStatus=
+filtro==="TODOS"||eq.status===filtro;
+
+return matchBusca&&matchStatus;
+});
+
+filtrados.forEach(eq=>{
+
 const div=document.createElement("div");
 div.className="item";
+
 div.innerHTML=`
 <h3>${eq.nome}</h3>
-<p><strong>Categoria / Área:</strong> ${eq.categoria||"-"}</p>
+
+<p><strong>Categoria:</strong> ${eq.categoria||"-"}</p>
 <p><strong>Marca:</strong> ${eq.marca||"-"}</p>
 <p><strong>Modelo:</strong> ${eq.modelo||"-"}</p>
 <p><strong>Local:</strong> ${eq.localizacao||"-"}</p>
-<p><strong>ID discreto:</strong> ${eq.codigo_publico||"-"}</p>
-<p><strong>QR:</strong> ${eq.qr_code||"-"}</p>
-<p><strong>Próxima revisão:</strong> ${eq.proxima_revisao||"-"}</p>
-<div class="${classeStatus(eq.status)}">${eq.status||"OPERACIONAL"}</div>
+<p><strong>ID:</strong> ${eq.codigo_publico||"-"}</p>
+
+<div class="${classeStatus(eq.status)}">
+${eq.status}
+</div>
+
 <div class="botoes">
-<button class="btn-cinza" onclick="abrirHistorico(${eq.id}, '${eq.nome.replace(/'/g,"\\'")}')">Ver histórico</button>
+<button class="btn-azul" onclick="abrirEditar(${eq.id})">
+Editar
+</button>
+
+<button class="btn-verde" onclick="abrirQR('${eq.nome}','${eq.qr_code||""}')">
+QR
+</button>
+
+<button class="btn-cinza" onclick="abrirHistorico(${eq.id},'${eq.nome}')">
+Histórico
+</button>
+
+<button class="btn-vermelho" onclick="desativarEquipamento(${eq.id},'${eq.nome}')">
+Desativar
+</button>
 </div>
 `;
+
 lista.appendChild(div);
 });
 }
 
-function renderizarChamados(){
-const lista=document.getElementById("listaChamados");
-lista.innerHTML="";
-
-const filtroStatus=document.getElementById("filtroStatus").value;
-const filtroPrioridade=document.getElementById("filtroPrioridade").value;
-const busca=document.getElementById("buscaChamado").value.toLowerCase();
-
-let chamados=[...chamadosGlobais];
-
-chamados=chamados.filter(chamado=>{
-const equipamento=equipamentosGlobais.find(e=>e.id===chamado.equipamento_id);
-const nomeEquipamento=equipamento?equipamento.nome.toLowerCase():"";
-return (filtroStatus==="TODOS"||chamado.status===filtroStatus)
-&& (filtroPrioridade==="TODAS"||chamado.prioridade===filtroPrioridade)
-&& (!busca||nomeEquipamento.includes(busca)||(chamado.descricao||"").toLowerCase().includes(busca)||(chamado.tipo_problema||"").toLowerCase().includes(busca));
-});
-
-if(chamados.length===0){
-lista.innerHTML="<p>Nenhum chamado encontrado.</p>";
-return;
+function abrirQR(nome,link){
+document.getElementById("modalQR").classList.remove("oculto");
+document.getElementById("modalQR").style.display="flex";
+document.getElementById("tituloQR").innerText=`QR - ${nome}`;
+document.getElementById("linkQR").innerText=link;
+linkAtualQR=link;
 }
 
-chamados.forEach(chamado=>{
-const equipamento=equipamentosGlobais.find(e=>e.id===chamado.equipamento_id);
-const nomeEquipamento=equipamento?equipamento.nome:"Equipamento não encontrado";
-
-const div=document.createElement("div");
-div.className="item";
-
-div.innerHTML=`
-<h3>Chamado #${chamado.id}</h3>
-<p><strong>Equipamento:</strong> ${nomeEquipamento}</p>
-<p><strong>Tipo:</strong> ${chamado.tipo_problema||"-"}</p>
-<p><strong>Descrição:</strong> ${chamado.descricao||"-"}</p>
-<p>
-<strong>Status:</strong>
-<span class="${classeStatus(chamado.status)}">${chamado.status}</span>
-<span class="${classePrioridade(chamado.prioridade)}">${chamado.prioridade||"BAIXA"}</span>
-</p>
-<p><strong>Aberto em:</strong> ${formatarData(chamado.created_at)}</p>
-
-<div class="botoes">
-<button class="btn-amarelo" onclick="alterarStatusChamado(${chamado.id},${chamado.equipamento_id},'EM MANUTENCAO')">Em manutenção</button>
-<button class="btn-verde" onclick="alterarStatusChamado(${chamado.id},${chamado.equipamento_id},'FINALIZADO')">Finalizar</button>
-<button class="btn-cinza" onclick="alterarStatusChamado(${chamado.id},${chamado.equipamento_id},'ABERTO')">Reabrir</button>
-<button class="btn-cinza" onclick="abrirHistorico(${chamado.equipamento_id}, '${nomeEquipamento.replace(/'/g,"\\'")}')">Histórico</button>
-</div>
-`;
-lista.appendChild(div);
-});
+function fecharQR(){
+document.getElementById("modalQR").classList.add("oculto");
+document.getElementById("modalQR").style.display="none";
 }
 
-function formatarData(data){
-if(!data)return"-";
-return new Date(data).toLocaleString("pt-BR");
+function copiarLinkQR(){
+navigator.clipboard.writeText(linkAtualQR);
+document.getElementById("sucessoQR").innerText=
+"Link copiado.";
 }
 
-async function registrarHistorico(equipamentoId,chamadoId,tipoEvento,descricao,status){
-try{
-await supabaseClient.from("historico_manutencao").insert([{
-equipamento_id:equipamentoId,
-chamado_id:chamadoId,
-tipo_evento:tipoEvento,
-descricao:descricao,
-status:status
-}]);
-}catch(error){
-console.error("Erro ao salvar histórico:",error);
+function abrirEditar(id){
+
+const eq=equipamentosGlobais.find(e=>e.id===id);
+
+document.getElementById("editId").value=eq.id;
+document.getElementById("editNome").value=eq.nome||"";
+document.getElementById("editCategoria").value=eq.categoria||"";
+document.getElementById("editMarca").value=eq.marca||"";
+document.getElementById("editModelo").value=eq.modelo||"";
+document.getElementById("editSerie").value=eq.numero_serie||"";
+document.getElementById("editLocalizacao").value=eq.localizacao||"";
+document.getElementById("editCodigo").value=eq.codigo_publico||"";
+document.getElementById("editStatus").value=eq.status||"OPERACIONAL";
+document.getElementById("editProximaRevisao").value=eq.proxima_revisao||"";
+
+document.getElementById("modalEditar").classList.remove("oculto");
+document.getElementById("modalEditar").style.display="flex";
 }
+
+function fecharEditar(){
+document.getElementById("modalEditar").classList.add("oculto");
+document.getElementById("modalEditar").style.display="none";
 }
 
-async function alterarStatusChamado(chamadoId,equipamentoId,novoStatus){
-const chamado=chamadosGlobais.find(c=>c.id===chamadoId);
+async function salvarEdicaoEquipamento(){
 
-await supabaseClient.from("chamados").update({status:novoStatus}).eq("id",chamadoId);
+const id=document.getElementById("editId").value;
 
-let novoStatusEquipamento="OPERACIONAL";
-if(novoStatus==="EM MANUTENCAO")novoStatusEquipamento="MANUTENCAO";
+await supabaseClient
+.from("equipamentos")
+.update({
+nome:document.getElementById("editNome").value,
+categoria:document.getElementById("editCategoria").value,
+marca:document.getElementById("editMarca").value,
+modelo:document.getElementById("editModelo").value,
+numero_serie:document.getElementById("editSerie").value,
+localizacao:document.getElementById("editLocalizacao").value,
+codigo_publico:document.getElementById("editCodigo").value,
+status:document.getElementById("editStatus").value,
+proxima_revisao:document.getElementById("editProximaRevisao").value
+})
+.eq("id",id);
 
-await supabaseClient.from("equipamentos").update({status:novoStatusEquipamento}).eq("id",equipamentoId);
+fecharEditar();
+carregarDashboard();
+}
 
-await registrarHistorico(
-equipamentoId,
-chamadoId,
-"ALTERAÇÃO DE STATUS",
-`Chamado alterado para ${novoStatus}. Descrição original: ${chamado?.descricao||"-"}`,
-novoStatus
+async function desativarEquipamento(id,nome){
+
+const confirmar=confirm(
+`Deseja desativar ${nome} ?`
 );
+
+if(!confirmar)return;
+
+await supabaseClient
+.from("equipamentos")
+.update({
+status:"DESATIVADO"
+})
+.eq("id",id);
 
 carregarDashboard();
 }
 
 async function abrirHistorico(equipamentoId,nomeEquipamento){
-document.getElementById("tituloHistorico").innerText="Histórico - "+nomeEquipamento;
-document.getElementById("conteudoHistorico").innerHTML="Carregando histórico...";
-document.getElementById("modalHistorico").classList.remove("oculto");
-document.getElementById("modalHistorico").style.display="flex";
+
+document.getElementById("tituloHistorico").innerText=
+"Histórico - "+nomeEquipamento;
+
+document.getElementById("modalHistorico")
+.classList.remove("oculto");
+
+document.getElementById("modalHistorico")
+.style.display="flex";
 
 const {data}=await supabaseClient
 .from("historico_manutencao")
@@ -526,22 +584,21 @@ const {data}=await supabaseClient
 .eq("equipamento_id",equipamentoId)
 .order("criado_em",{ascending:false});
 
-if(!data||data.length===0){
-document.getElementById("conteudoHistorico").innerHTML="<p>Nenhum histórico registrado ainda.</p>";
-return;
-}
-
 let html="";
+
+if(!data||data.length===0){
+html="<p>Nenhum histórico registrado.</p>";
+}else{
 data.forEach(ev=>{
 html+=`
 <div class="evento">
 <strong>${ev.tipo_evento||"Evento"}</strong>
 <p>${ev.descricao||"-"}</p>
-<p><strong>Status:</strong> ${ev.status||"-"}</p>
-<p><strong>Data:</strong> ${formatarData(ev.criado_em)}</p>
+<p>Status: ${ev.status||"-"}</p>
 </div>
 `;
 });
+}
 
 document.getElementById("conteudoHistorico").innerHTML=html;
 }
@@ -549,6 +606,28 @@ document.getElementById("conteudoHistorico").innerHTML=html;
 function fecharHistorico(){
 document.getElementById("modalHistorico").classList.add("oculto");
 document.getElementById("modalHistorico").style.display="none";
+}
+
+function renderizarChamados(){
+const lista=document.getElementById("listaChamados");
+lista.innerHTML="";
+
+chamadosGlobais.forEach(chamado=>{
+
+const equipamento=equipamentosGlobais.find(
+e=>e.id===chamado.equipamento_id
+);
+
+lista.innerHTML+=`
+<div class="item">
+<h3>Chamado #${chamado.id}</h3>
+<p><strong>Equipamento:</strong> ${equipamento?.nome||"-"}</p>
+<p><strong>Problema:</strong> ${chamado.tipo_problema||"-"}</p>
+<p><strong>Descrição:</strong> ${chamado.descricao||"-"}</p>
+<p><strong>Status:</strong> ${chamado.status}</p>
+</div>
+`;
+});
 }
 
 verificarLoginSalvo();
