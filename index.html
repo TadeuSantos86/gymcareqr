@@ -744,6 +744,37 @@ document.getElementById("modalHistorico")
 .classList.add("oculto");
 }
 
+async function alterarStatusChamado(chamadoId,equipamentoId,novoStatus){
+
+await supabaseClient
+.from("chamados")
+.update({status:novoStatus})
+.eq("id",chamadoId);
+
+let statusEquipamento="OPERACIONAL";
+
+if(novoStatus==="EM MANUTENCAO"){
+statusEquipamento="MANUTENCAO";
+}
+
+await supabaseClient
+.from("equipamentos")
+.update({status:statusEquipamento})
+.eq("id",equipamentoId);
+
+await supabaseClient
+.from("historico_manutencao")
+.insert([{
+equipamento_id:equipamentoId,
+chamado_id:chamadoId,
+tipo_evento:"ALTERAÇÃO DE STATUS",
+descricao:"Chamado alterado para "+novoStatus,
+status:novoStatus
+}]);
+
+carregarDashboard();
+}
+  
 function renderizarChamados(){
 
 let html="";
