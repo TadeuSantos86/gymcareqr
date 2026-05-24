@@ -5,23 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin | GymCare QR</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
 body{background:#F3F4F6;color:#111827}
-header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-content:space-between;align-items:center;gap:20px}
-.logo h1{color:#93D500;font-size:32px}
+header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-content:space-between;gap:20px}
+.logo h1{color:#93D500}
 .container{padding:35px}
 .card,.bloco{background:white;border-radius:18px;padding:25px;box-shadow:0 4px 15px rgba(0,0,0,.08)}
 .login{max-width:420px;margin:60px auto}
-input,select{width:100%;padding:13px;margin:8px 0 16px;border:1px solid #ddd;border-radius:10px;font-size:15px}
+input,select{width:100%;padding:13px;margin:8px 0 16px;border:1px solid #ddd;border-radius:10px}
 button{border:none;padding:11px 14px;border-radius:10px;cursor:pointer;font-weight:bold}
-.btn-verde{background:#93D500;color:#111827}
-.btn-amarelo{background:#facc15;color:#111827}
-.btn-cinza{background:#e5e7eb;color:#111827}
+.btn-verde{background:#93D500}
+.btn-amarelo{background:#facc15}
+.btn-cinza{background:#e5e7eb}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin:25px 0}
 .numero{font-size:36px;font-weight:bold;color:#93D500}
-.grid{display:grid;grid-template-columns:1fr 1.2fr;gap:25px;align-items:start}
+.grid{display:grid;grid-template-columns:1fr 1.2fr;gap:25px}
 .item{border-bottom:1px solid #e5e7eb;padding:18px 0}
 .item:last-child{border-bottom:none}
 .item p{margin:5px 0;font-size:14px}
@@ -36,319 +35,367 @@ button{border:none;padding:11px 14px;border-radius:10px;cursor:pointer;font-weig
 .p-urgente{background:#fee2e2;color:#991b1b}
 .botoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
 .filtros{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0}
-.erro{color:#dc2626;font-weight:bold;margin-top:15px}
 .oculto{display:none}
-.destaque-urgente{border-left:6px solid #dc2626;padding-left:14px;background:#fff7f7}
-.destaque-alta{border-left:6px solid #f97316;padding-left:14px}
-@media(max-width:900px){header{flex-direction:column;align-items:flex-start}.container{padding:20px}.grid,.filtros{grid-template-columns:1fr}}
+.erro{color:#dc2626;font-weight:bold;margin-top:15px}
+.timeline{margin-top:20px;border-left:4px solid #93D500;padding-left:18px}
+.evento{margin-bottom:18px;background:#f9fafb;padding:14px;border-radius:12px}
+.evento strong{color:#323E48}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:white;border-radius:20px;max-width:700px;width:100%;padding:25px;max-height:85vh;overflow:auto}
+@media(max-width:900px){header{flex-direction:column}.container{padding:20px}.grid,.filtros{grid-template-columns:1fr}}
 </style>
 </head>
 
 <body>
 
 <div id="telaLogin" class="login card">
-  <h1>GymCare QR</h1>
-  <p>Login administrativo temporário</p><br>
-  <label>Usuário</label>
-  <input type="text" id="usuario" placeholder="admin">
-  <label>Senha</label>
-  <input type="password" id="senha" placeholder="teste01">
-  <button class="btn-verde" onclick="entrarAdmin()">Entrar</button>
-  <p class="erro" id="erroLogin"></p>
+<h1>GymCare QR</h1>
+<p>Login administrativo temporário</p><br>
+<label>Usuário</label>
+<input type="text" id="usuario" placeholder="admin">
+<label>Senha</label>
+<input type="password" id="senha" placeholder="teste01">
+<button class="btn-verde" onclick="entrarAdmin()">Entrar</button>
+<p class="erro" id="erroLogin"></p>
 </div>
 
 <div id="telaAdmin" class="oculto">
 
 <header>
-  <div class="logo">
-    <h1 id="nomeAcademia">GymCare QR</h1>
-    <p id="slogan">Dashboard administrativo</p>
-  </div>
-  <div>
-    <p id="endereco"></p>
-    <p id="horario"></p><br>
-    <button class="btn-cinza" onclick="sair()">Sair</button>
-  </div>
+<div class="logo">
+<h1 id="nomeAcademia">GymCare QR</h1>
+<p id="slogan">Dashboard administrativo</p>
+</div>
+<div>
+<p id="endereco"></p>
+<p id="horario"></p><br>
+<button class="btn-cinza" onclick="sair()">Sair</button>
+</div>
 </header>
 
 <div class="container">
-  <h2>Dashboard Administrativo</h2>
-  <p>Controle operacional de equipamentos, chamados e manutenção.</p>
+<h2>Dashboard Administrativo</h2>
+<p>Controle operacional de equipamentos, chamados e histórico.</p>
 
-  <div class="cards">
-    <div class="card"><h3>Equipamentos</h3><div class="numero" id="totalEquipamentos">0</div></div>
-    <div class="card"><h3>Chamados abertos</h3><div class="numero" id="chamadosAbertos">0</div></div>
-    <div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div>
-    <div class="card"><h3>Urgentes / Alta</h3><div class="numero" id="urgentes">0</div></div>
-  </div>
-
-  <div class="grid">
-    <div class="bloco">
-      <h2>Equipamentos</h2>
-      <div id="listaEquipamentos">Carregando...</div>
-    </div>
-
-    <div class="bloco">
-      <h2>Chamados</h2>
-
-      <div class="filtros">
-        <div>
-          <label>Status</label>
-          <select id="filtroStatus" onchange="renderizarChamados()">
-            <option value="TODOS">Todos</option>
-            <option value="ABERTO">Aberto</option>
-            <option value="EM MANUTENCAO">Em manutenção</option>
-            <option value="FINALIZADO">Finalizado</option>
-          </select>
-        </div>
-
-        <div>
-          <label>Prioridade</label>
-          <select id="filtroPrioridade" onchange="renderizarChamados()">
-            <option value="TODAS">Todas</option>
-            <option value="URGENTE">Urgente</option>
-            <option value="ALTA">Alta</option>
-            <option value="MEDIA">Média</option>
-            <option value="BAIXA">Baixa</option>
-          </select>
-        </div>
-
-        <div>
-          <label>Buscar</label>
-          <input type="text" id="buscaChamado" placeholder="equipamento ou descrição" oninput="renderizarChamados()">
-        </div>
-      </div>
-
-      <div id="listaChamados">Carregando...</div>
-    </div>
-  </div>
-
-  <p class="erro" id="erro"></p>
+<div class="cards">
+<div class="card"><h3>Equipamentos</h3><div class="numero" id="totalEquipamentos">0</div></div>
+<div class="card"><h3>Chamados abertos</h3><div class="numero" id="chamadosAbertos">0</div></div>
+<div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div>
+<div class="card"><h3>Urgentes / Alta</h3><div class="numero" id="urgentes">0</div></div>
 </div>
 
+<div class="grid">
+
+<div class="bloco">
+<h2>Equipamentos</h2>
+<div id="listaEquipamentos">Carregando...</div>
+</div>
+
+<div class="bloco">
+<h2>Chamados</h2>
+
+<div class="filtros">
+<div>
+<label>Status</label>
+<select id="filtroStatus" onchange="renderizarChamados()">
+<option value="TODOS">Todos</option>
+<option value="ABERTO">Aberto</option>
+<option value="EM MANUTENCAO">Em manutenção</option>
+<option value="FINALIZADO">Finalizado</option>
+</select>
+</div>
+
+<div>
+<label>Prioridade</label>
+<select id="filtroPrioridade" onchange="renderizarChamados()">
+<option value="TODAS">Todas</option>
+<option value="URGENTE">Urgente</option>
+<option value="ALTA">Alta</option>
+<option value="MEDIA">Média</option>
+<option value="BAIXA">Baixa</option>
+</select>
+</div>
+
+<div>
+<label>Buscar</label>
+<input type="text" id="buscaChamado" placeholder="equipamento ou descrição" oninput="renderizarChamados()">
+</div>
+</div>
+
+<div id="listaChamados">Carregando...</div>
+</div>
+
+</div>
+
+<p class="erro" id="erro"></p>
+</div>
+</div>
+
+<div id="modalHistorico" class="modal oculto">
+<div class="modal-box">
+<h2 id="tituloHistorico">Histórico</h2>
+<div id="conteudoHistorico" class="timeline"></div>
+<br>
+<button class="btn-cinza" onclick="fecharHistorico()">Fechar</button>
+</div>
 </div>
 
 <script>
-const SUPABASE_URL = "https://juwbkfhfmygduktuzqmu.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";
+const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let equipamentosGlobais = [];
-let chamadosGlobais = [];
+let equipamentosGlobais=[];
+let chamadosGlobais=[];
 
 function verificarLoginSalvo(){
-  if(localStorage.getItem("gymcare_admin_logado") === "sim"){
-    document.getElementById("telaLogin").classList.add("oculto");
-    document.getElementById("telaAdmin").classList.remove("oculto");
-    carregarDashboard();
-  }
+if(localStorage.getItem("gymcare_admin_logado")==="sim"){
+document.getElementById("telaLogin").classList.add("oculto");
+document.getElementById("telaAdmin").classList.remove("oculto");
+carregarDashboard();
+}
 }
 
 function entrarAdmin(){
-  const usuario = document.getElementById("usuario").value.trim();
-  const senha = document.getElementById("senha").value.trim();
+const usuario=document.getElementById("usuario").value.trim();
+const senha=document.getElementById("senha").value.trim();
 
-  if(usuario === "admin" && senha === "teste01"){
-    localStorage.setItem("gymcare_admin_logado","sim");
-    document.getElementById("telaLogin").classList.add("oculto");
-    document.getElementById("telaAdmin").classList.remove("oculto");
-    carregarDashboard();
-  }else{
-    document.getElementById("erroLogin").innerText = "Usuário ou senha inválidos.";
-  }
+if(usuario==="admin"&&senha==="teste01"){
+localStorage.setItem("gymcare_admin_logado","sim");
+document.getElementById("telaLogin").classList.add("oculto");
+document.getElementById("telaAdmin").classList.remove("oculto");
+carregarDashboard();
+}else{
+document.getElementById("erroLogin").innerText="Usuário ou senha inválidos.";
+}
 }
 
 function sair(){
-  localStorage.removeItem("gymcare_admin_logado");
-  location.reload();
+localStorage.removeItem("gymcare_admin_logado");
+location.reload();
 }
 
 async function carregarDashboard(){
-  try{
-    document.getElementById("erro").innerText = "";
+try{
+document.getElementById("erro").innerText="";
 
-    const { data: academia } = await supabaseClient
-      .from("academias")
-      .select("*")
-      .eq("id",1)
-      .single();
+const {data:academia}=await supabaseClient.from("academias").select("*").eq("id",1).single();
 
-    if(academia){
-      document.getElementById("nomeAcademia").innerText = academia.nome || "GymCare QR";
-      document.getElementById("slogan").innerText = academia.slogan || "Dashboard administrativo";
-      document.getElementById("endereco").innerText = academia.endereco || "";
-      document.getElementById("horario").innerText = academia.horario_funcionamento || "";
-    }
+if(academia){
+document.getElementById("nomeAcademia").innerText=academia.nome||"GymCare QR";
+document.getElementById("slogan").innerText=academia.slogan||"Dashboard administrativo";
+document.getElementById("endereco").innerText=academia.endereco||"";
+document.getElementById("horario").innerText=academia.horario_funcionamento||"";
+}
 
-    const { data: equipamentos, error: erroEq } = await supabaseClient
-      .from("equipamentos")
-      .select("*")
-      .eq("academia_id",1)
-      .order("id",{ascending:true});
+const {data:equipamentos,error:erroEq}=await supabaseClient.from("equipamentos").select("*").eq("academia_id",1).order("id",{ascending:true});
+if(erroEq)throw erroEq;
 
-    if(erroEq) throw erroEq;
+const {data:chamados,error:erroCham}=await supabaseClient.from("chamados").select("*").order("id",{ascending:false});
+if(erroCham)throw erroCham;
 
-    const { data: chamados, error: erroCham } = await supabaseClient
-      .from("chamados")
-      .select("*")
-      .order("id",{ascending:false});
+equipamentosGlobais=equipamentos||[];
+chamadosGlobais=chamados||[];
 
-    if(erroCham) throw erroCham;
+atualizarCards();
+renderizarEquipamentos();
+renderizarChamados();
 
-    equipamentosGlobais = equipamentos || [];
-    chamadosGlobais = chamados || [];
-
-    atualizarCards();
-    renderizarEquipamentos();
-    renderizarChamados();
-
-  }catch(error){
-    document.getElementById("erro").innerText = "Erro ao carregar dashboard: " + error.message;
-  }
+}catch(error){
+document.getElementById("erro").innerText="Erro ao carregar dashboard: "+error.message;
+}
 }
 
 function atualizarCards(){
-  document.getElementById("totalEquipamentos").innerText = equipamentosGlobais.length;
-  document.getElementById("chamadosAbertos").innerText = chamadosGlobais.filter(c => c.status === "ABERTO").length;
-  document.getElementById("emManutencao").innerText = equipamentosGlobais.filter(e => e.status === "MANUTENCAO").length;
-  document.getElementById("urgentes").innerText = chamadosGlobais.filter(c => c.prioridade === "URGENTE" || c.prioridade === "ALTA").length;
+document.getElementById("totalEquipamentos").innerText=equipamentosGlobais.length;
+document.getElementById("chamadosAbertos").innerText=chamadosGlobais.filter(c=>c.status==="ABERTO").length;
+document.getElementById("emManutencao").innerText=equipamentosGlobais.filter(e=>e.status==="MANUTENCAO").length;
+document.getElementById("urgentes").innerText=chamadosGlobais.filter(c=>c.prioridade==="URGENTE"||c.prioridade==="ALTA").length;
 }
 
 function classeStatus(status){
-  if(status === "OPERACIONAL" || status === "FINALIZADO") return "status status-ok";
-  if(status === "MANUTENCAO" || status === "EM MANUTENCAO") return "status status-andamento";
-  return "status status-alerta";
+if(status==="OPERACIONAL"||status==="FINALIZADO")return"status status-ok";
+if(status==="MANUTENCAO"||status==="EM MANUTENCAO")return"status status-andamento";
+return"status status-alerta";
 }
 
 function classePrioridade(p){
-  if(p === "URGENTE") return "prioridade p-urgente";
-  if(p === "ALTA") return "prioridade p-alta";
-  if(p === "MEDIA") return "prioridade p-media";
-  return "prioridade p-baixa";
+if(p==="URGENTE")return"prioridade p-urgente";
+if(p==="ALTA")return"prioridade p-alta";
+if(p==="MEDIA")return"prioridade p-media";
+return"prioridade p-baixa";
 }
 
 function renderizarEquipamentos(){
-  const lista = document.getElementById("listaEquipamentos");
-  lista.innerHTML = "";
+const lista=document.getElementById("listaEquipamentos");
+lista.innerHTML="";
 
-  if(equipamentosGlobais.length === 0){
-    lista.innerHTML = "<p>Nenhum equipamento cadastrado.</p>";
-    return;
-  }
+if(equipamentosGlobais.length===0){
+lista.innerHTML="<p>Nenhum equipamento cadastrado.</p>";
+return;
+}
 
-  equipamentosGlobais.forEach(eq=>{
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
-      <h3>${eq.nome}</h3>
-      <p><strong>Marca:</strong> ${eq.marca || "-"}</p>
-      <p><strong>Modelo:</strong> ${eq.modelo || "-"}</p>
-      <p><strong>Local:</strong> ${eq.localizacao || "-"}</p>
-      <p><strong>QR:</strong> ${eq.qr_code || "-"}</p>
-      <div class="${classeStatus(eq.status)}">${eq.status || "OPERACIONAL"}</div>
-    `;
-    lista.appendChild(div);
-  });
+equipamentosGlobais.forEach(eq=>{
+const div=document.createElement("div");
+div.className="item";
+div.innerHTML=`
+<h3>${eq.nome}</h3>
+<p><strong>Marca:</strong> ${eq.marca||"-"}</p>
+<p><strong>Modelo:</strong> ${eq.modelo||"-"}</p>
+<p><strong>Local:</strong> ${eq.localizacao||"-"}</p>
+<p><strong>QR:</strong> ${eq.qr_code||"-"}</p>
+<div class="${classeStatus(eq.status)}">${eq.status||"OPERACIONAL"}</div>
+<div class="botoes">
+<button class="btn-cinza" onclick="abrirHistorico(${eq.id}, '${eq.nome.replace(/'/g,"\\'")}')">Ver histórico</button>
+</div>
+`;
+lista.appendChild(div);
+});
 }
 
 function renderizarChamados(){
-  const lista = document.getElementById("listaChamados");
-  lista.innerHTML = "";
+const lista=document.getElementById("listaChamados");
+lista.innerHTML="";
 
-  const filtroStatus = document.getElementById("filtroStatus").value;
-  const filtroPrioridade = document.getElementById("filtroPrioridade").value;
-  const busca = document.getElementById("buscaChamado").value.toLowerCase();
+const filtroStatus=document.getElementById("filtroStatus").value;
+const filtroPrioridade=document.getElementById("filtroPrioridade").value;
+const busca=document.getElementById("buscaChamado").value.toLowerCase();
 
-  let chamados = [...chamadosGlobais];
+let chamados=[...chamadosGlobais];
 
-  chamados.sort((a,b)=>{
-    const ordem = {"URGENTE":1,"ALTA":2,"MEDIA":3,"BAIXA":4};
-    return (ordem[a.prioridade] || 5) - (ordem[b.prioridade] || 5);
-  });
+chamados.sort((a,b)=>{
+const ordem={"URGENTE":1,"ALTA":2,"MEDIA":3,"BAIXA":4};
+return(ordem[a.prioridade]||5)-(ordem[b.prioridade]||5);
+});
 
-  chamados = chamados.filter(chamado=>{
-    const equipamento = equipamentosGlobais.find(e => e.id === chamado.equipamento_id);
-    const nomeEquipamento = equipamento ? equipamento.nome.toLowerCase() : "";
+chamados=chamados.filter(chamado=>{
+const equipamento=equipamentosGlobais.find(e=>e.id===chamado.equipamento_id);
+const nomeEquipamento=equipamento?equipamento.nome.toLowerCase():"";
 
-    const passaStatus = filtroStatus === "TODOS" || chamado.status === filtroStatus;
-    const passaPrioridade = filtroPrioridade === "TODAS" || chamado.prioridade === filtroPrioridade;
-    const passaBusca =
-      !busca ||
-      nomeEquipamento.includes(busca) ||
-      (chamado.descricao || "").toLowerCase().includes(busca) ||
-      (chamado.tipo_problema || "").toLowerCase().includes(busca);
+const passaStatus=filtroStatus==="TODOS"||chamado.status===filtroStatus;
+const passaPrioridade=filtroPrioridade==="TODAS"||chamado.prioridade===filtroPrioridade;
+const passaBusca=!busca||nomeEquipamento.includes(busca)||(chamado.descricao||"").toLowerCase().includes(busca)||(chamado.tipo_problema||"").toLowerCase().includes(busca);
 
-    return passaStatus && passaPrioridade && passaBusca;
-  });
+return passaStatus&&passaPrioridade&&passaBusca;
+});
 
-  if(chamados.length === 0){
-    lista.innerHTML = "<p>Nenhum chamado encontrado.</p>";
-    return;
-  }
+if(chamados.length===0){
+lista.innerHTML="<p>Nenhum chamado encontrado.</p>";
+return;
+}
 
-  chamados.forEach(chamado=>{
-    const equipamento = equipamentosGlobais.find(e => e.id === chamado.equipamento_id);
-    const nomeEquipamento = equipamento ? equipamento.nome : "Equipamento não encontrado";
+chamados.forEach(chamado=>{
+const equipamento=equipamentosGlobais.find(e=>e.id===chamado.equipamento_id);
+const nomeEquipamento=equipamento?equipamento.nome:"Equipamento não encontrado";
 
-    let classeItem = "item";
-    if(chamado.prioridade === "URGENTE") classeItem += " destaque-urgente";
-    if(chamado.prioridade === "ALTA") classeItem += " destaque-alta";
+const div=document.createElement("div");
+div.className="item";
 
-    const div = document.createElement("div");
-    div.className = classeItem;
+div.innerHTML=`
+<h3>Chamado #${chamado.id}</h3>
+<p><strong>Equipamento:</strong> ${nomeEquipamento}</p>
+<p><strong>Tipo:</strong> ${chamado.tipo_problema||"-"}</p>
+<p><strong>Descrição:</strong> ${chamado.descricao||"-"}</p>
+<p>
+<strong>Status:</strong>
+<span class="${classeStatus(chamado.status)}">${chamado.status}</span>
+<span class="${classePrioridade(chamado.prioridade)}">${chamado.prioridade||"BAIXA"}</span>
+</p>
+<p><strong>Aberto em:</strong> ${formatarData(chamado.created_at)}</p>
 
-    div.innerHTML = `
-      <h3>Chamado #${chamado.id}</h3>
-      <p><strong>Equipamento:</strong> ${nomeEquipamento}</p>
-      <p><strong>Tipo:</strong> ${chamado.tipo_problema || "-"}</p>
-      <p><strong>Descrição:</strong> ${chamado.descricao || "-"}</p>
-      <p>
-        <strong>Status:</strong>
-        <span class="${classeStatus(chamado.status)}">${chamado.status}</span>
-        <span class="${classePrioridade(chamado.prioridade)}">${chamado.prioridade || "BAIXA"}</span>
-      </p>
-      <p><strong>Aberto em:</strong> ${formatarData(chamado.created_at)}</p>
+<div class="botoes">
+<button class="btn-amarelo" onclick="alterarStatusChamado(${chamado.id},${chamado.equipamento_id},'EM MANUTENCAO')">Em manutenção</button>
+<button class="btn-verde" onclick="alterarStatusChamado(${chamado.id},${chamado.equipamento_id},'FINALIZADO')">Finalizar</button>
+<button class="btn-cinza" onclick="alterarStatusChamado(${chamado.id},${chamado.equipamento_id},'ABERTO')">Reabrir</button>
+<button class="btn-cinza" onclick="abrirHistorico(${chamado.equipamento_id}, '${nomeEquipamento.replace(/'/g,"\\'")}')">Histórico</button>
+</div>
+`;
 
-      <div class="botoes">
-        <button class="btn-amarelo" onclick="alterarStatusChamado(${chamado.id},${chamado.equipamento_id},'EM MANUTENCAO')">Em manutenção</button>
-        <button class="btn-verde" onclick="alterarStatusChamado(${chamado.id},${chamado.equipamento_id},'FINALIZADO')">Finalizar</button>
-        <button class="btn-cinza" onclick="alterarStatusChamado(${chamado.id},${chamado.equipamento_id},'ABERTO')">Reabrir</button>
-      </div>
-    `;
-
-    lista.appendChild(div);
-  });
+lista.appendChild(div);
+});
 }
 
 function formatarData(data){
-  if(!data) return "-";
-  return new Date(data).toLocaleString("pt-BR");
+if(!data)return"-";
+return new Date(data).toLocaleString("pt-BR");
+}
+
+async function registrarHistorico(equipamentoId,chamadoId,tipoEvento,descricao,status){
+await supabaseClient.from("historico_manutencao").insert([{
+equipamento_id:equipamentoId,
+chamado_id:chamadoId,
+tipo_evento:tipoEvento,
+descricao:descricao,
+status:status
+}]);
 }
 
 async function alterarStatusChamado(chamadoId,equipamentoId,novoStatus){
-  try{
-    const { error: erroChamado } = await supabaseClient
-      .from("chamados")
-      .update({status:novoStatus})
-      .eq("id",chamadoId);
+try{
+const chamado=chamadosGlobais.find(c=>c.id===chamadoId);
 
-    if(erroChamado) throw erroChamado;
+const {error:erroChamado}=await supabaseClient.from("chamados").update({status:novoStatus}).eq("id",chamadoId);
+if(erroChamado)throw erroChamado;
 
-    let novoStatusEquipamento = "OPERACIONAL";
-    if(novoStatus === "EM MANUTENCAO") novoStatusEquipamento = "MANUTENCAO";
+let novoStatusEquipamento="OPERACIONAL";
+if(novoStatus==="EM MANUTENCAO")novoStatusEquipamento="MANUTENCAO";
 
-    const { error: erroEquipamento } = await supabaseClient
-      .from("equipamentos")
-      .update({status:novoStatusEquipamento})
-      .eq("id",equipamentoId);
+const {error:erroEquipamento}=await supabaseClient.from("equipamentos").update({status:novoStatusEquipamento}).eq("id",equipamentoId);
+if(erroEquipamento)throw erroEquipamento;
 
-    if(erroEquipamento) throw erroEquipamento;
+await registrarHistorico(
+equipamentoId,
+chamadoId,
+"ALTERAÇÃO DE STATUS",
+`Chamado alterado para ${novoStatus}. Descrição original: ${chamado?.descricao||"-"}`,
+novoStatus
+);
 
-    carregarDashboard();
+carregarDashboard();
 
-  }catch(error){
-    document.getElementById("erro").innerText = "Erro ao atualizar chamado: " + error.message;
-  }
+}catch(error){
+document.getElementById("erro").innerText="Erro ao atualizar chamado: "+error.message;
+}
+}
+
+async function abrirHistorico(equipamentoId,nomeEquipamento){
+document.getElementById("tituloHistorico").innerText="Histórico - "+nomeEquipamento;
+document.getElementById("conteudoHistorico").innerHTML="Carregando histórico...";
+document.getElementById("modalHistorico").classList.remove("oculto");
+
+const {data,error}=await supabaseClient
+.from("historico_manutencao")
+.select("*")
+.eq("equipamento_id",equipamentoId)
+.order("criado_em",{ascending:false});
+
+if(error){
+document.getElementById("conteudoHistorico").innerHTML="Erro ao carregar histórico.";
+return;
+}
+
+if(!data||data.length===0){
+document.getElementById("conteudoHistorico").innerHTML="<p>Nenhum histórico registrado ainda.</p>";
+return;
+}
+
+let html="";
+data.forEach(ev=>{
+html+=`
+<div class="evento">
+<strong>${ev.tipo_evento||"Evento"}</strong>
+<p>${ev.descricao||"-"}</p>
+<p><strong>Status:</strong> ${ev.status||"-"}</p>
+<p><strong>Data:</strong> ${formatarData(ev.criado_em)}</p>
+</div>
+`;
+});
+
+document.getElementById("conteudoHistorico").innerHTML=html;
+}
+
+function fecharHistorico(){
+document.getElementById("modalHistorico").classList.add("oculto");
 }
 
 verificarLoginSalvo();
