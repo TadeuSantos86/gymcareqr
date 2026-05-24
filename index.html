@@ -1,135 +1,198 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GymCare QR</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      font-family: Arial, sans-serif;
-    }
+<title>Move Academia | GymCare QR</title>
 
-    body{
-      background:#f3f4f6;
-    }
+<style>
 
-    header{
-      background:#111827;
-      color:white;
-      padding:20px;
-    }
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, sans-serif;
+}
 
-    header h1{
-      font-size:32px;
-    }
+body{
+background:#F3F4F6;
+}
 
-    .container{
-      padding:30px;
-    }
+header{
+background:#323E48;
+padding:20px 40px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+color:white;
+}
 
-    .cards{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:20px;
-      margin-top:20px;
-    }
+.logo-area h1{
+color:#93D500;
+font-size:34px;
+}
 
-    .card{
-      background:white;
-      border-radius:15px;
-      padding:25px;
-      box-shadow:0 3px 10px rgba(0,0,0,0.1);
-    }
+.logo-area p{
+font-size:14px;
+}
 
-    .card h3{
-      color:#374151;
-      margin-bottom:10px;
-    }
+.info-academia{
+text-align:right;
+font-size:14px;
+}
 
-    .number{
-      font-size:32px;
-      font-weight:bold;
-      color:#16a34a;
-    }
+.container{
+padding:40px;
+}
 
-    .equipamento{
-      margin-top:30px;
-      background:white;
-      padding:30px;
-      border-radius:15px;
-      box-shadow:0 3px 10px rgba(0,0,0,0.1);
-    }
+.titulo{
+margin-bottom:20px;
+}
 
-    .btn{
-      background:#16a34a;
-      color:white;
-      border:none;
-      padding:15px 20px;
-      border-radius:10px;
-      cursor:pointer;
-      margin-top:20px;
-      font-size:16px;
-    }
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+gap:20px;
+margin-bottom:30px;
+}
 
-    .btn:hover{
-      background:#15803d;
-    }
-  </style>
+.card{
+background:white;
+padding:25px;
+border-radius:20px;
+box-shadow:0 4px 15px rgba(0,0,0,0.08);
+}
+
+.card h3{
+margin-bottom:10px;
+color:#374151;
+}
+
+.numero{
+font-size:38px;
+font-weight:bold;
+color:#93D500;
+}
+
+.equipamentos{
+background:white;
+padding:30px;
+border-radius:20px;
+box-shadow:0 4px 15px rgba(0,0,0,0.08);
+}
+
+.equipamento{
+border-bottom:1px solid #ddd;
+padding:20px 0;
+}
+
+.equipamento:last-child{
+border:none;
+}
+
+.status{
+display:inline-block;
+background:#22c55e;
+color:white;
+padding:6px 12px;
+border-radius:20px;
+font-size:13px;
+margin-top:10px;
+}
+
+.botao{
+margin-top:20px;
+background:#93D500;
+border:none;
+padding:15px 20px;
+border-radius:12px;
+font-size:16px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.botao:hover{
+opacity:0.9;
+}
+
+</style>
 </head>
 
 <body>
 
 <header>
-  <h1>GymCare QR</h1>
-  <p>Gestão inteligente de equipamentos para academias</p>
+
+<div class="logo-area">
+<h1>MOVE ACADEMIA</h1>
+<p>Gestão Inteligente de Equipamentos</p>
+</div>
+
+<div class="info-academia">
+<p><strong>Move Academia Vinhedo</strong></p>
+<p>Rod. Edenor João Tasca, 320</p>
+<p>Seg a Sex: 5h às 22h</p>
+</div>
+
 </header>
 
 <div class="container">
 
-  <h2>Dashboard</h2>
+<div class="titulo">
+<h2>Dashboard Operacional</h2>
+<p>Monitoramento em tempo real dos equipamentos</p>
+</div>
 
-  <div class="cards">
+<div class="cards">
 
-    <div class="card">
-      <h3>Equipamentos</h3>
-      <div class="number">1</div>
-    </div>
+<div class="card">
+<h3>Equipamentos</h3>
+<div class="numero">1</div>
+</div>
 
-    <div class="card">
-      <h3>Chamados abertos</h3>
-      <div class="number">1</div>
-    </div>
+<div class="card">
+<h3>Chamados abertos</h3>
+<div class="numero">1</div>
+</div>
 
-    <div class="card">
-      <h3>Em manutenção</h3>
-      <div class="number">0</div>
-    </div>
+<div class="card">
+<h3>Em manutenção</h3>
+<div class="numero">0</div>
+</div>
 
-    <div class="card">
-      <h3>Revisões pendentes</h3>
-      <div class="number">0</div>
-    </div>
+<div class="card">
+<h3>Revisões pendentes</h3>
+<div class="numero">0</div>
+</div>
 
-  </div>
+</div>
 
-  <div class="equipamento">
+<div class="equipamentos">
 
-    <h2>Esteira 01</h2>
+<h2>Equipamentos Monitorados</h2>
 
-    <p><strong>Status:</strong> Operacional</p>
-    <p><strong>Localização:</strong> Área Cardio</p>
-    <p><strong>Última revisão:</strong> 24/05/2026</p>
-    <p><strong>Próxima revisão:</strong> 23/06/2026</p>
+<div class="equipamento">
 
-    <button class="btn">
-      Solicitar manutenção
-    </button>
+<h3>Esteira 01</h3>
 
-  </div>
+<p><strong>Marca:</strong> Movement</p>
+<p><strong>Localização:</strong> Área Cardio</p>
+<p><strong>Última revisão:</strong> 24/05/2026</p>
+<p><strong>Próxima revisão:</strong> 23/06/2026</p>
+
+<div class="status">
+OPERACIONAL
+</div>
+
+<br>
+
+<button class="botao">
+Solicitar manutenção
+</button>
+
+</div>
+
+</div>
 
 </div>
 
