@@ -748,7 +748,42 @@ function renderizarChamados(){
 
 let html="";
 
-chamadosGlobais.forEach(c=>{
+const filtroStatus=document.getElementById("filtroStatus").value;
+const filtroPrioridade=document.getElementById("filtroPrioridade").value;
+const busca=document.getElementById("buscaChamado").value.toLowerCase();
+
+let chamados=[...chamadosGlobais];
+
+chamados=chamados.filter(c=>{
+
+const eq=equipamentosGlobais.find(
+e=>e.id===c.equipamento_id
+);
+
+const nomeEquipamento=eq?.nome?.toLowerCase()||"";
+
+const passaStatus=
+filtroStatus==="TODOS"||c.status===filtroStatus;
+
+const passaPrioridade=
+filtroPrioridade==="TODAS"||c.prioridade===filtroPrioridade;
+
+const passaBusca=
+!busca||
+nomeEquipamento.includes(busca)||
+(c.descricao||"").toLowerCase().includes(busca)||
+(c.tipo_problema||"").toLowerCase().includes(busca);
+
+return passaStatus&&passaPrioridade&&passaBusca;
+});
+
+if(chamados.length===0){
+document.getElementById("listaChamados").innerHTML=
+"<p>Nenhum chamado encontrado.</p>";
+return;
+}
+
+chamados.forEach(c=>{
 
 const eq=equipamentosGlobais.find(
 e=>e.id===c.equipamento_id
@@ -757,14 +792,41 @@ e=>e.id===c.equipamento_id
 html+=`
 <div class="item">
 <h3>Chamado #${c.id}</h3>
+
 <p><strong>Equipamento:</strong> ${eq?.nome||"-"}</p>
+<p><strong>Tipo:</strong> ${c.tipo_problema||"-"}</p>
+<p><strong>Descrição:</strong> ${c.descricao||"-"}</p>
+<p><strong>Prioridade:</strong> ${c.prioridade||"-"}</p>
 <p><strong>Status:</strong> ${c.status}</p>
+
+<div class="botoes">
+
+<button class="btn-amarelo"
+onclick="alterarStatusChamado(${c.id},${c.equipamento_id},'EM MANUTENCAO')">
+Em manutenção
+</button>
+
+<button class="btn-verde"
+onclick="alterarStatusChamado(${c.id},${c.equipamento_id},'FINALIZADO')">
+Finalizar
+</button>
+
+<button class="btn-cinza"
+onclick="alterarStatusChamado(${c.id},${c.equipamento_id},'ABERTO')">
+Reabrir
+</button>
+
+<button class="btn-cinza"
+onclick="abrirHistorico(${c.equipamento_id},'${eq?.nome||"Equipamento"}')">
+Histórico
+</button>
+
+</div>
 </div>
 `;
 });
 
-document.getElementById("listaChamados")
-.innerHTML=html;
+document.getElementById("listaChamados").innerHTML=html;
 }
 
 verificarLoginSalvo();
