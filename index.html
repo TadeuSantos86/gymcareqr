@@ -3,22 +3,162 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Move Academia | GymCare QR</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
-body{background:#F3F4F6}
-header{background:#323E48;padding:20px 40px;display:flex;justify-content:space-between;align-items:center;color:white}
-.logo-area h1{color:#93D500;font-size:34px}
-.container{padding:40px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px;margin:25px 0}
-.card,.equipamentos{background:white;padding:25px;border-radius:20px;box-shadow:0 4px 15px rgba(0,0,0,.08)}
-.numero{font-size:38px;font-weight:bold;color:#93D500}
-.equipamento{border-bottom:1px solid #ddd;padding:18px 0}
-.status{display:inline-block;background:#22c55e;color:white;padding:6px 12px;border-radius:20px;font-size:13px;margin-top:10px}
-.erro{color:red;margin-top:20px}
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial, sans-serif;
+}
+
+body{
+  background:#F3F4F6;
+  color:#111827;
+}
+
+header{
+  background:#323E48;
+  padding:20px 40px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  color:white;
+  gap:20px;
+}
+
+.logo-area h1{
+  color:#93D500;
+  font-size:34px;
+}
+
+.logo-area p{
+  font-size:14px;
+}
+
+.info-academia{
+  text-align:right;
+  font-size:14px;
+  line-height:1.5;
+}
+
+.container{
+  padding:40px;
+}
+
+.titulo{
+  margin-bottom:20px;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:20px;
+  margin:25px 0;
+}
+
+.card{
+  background:white;
+  padding:25px;
+  border-radius:20px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.08);
+}
+
+.card h3{
+  color:#374151;
+  margin-bottom:10px;
+}
+
+.numero{
+  font-size:38px;
+  font-weight:bold;
+  color:#93D500;
+}
+
+.equipamentos{
+  background:white;
+  padding:30px;
+  border-radius:20px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.08);
+}
+
+.equipamento{
+  border-bottom:1px solid #ddd;
+  padding:22px 0;
+}
+
+.equipamento:last-child{
+  border-bottom:none;
+}
+
+.equipamento h3{
+  margin-bottom:10px;
+}
+
+.equipamento p{
+  margin:5px 0;
+}
+
+.status{
+  display:inline-block;
+  background:#22c55e;
+  color:white;
+  padding:6px 12px;
+  border-radius:20px;
+  font-size:13px;
+  margin-top:10px;
+}
+
+.botao{
+  margin-top:15px;
+  background:#93D500;
+  border:none;
+  padding:14px 18px;
+  border-radius:12px;
+  font-size:15px;
+  cursor:pointer;
+  font-weight:bold;
+  color:#111827;
+}
+
+.botao:hover{
+  opacity:0.9;
+}
+
+.erro{
+  color:#dc2626;
+  margin-top:20px;
+  font-weight:bold;
+}
+
+.sucesso{
+  color:#16a34a;
+  margin-top:20px;
+  font-weight:bold;
+}
+
+@media(max-width:700px){
+  header{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .info-academia{
+    text-align:left;
+  }
+
+  .container{
+    padding:20px;
+  }
+
+  .logo-area h1{
+    font-size:28px;
+  }
+}
 </style>
 </head>
 
@@ -29,29 +169,50 @@ header{background:#323E48;padding:20px 40px;display:flex;justify-content:space-b
     <h1 id="nomeAcademia">GymCare QR</h1>
     <p id="slogan">Gestão inteligente de equipamentos</p>
   </div>
-  <div>
+
+  <div class="info-academia">
     <p id="endereco"></p>
     <p id="horario"></p>
   </div>
 </header>
 
 <div class="container">
-  <h2>Dashboard Operacional</h2>
-  <p>Dados carregados automaticamente do Supabase</p>
+
+  <div class="titulo">
+    <h2>Dashboard Operacional</h2>
+    <p>Monitoramento dos equipamentos e chamados de manutenção</p>
+  </div>
 
   <div class="cards">
-    <div class="card"><h3>Equipamentos</h3><div class="numero" id="totalEquipamentos">0</div></div>
-    <div class="card"><h3>Chamados abertos</h3><div class="numero" id="chamadosAbertos">0</div></div>
-    <div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div>
-    <div class="card"><h3>Revisões pendentes</h3><div class="numero" id="revisoesPendentes">0</div></div>
+    <div class="card">
+      <h3>Equipamentos</h3>
+      <div class="numero" id="totalEquipamentos">0</div>
+    </div>
+
+    <div class="card">
+      <h3>Chamados abertos</h3>
+      <div class="numero" id="chamadosAbertos">0</div>
+    </div>
+
+    <div class="card">
+      <h3>Em manutenção</h3>
+      <div class="numero" id="emManutencao">0</div>
+    </div>
+
+    <div class="card">
+      <h3>Revisões pendentes</h3>
+      <div class="numero" id="revisoesPendentes">0</div>
+    </div>
   </div>
 
   <div class="equipamentos">
     <h2>Equipamentos Monitorados</h2>
-    <div id="listaEquipamentos">Carregando...</div>
+    <div id="listaEquipamentos">Carregando equipamentos...</div>
   </div>
 
   <p class="erro" id="erro"></p>
+  <p class="sucesso" id="sucesso"></p>
+
 </div>
 
 <script>
@@ -62,32 +223,43 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function carregarDashboard(){
   try{
-    const { data: academia } = await supabaseClient
+    document.getElementById("erro").innerText = "";
+    document.getElementById("sucesso").innerText = "";
+
+    const { data: academia, error: erroAcademia } = await supabaseClient
       .from("academias")
       .select("*")
       .eq("id", 1)
       .single();
+
+    if(erroAcademia){
+      throw erroAcademia;
+    }
 
     if(academia){
       document.getElementById("nomeAcademia").innerText = academia.nome || "GymCare QR";
       document.getElementById("slogan").innerText = academia.slogan || "Gestão inteligente de equipamentos";
       document.getElementById("endereco").innerText = academia.endereco || "";
       document.getElementById("horario").innerText = academia.horario_funcionamento || "";
-      document.documentElement.style.setProperty("--corPrimaria", academia.cor_primaria || "#93D500");
     }
 
-    const { data: equipamentos, error: erroEq } = await supabaseClient
+    const { data: equipamentos, error: erroEquipamentos } = await supabaseClient
       .from("equipamentos")
       .select("*")
-      .eq("academia_id", 1);
+      .eq("academia_id", 1)
+      .order("id", { ascending: true });
 
-    if(erroEq) throw erroEq;
+    if(erroEquipamentos){
+      throw erroEquipamentos;
+    }
 
     const { data: chamados, error: erroChamados } = await supabaseClient
       .from("chamados")
       .select("*");
 
-    if(erroChamados) throw erroChamados;
+    if(erroChamados){
+      throw erroChamados;
+    }
 
     const totalEquipamentos = equipamentos.length;
     const chamadosAbertos = chamados.filter(c => c.status === "ABERTO").length;
@@ -101,9 +273,15 @@ async function carregarDashboard(){
     const lista = document.getElementById("listaEquipamentos");
     lista.innerHTML = "";
 
+    if(equipamentos.length === 0){
+      lista.innerHTML = "<p>Nenhum equipamento cadastrado.</p>";
+      return;
+    }
+
     equipamentos.forEach(eq => {
       const div = document.createElement("div");
       div.className = "equipamento";
+
       div.innerHTML = `
         <h3>${eq.nome}</h3>
         <p><strong>Marca:</strong> ${eq.marca || "-"}</p>
@@ -111,14 +289,54 @@ async function carregarDashboard(){
         <p><strong>Localização:</strong> ${eq.localizacao || "-"}</p>
         <p><strong>Última revisão:</strong> ${eq.ultima_revisao || "-"}</p>
         <p><strong>Próxima revisão:</strong> ${eq.proxima_revisao || "-"}</p>
-        <div class="status">${eq.status}</div>
+        <div class="status">${eq.status || "OPERACIONAL"}</div>
+        <br>
+        <button class="botao" onclick="abrirChamado(${eq.id}, '${eq.nome.replace(/'/g, "\\'")}')">
+          Solicitar manutenção
+        </button>
       `;
+
       lista.appendChild(div);
     });
 
   }catch(error){
     document.getElementById("erro").innerText = "Erro ao carregar dados: " + error.message;
   }
+}
+
+async function abrirChamado(equipamentoId, equipamentoNome){
+  document.getElementById("erro").innerText = "";
+  document.getElementById("sucesso").innerText = "";
+
+  const descricao = prompt("Descreva o problema no equipamento: " + equipamentoNome);
+
+  if(!descricao || descricao.trim() === ""){
+    alert("Solicitação cancelada.");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("chamados")
+    .insert([
+      {
+        equipamento_id: equipamentoId,
+        usuario_id: 1,
+        tipo_problema: "Solicitação via QR Code",
+        descricao: descricao.trim(),
+        prioridade: "Normal",
+        status: "ABERTO"
+      }
+    ]);
+
+  if(error){
+    alert("Erro ao abrir chamado: " + error.message);
+    return;
+  }
+
+  alert("Chamado aberto com sucesso!");
+  document.getElementById("sucesso").innerText = "Chamado aberto com sucesso para: " + equipamentoNome;
+
+  carregarDashboard();
 }
 
 carregarDashboard();
