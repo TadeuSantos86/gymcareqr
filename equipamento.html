@@ -9,112 +9,24 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial,sans-serif
-}
-
-body{
-background:#f3f4f6;
-padding:20px;
-color:#111827
-}
-
-.card{
-max-width:700px;
-margin:auto;
-background:white;
-border-radius:20px;
-padding:30px;
-box-shadow:0 5px 20px rgba(0,0,0,.08)
-}
-
-h1{
-color:#93D500;
-margin-bottom:10px
-}
-
-.subtitulo{
-color:#6b7280;
-margin-bottom:25px
-}
-
-.info{
-background:#f9fafb;
-padding:18px;
-border-radius:14px;
-margin-bottom:20px
-}
-
-.info p{
-margin:6px 0
-}
-
-label{
-display:block;
-margin-top:18px;
-margin-bottom:8px;
-font-weight:bold
-}
-
-input,
-select,
-textarea{
-width:100%;
-padding:14px;
-border:1px solid #ddd;
-border-radius:12px;
-font-size:15px
-}
-
-textarea{
-resize:none;
-min-height:120px
-}
-
-button{
-width:100%;
-margin-top:25px;
-padding:16px;
-border:none;
-border-radius:14px;
-background:#93D500;
-font-size:16px;
-font-weight:bold;
-cursor:pointer
-}
-
-button:hover{
-opacity:.95
-}
-
-.msg{
-margin-top:20px;
-text-align:center;
-font-weight:bold
-}
-
-.sucesso{
-color:#15803d
-}
-
-.erro{
-color:#dc2626
-}
-
-.alerta{
-background:#fef3c7;
-color:#92400e;
-padding:14px;
-border-radius:12px;
-margin-bottom:20px
-}
-
-.oculto{
-display:none
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#f3f4f6;padding:20px;color:#111827}
+.card{max-width:720px;margin:auto;background:white;border-radius:20px;padding:30px;box-shadow:0 5px 20px rgba(0,0,0,.08)}
+h1{color:#93D500;margin-bottom:10px}
+.subtitulo{color:#6b7280;margin-bottom:25px}
+.info{background:#f9fafb;padding:18px;border-radius:14px;margin-bottom:20px}
+.info p{margin:6px 0}
+label{display:block;margin-top:18px;margin-bottom:8px;font-weight:bold}
+input,select,textarea{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;font-size:15px}
+textarea{resize:none;min-height:120px}
+button{width:100%;margin-top:20px;padding:16px;border:none;border-radius:14px;background:#93D500;font-size:16px;font-weight:bold;cursor:pointer}
+button:hover{opacity:.95}
+.btn-cinza{background:#e5e7eb}
+.msg{margin-top:20px;text-align:center;font-weight:bold}
+.sucesso{color:#15803d}
+.erro{color:#dc2626}
+.alerta{background:#fef3c7;color:#92400e;padding:14px;border-radius:12px;margin-bottom:20px}
+.oculto{display:none!important}
 </style>
 </head>
 
@@ -123,52 +35,53 @@ display:none
 <div class="card">
 
 <div id="loginArea">
-
 <h1>GymCare QR</h1>
-
-<p class="subtitulo">
-Login do equipamento
-</p>
+<p class="subtitulo">Login do equipamento</p>
 
 <label>Usuário</label>
-<input type="text" id="usuario">
+<input type="text" id="usuario" placeholder="equipamento01">
 
 <label>Senha</label>
-<input type="password" id="senha">
+<input type="password" id="senha" placeholder="teste01">
 
-<button onclick="fazerLogin()">
-Entrar
-</button>
+<button onclick="fazerLogin()">Entrar</button>
 
 <p id="erroLogin" class="msg erro"></p>
+</div>
 
+<div id="buscaArea" class="oculto">
+<h1>Identificar equipamento</h1>
+<p class="subtitulo">
+Escaneie o QR Code ou digite o ID discreto do equipamento.
+</p>
+
+<label>ID do equipamento</label>
+<input type="text" id="codigoEquipamento" placeholder="Exemplo: EQ-001">
+
+<button onclick="buscarPorCodigo()">Buscar equipamento</button>
+
+<p id="erroBusca" class="msg erro"></p>
 </div>
 
 <div id="painelEquipamento" class="oculto">
 
-<h1 id="nomeEquipamento">
-Carregando...
-</h1>
+<h1 id="nomeEquipamento">Carregando...</h1>
 
-<p class="subtitulo">
-Solicitação de manutenção
-</p>
+<p class="subtitulo">Solicitação de manutenção</p>
 
 <div class="info">
 <p><strong>Marca:</strong> <span id="marca"></span></p>
 <p><strong>Modelo:</strong> <span id="modelo"></span></p>
 <p><strong>Local:</strong> <span id="localizacao"></span></p>
 <p><strong>Status:</strong> <span id="status"></span></p>
+<p><strong>ID discreto:</strong> <span id="codigoPublico"></span></p>
 </div>
 
-<div id="avisoChamado"
-class="alerta oculto">
-
+<div id="avisoChamado" class="alerta oculto">
 Já existe uma solicitação em andamento para este equipamento.
 </div>
 
 <label>Tipo do problema</label>
-
 <select id="tipoProblema">
 <option>Quebrado</option>
 <option>Barulho estranho</option>
@@ -178,7 +91,6 @@ Já existe uma solicitação em andamento para este equipamento.
 </select>
 
 <label>Prioridade</label>
-
 <select id="prioridade">
 <option value="BAIXA">Baixa</option>
 <option value="MEDIA">Média</option>
@@ -187,15 +99,11 @@ Já existe uma solicitação em andamento para este equipamento.
 </select>
 
 <label>Descrição</label>
-
 <textarea id="descricao"></textarea>
 
-<button id="btnAbrirChamado"
-onclick="abrirChamado()">
+<button id="btnAbrirChamado" onclick="abrirChamado()">Solicitar manutenção</button>
 
-Solicitar manutenção
-
-</button>
+<button class="btn-cinza" onclick="voltarBusca()">Escolher outro equipamento</button>
 
 <p id="mensagem" class="msg"></p>
 
@@ -204,236 +112,198 @@ Solicitar manutenção
 </div>
 
 <script>
-const SUPABASE_URL =
-"https://juwbkfhfmygduktuzqmu.supabase.co";
+const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";
+const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-const SUPABASE_KEY =
-"sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
-
-const supabaseClient =
-supabase.createClient(
-SUPABASE_URL,
-SUPABASE_KEY
-);
-
-let equipamentoAtual = null;
+let equipamentoAtual=null;
 
 function obterIdEquipamento(){
-const params =
-new URLSearchParams(window.location.search);
-
+const params=new URLSearchParams(window.location.search);
 return params.get("id");
 }
 
 function fazerLogin(){
+const usuario=document.getElementById("usuario").value.trim();
+const senha=document.getElementById("senha").value.trim();
 
-const usuario =
-document.getElementById("usuario")
-.value.trim();
+if(usuario==="equipamento01"&&senha==="teste01"){
+document.getElementById("loginArea").classList.add("oculto");
 
-const senha =
-document.getElementById("senha")
-.value.trim();
+const id=obterIdEquipamento();
 
-if(
-usuario === "equipamento01" &&
-senha === "teste01"
-){
-
-document.getElementById("loginArea")
-.classList.add("oculto");
-
-document.getElementById("painelEquipamento")
-.classList.remove("oculto");
-
-carregarEquipamento();
+if(id){
+carregarEquipamentoPorId(id);
+}else{
+document.getElementById("buscaArea").classList.remove("oculto");
+}
 
 }else{
-
-document.getElementById("erroLogin")
-.innerText =
-"Usuário ou senha inválidos.";
-
+document.getElementById("erroLogin").innerText="Usuário ou senha inválidos.";
 }
 }
 
-async function carregarEquipamento(){
+async function buscarPorCodigo(){
+document.getElementById("erroBusca").innerText="";
 
-const id =
-obterIdEquipamento();
+const codigo=document.getElementById("codigoEquipamento").value.trim().toUpperCase();
 
-const { data, error } =
-await supabaseClient
-.from("equipamentos")
-.select("*")
-.eq("id", id)
-.single();
-
-if(error || !data){
-
-document.getElementById("mensagem")
-.innerHTML =
-"Equipamento não encontrado.";
-
+if(!codigo){
+document.getElementById("erroBusca").innerText="Digite o ID do equipamento.";
 return;
 }
 
-equipamentoAtual = data;
+const {data,error}=await supabaseClient
+.from("equipamentos")
+.select("*")
+.eq("codigo_publico",codigo)
+.single();
 
-document.getElementById("nomeEquipamento")
-.innerText = data.nome;
+if(error||!data){
+document.getElementById("erroBusca").innerText="Equipamento não encontrado.";
+return;
+}
 
-document.getElementById("marca")
-.innerText = data.marca || "-";
+mostrarEquipamento(data);
+}
 
-document.getElementById("modelo")
-.innerText = data.modelo || "-";
+async function carregarEquipamentoPorId(id){
+const {data,error}=await supabaseClient
+.from("equipamentos")
+.select("*")
+.eq("id",id)
+.single();
 
-document.getElementById("localizacao")
-.innerText = data.localizacao || "-";
+if(error||!data){
+document.getElementById("loginArea").classList.add("oculto");
+document.getElementById("buscaArea").classList.remove("oculto");
+document.getElementById("erroBusca").innerText="Equipamento não encontrado. Digite o ID discreto.";
+return;
+}
 
-document.getElementById("status")
-.innerText =
-data.status || "OPERACIONAL";
+mostrarEquipamento(data);
+}
+
+function mostrarEquipamento(data){
+equipamentoAtual=data;
+
+document.getElementById("buscaArea").classList.add("oculto");
+document.getElementById("painelEquipamento").classList.remove("oculto");
+
+document.getElementById("nomeEquipamento").innerText=data.nome;
+document.getElementById("marca").innerText=data.marca||"-";
+document.getElementById("modelo").innerText=data.modelo||"-";
+document.getElementById("localizacao").innerText=data.localizacao||"-";
+document.getElementById("status").innerText=data.status||"OPERACIONAL";
+document.getElementById("codigoPublico").innerText=data.codigo_publico||"-";
+
+document.getElementById("descricao").value="";
+document.getElementById("mensagem").innerText="";
+document.getElementById("avisoChamado").classList.add("oculto");
+document.getElementById("btnAbrirChamado").disabled=false;
+document.getElementById("btnAbrirChamado").style.opacity="1";
 
 verificarChamadoAberto();
 }
 
-async function verificarChamadoAberto(){
+function voltarBusca(){
+document.getElementById("painelEquipamento").classList.add("oculto");
+document.getElementById("buscaArea").classList.remove("oculto");
+document.getElementById("codigoEquipamento").value="";
+equipamentoAtual=null;
+}
 
-const { data } =
-await supabaseClient
+async function verificarChamadoAberto(){
+const {data}=await supabaseClient
 .from("chamados")
 .select("*")
-.eq("equipamento_id",
-equipamentoAtual.id)
-.in("status",
-["ABERTO","EM MANUTENCAO"]);
+.eq("equipamento_id",equipamentoAtual.id)
+.in("status",["ABERTO","EM MANUTENCAO"]);
 
-if(data && data.length > 0){
+if(data&&data.length>0){
+document.getElementById("avisoChamado").classList.remove("oculto");
+document.getElementById("btnAbrirChamado").disabled=true;
+document.getElementById("btnAbrirChamado").style.opacity=".5";
+}
+}
 
-document.getElementById(
-"avisoChamado"
-).classList.remove("oculto");
-
-document.getElementById(
-"btnAbrirChamado"
-).disabled = true;
-
-document.getElementById(
-"btnAbrirChamado"
-).style.opacity = ".5";
+async function registrarHistorico(equipamentoId,chamadoId,tipoEvento,descricao,status){
+try{
+await supabaseClient
+.from("historico_manutencao")
+.insert([{
+equipamento_id:equipamentoId,
+chamado_id:chamadoId,
+tipo_evento:tipoEvento,
+descricao:descricao,
+status:status
+}]);
+}catch(error){
+console.error("Erro ao registrar histórico:",error);
 }
 }
 
 async function abrirChamado(){
+const tipoProblema=document.getElementById("tipoProblema").value;
+const prioridade=document.getElementById("prioridade").value;
+const descricao=document.getElementById("descricao").value.trim();
 
-const tipoProblema =
-document.getElementById(
-"tipoProblema"
-).value;
-
-const prioridade =
-document.getElementById(
-"prioridade"
-).value;
-
-const descricao =
-document.getElementById(
-"descricao"
-).value.trim();
-
-const { data: existente } =
-await supabaseClient
-.from("chamados")
-.select("*")
-.eq("equipamento_id",
-equipamentoAtual.id)
-.in("status",
-["ABERTO",
-"EM MANUTENCAO"]);
-
-if(existente &&
-existente.length > 0){
-
-document.getElementById(
-"mensagem"
-).innerHTML =
-"Já existe um chamado em andamento.";
-
-document.getElementById(
-"mensagem"
-).className =
-"msg erro";
-
+if(!descricao){
+document.getElementById("mensagem").innerText="Descreva o problema antes de enviar.";
+document.getElementById("mensagem").className="msg erro";
 return;
 }
 
-const { error } =
-await supabaseClient
+const {data:existente}=await supabaseClient
+.from("chamados")
+.select("*")
+.eq("equipamento_id",equipamentoAtual.id)
+.in("status",["ABERTO","EM MANUTENCAO"]);
+
+if(existente&&existente.length>0){
+document.getElementById("mensagem").innerText="Já existe um chamado em andamento.";
+document.getElementById("mensagem").className="msg erro";
+return;
+}
+
+const {data:novoChamado,error}=await supabaseClient
 .from("chamados")
 .insert([{
-equipamento_id:
-equipamentoAtual.id,
-
-tipo_problema:
-tipoProblema,
-
-prioridade:
-prioridade,
-
-descricao:
-descricao,
-
-status:
-"ABERTO"
-}]);
+equipamento_id:equipamentoAtual.id,
+tipo_problema:tipoProblema,
+prioridade:prioridade,
+descricao:descricao,
+status:"ABERTO"
+}])
+.select()
+.single();
 
 if(error){
-
-document.getElementById(
-"mensagem"
-).innerHTML =
-error.message;
-
-document.getElementById(
-"mensagem"
-).className =
-"msg erro";
-
+document.getElementById("mensagem").innerText=error.message;
+document.getElementById("mensagem").className="msg erro";
 return;
 }
 
 await supabaseClient
 .from("equipamentos")
-.update({
-status:"MANUTENCAO"
-})
-.eq("id",
-equipamentoAtual.id);
+.update({status:"MANUTENCAO"})
+.eq("id",equipamentoAtual.id);
 
-document.getElementById(
-"mensagem"
-).innerHTML =
-"Chamado aberto com sucesso.";
+await registrarHistorico(
+equipamentoAtual.id,
+novoChamado.id,
+"CHAMADO ABERTO",
+`Tipo: ${tipoProblema}. Prioridade: ${prioridade}. Descrição: ${descricao}`,
+"ABERTO"
+);
 
-document.getElementById(
-"mensagem"
-).className =
-"msg sucesso";
+document.getElementById("mensagem").innerText="Chamado aberto com sucesso.";
+document.getElementById("mensagem").className="msg sucesso";
 
-document.getElementById(
-"btnAbrirChamado"
-).disabled = true;
-
-document.getElementById(
-"btnAbrirChamado"
-).style.opacity = ".5";
-
-document.getElementById(
-"avisoChamado"
-).classList.remove("oculto");
-
+document.getElementById("btnAbrirChamado").disabled=true;
+document.getElementById("btnAbrirChamado").style.opacity=".5";
+document.getElementById("avisoChamado").classList.remove("oculto");
+document.getElementById("status").innerText="MANUTENCAO";
 }
 </script>
 
