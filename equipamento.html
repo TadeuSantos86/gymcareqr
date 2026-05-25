@@ -3,30 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Solicitar Manutenção | GymCare QR</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
-body{background:#f3f4f6;padding:20px;color:#111827}
-.card{max-width:720px;margin:auto;background:white;border-radius:20px;padding:30px;box-shadow:0 5px 20px rgba(0,0,0,.08)}
+body{background:#f3f4f6;color:#111827;padding:24px}
+.card{max-width:760px;margin:0 auto;background:white;border-radius:20px;padding:30px;box-shadow:0 5px 20px rgba(0,0,0,.08)}
 h1{color:#93D500;margin-bottom:10px}
 .subtitulo{color:#6b7280;margin-bottom:25px}
-.info{background:#f9fafb;padding:18px;border-radius:14px;margin-bottom:20px}
-.info p{margin:6px 0}
 label{display:block;margin-top:18px;margin-bottom:8px;font-weight:bold}
 input,select,textarea{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;font-size:15px}
 textarea{resize:none;min-height:120px}
 button{width:100%;margin-top:20px;padding:16px;border:none;border-radius:14px;background:#93D500;font-size:16px;font-weight:bold;cursor:pointer}
-button:hover{opacity:.95}
 .btn-cinza{background:#e5e7eb}
+.info{background:#f9fafb;padding:18px;border-radius:14px;margin-bottom:20px}
+.info p{margin:7px 0}
 .msg{margin-top:20px;text-align:center;font-weight:bold}
 .sucesso{color:#15803d}
 .erro{color:#dc2626}
-.alerta{background:#fef3c7;color:#92400e;padding:14px;border-radius:12px;margin-bottom:20px}
+.alerta{background:#fef3c7;color:#92400e;padding:14px;border-radius:12px;margin-bottom:20px;font-weight:bold}
 .oculto{display:none!important}
+.status{display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:bold}
+.status-operacional{background:#dcfce7;color:#166534}
+.status-manutencao{background:#fef3c7;color:#92400e}
+.status-bloqueado{background:#fef3c7;color:#92400e}
+.status-desativado{background:#e5e7eb;color:#374151}
+@media(max-width:700px){body{padding:12px}.card{padding:22px}}
 </style>
 </head>
 
@@ -36,7 +40,7 @@ button:hover{opacity:.95}
 
 <div id="loginArea">
 <h1>GymCare QR</h1>
-<p class="subtitulo">Login do equipamento</p>
+<p class="subtitulo">Acesso para solicitação de manutenção do equipamento</p>
 
 <label>Usuário</label>
 <input type="text" id="usuario" placeholder="equipamento01">
@@ -45,36 +49,32 @@ button:hover{opacity:.95}
 <input type="password" id="senha" placeholder="teste01">
 
 <button onclick="fazerLogin()">Entrar</button>
-
 <p id="erroLogin" class="msg erro"></p>
 </div>
 
 <div id="buscaArea" class="oculto">
 <h1>Identificar equipamento</h1>
-<p class="subtitulo">
-Escaneie o QR Code ou digite o ID discreto do equipamento.
-</p>
+<p class="subtitulo">Escaneie o QR Code ou digite o ID discreto do equipamento.</p>
 
 <label>ID do equipamento</label>
 <input type="text" id="codigoEquipamento" placeholder="Exemplo: EQ-001">
 
 <button onclick="buscarPorCodigo()">Buscar equipamento</button>
-
 <p id="erroBusca" class="msg erro"></p>
 </div>
 
 <div id="painelEquipamento" class="oculto">
-
-<h1 id="nomeEquipamento">Carregando...</h1>
-
+<h1 id="nomeEquipamento">Equipamento</h1>
 <p class="subtitulo">Solicitação de manutenção</p>
 
 <div class="info">
+<p><strong>Categoria / Área:</strong> <span id="categoria"></span></p>
 <p><strong>Marca:</strong> <span id="marca"></span></p>
 <p><strong>Modelo:</strong> <span id="modelo"></span></p>
-<p><strong>Local:</strong> <span id="localizacao"></span></p>
-<p><strong>Status:</strong> <span id="status"></span></p>
+<p><strong>Número de série:</strong> <span id="serie"></span></p>
+<p><strong>Localização:</strong> <span id="localizacao"></span></p>
 <p><strong>ID discreto:</strong> <span id="codigoPublico"></span></p>
+<p><strong>Status:</strong> <span id="status" class="status"></span></p>
 </div>
 
 <div id="avisoChamado" class="alerta oculto">
@@ -83,11 +83,11 @@ Já existe uma solicitação em andamento para este equipamento.
 
 <label>Tipo do problema</label>
 <select id="tipoProblema">
-<option>Quebrado</option>
-<option>Barulho estranho</option>
-<option>Falha elétrica</option>
-<option>Revisão preventiva</option>
-<option>Outro</option>
+<option value="Quebrado">Quebrado</option>
+<option value="Barulho estranho">Barulho estranho</option>
+<option value="Falha elétrica">Falha elétrica</option>
+<option value="Revisão preventiva">Revisão preventiva</option>
+<option value="Outro">Outro</option>
 </select>
 
 <label>Prioridade</label>
@@ -99,14 +99,12 @@ Já existe uma solicitação em andamento para este equipamento.
 </select>
 
 <label>Descrição</label>
-<textarea id="descricao"></textarea>
+<textarea id="descricao" placeholder="Descreva o problema encontrado no equipamento"></textarea>
 
 <button id="btnAbrirChamado" onclick="abrirChamado()">Solicitar manutenção</button>
-
 <button class="btn-cinza" onclick="voltarBusca()">Escolher outro equipamento</button>
 
 <p id="mensagem" class="msg"></p>
-
 </div>
 
 </div>
@@ -118,7 +116,32 @@ const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let equipamentoAtual=null;
 
-function obterIdEquipamento(){
+function normalizarStatus(status){
+if(status==="MANUTENCAO"||status==="EM MANUTENCAO")return"EM_MANUTENCAO";
+if(status==="OPERACIONAL")return"OPERACIONAL";
+if(status==="BLOQUEADO")return"BLOQUEADO";
+if(status==="DESATIVADO")return"DESATIVADO";
+return status||"OPERACIONAL";
+}
+
+function textoStatus(status){
+const s=normalizarStatus(status);
+if(s==="EM_MANUTENCAO")return"Em manutenção";
+if(s==="OPERACIONAL")return"Operacional";
+if(s==="BLOQUEADO")return"Bloqueado";
+if(s==="DESATIVADO")return"Desativado";
+return status||"Operacional";
+}
+
+function classeStatus(status){
+const s=normalizarStatus(status);
+if(s==="OPERACIONAL")return"status status-operacional";
+if(s==="EM_MANUTENCAO")return"status status-manutencao";
+if(s==="BLOQUEADO")return"status status-bloqueado";
+return"status status-desativado";
+}
+
+function obterIdUrl(){
 const params=new URLSearchParams(window.location.search);
 return params.get("id");
 }
@@ -130,17 +153,42 @@ const senha=document.getElementById("senha").value.trim();
 if(usuario==="equipamento01"&&senha==="teste01"){
 document.getElementById("loginArea").classList.add("oculto");
 
-const id=obterIdEquipamento();
+const id=obterIdUrl();
 
 if(id){
 carregarEquipamentoPorId(id);
 }else{
 document.getElementById("buscaArea").classList.remove("oculto");
 }
-
 }else{
 document.getElementById("erroLogin").innerText="Usuário ou senha inválidos.";
 }
+}
+
+async function carregarEquipamentoPorId(id){
+document.getElementById("erroBusca").innerText="";
+
+const idNumerico=Number(id);
+
+if(!idNumerico){
+document.getElementById("buscaArea").classList.remove("oculto");
+document.getElementById("erroBusca").innerText="ID inválido. Digite o ID discreto.";
+return;
+}
+
+const {data,error}=await supabaseClient
+.from("equipamentos")
+.select("*")
+.eq("id",idNumerico)
+.maybeSingle();
+
+if(error||!data){
+document.getElementById("buscaArea").classList.remove("oculto");
+document.getElementById("erroBusca").innerText="Equipamento não encontrado. Digite o ID discreto.";
+return;
+}
+
+mostrarEquipamento(data);
 }
 
 async function buscarPorCodigo(){
@@ -157,27 +205,10 @@ const {data,error}=await supabaseClient
 .from("equipamentos")
 .select("*")
 .eq("codigo_publico",codigo)
-.single();
+.maybeSingle();
 
 if(error||!data){
 document.getElementById("erroBusca").innerText="Equipamento não encontrado.";
-return;
-}
-
-mostrarEquipamento(data);
-}
-
-async function carregarEquipamentoPorId(id){
-const {data,error}=await supabaseClient
-.from("equipamentos")
-.select("*")
-.eq("id",id)
-.single();
-
-if(error||!data){
-document.getElementById("loginArea").classList.add("oculto");
-document.getElementById("buscaArea").classList.remove("oculto");
-document.getElementById("erroBusca").innerText="Equipamento não encontrado. Digite o ID discreto.";
 return;
 }
 
@@ -190,15 +221,21 @@ equipamentoAtual=data;
 document.getElementById("buscaArea").classList.add("oculto");
 document.getElementById("painelEquipamento").classList.remove("oculto");
 
-document.getElementById("nomeEquipamento").innerText=data.nome;
+document.getElementById("nomeEquipamento").innerText=data.nome||"Equipamento";
+document.getElementById("categoria").innerText=data.categoria||"-";
 document.getElementById("marca").innerText=data.marca||"-";
 document.getElementById("modelo").innerText=data.modelo||"-";
+document.getElementById("serie").innerText=data.numero_serie||"-";
 document.getElementById("localizacao").innerText=data.localizacao||"-";
-document.getElementById("status").innerText=data.status||"OPERACIONAL";
 document.getElementById("codigoPublico").innerText=data.codigo_publico||"-";
+
+const statusEl=document.getElementById("status");
+statusEl.innerText=textoStatus(data.status);
+statusEl.className=classeStatus(data.status);
 
 document.getElementById("descricao").value="";
 document.getElementById("mensagem").innerText="";
+document.getElementById("mensagem").className="msg";
 document.getElementById("avisoChamado").classList.add("oculto");
 document.getElementById("btnAbrirChamado").disabled=false;
 document.getElementById("btnAbrirChamado").style.opacity="1";
@@ -214,11 +251,13 @@ equipamentoAtual=null;
 }
 
 async function verificarChamadoAberto(){
+if(!equipamentoAtual)return;
+
 const {data}=await supabaseClient
 .from("chamados")
 .select("*")
 .eq("equipamento_id",equipamentoAtual.id)
-.in("status",["ABERTO","EM MANUTENCAO"]);
+.in("status",["ABERTO","EM MANUTENCAO","MANUTENCAO"]);
 
 if(data&&data.length>0){
 document.getElementById("avisoChamado").classList.remove("oculto");
@@ -228,7 +267,6 @@ document.getElementById("btnAbrirChamado").style.opacity=".5";
 }
 
 async function registrarHistorico(equipamentoId,chamadoId,tipoEvento,descricao,status){
-try{
 await supabaseClient
 .from("historico_manutencao")
 .insert([{
@@ -238,12 +276,11 @@ tipo_evento:tipoEvento,
 descricao:descricao,
 status:status
 }]);
-}catch(error){
-console.error("Erro ao registrar histórico:",error);
-}
 }
 
 async function abrirChamado(){
+if(!equipamentoAtual)return;
+
 const tipoProblema=document.getElementById("tipoProblema").value;
 const prioridade=document.getElementById("prioridade").value;
 const descricao=document.getElementById("descricao").value.trim();
@@ -258,11 +295,14 @@ const {data:existente}=await supabaseClient
 .from("chamados")
 .select("*")
 .eq("equipamento_id",equipamentoAtual.id)
-.in("status",["ABERTO","EM MANUTENCAO"]);
+.in("status",["ABERTO","EM MANUTENCAO","MANUTENCAO"]);
 
 if(existente&&existente.length>0){
-document.getElementById("mensagem").innerText="Já existe um chamado em andamento.";
+document.getElementById("mensagem").innerText="Já existe um chamado em andamento para este equipamento.";
 document.getElementById("mensagem").className="msg erro";
+document.getElementById("avisoChamado").classList.remove("oculto");
+document.getElementById("btnAbrirChamado").disabled=true;
+document.getElementById("btnAbrirChamado").style.opacity=".5";
 return;
 }
 
@@ -292,18 +332,21 @@ await supabaseClient
 await registrarHistorico(
 equipamentoAtual.id,
 novoChamado.id,
-"CHAMADO ABERTO",
-`Tipo: ${tipoProblema}. Prioridade: ${prioridade}. Descrição: ${descricao}`,
+"Chamado aberto",
+"Tipo: "+tipoProblema+". Prioridade: "+prioridade+". Descrição: "+descricao,
 "ABERTO"
 );
 
 document.getElementById("mensagem").innerText="Chamado aberto com sucesso.";
 document.getElementById("mensagem").className="msg sucesso";
-
 document.getElementById("btnAbrirChamado").disabled=true;
 document.getElementById("btnAbrirChamado").style.opacity=".5";
 document.getElementById("avisoChamado").classList.remove("oculto");
-document.getElementById("status").innerText="MANUTENCAO";
+
+equipamentoAtual.status="MANUTENCAO";
+const statusEl=document.getElementById("status");
+statusEl.innerText=textoStatus("MANUTENCAO");
+statusEl.className=classeStatus("MANUTENCAO");
 }
 </script>
 
