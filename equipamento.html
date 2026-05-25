@@ -6,6 +6,7 @@
 <title>Solicitar Manutenção | GymCare QR</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
@@ -114,7 +115,14 @@ const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
+const EMAILJS_SERVICE_ID="service_i6mlqzr";
+const EMAILJS_TEMPLATE_ID="template_dec814j";
+const EMAILJS_PUBLIC_KEY="aXBqSvpRwjN9R_QNu";
+
+emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});
+
 let equipamentoAtual=null;
+let academiaAtual=null;
 
 function normalizarStatus(status){
 if(status==="MANUTENCAO"||status==="EM MANUTENCAO")return"EM_MANUTENCAO";
@@ -130,6 +138,8 @@ if(s==="EM_MANUTENCAO")return"Em manutenção";
 if(s==="OPERACIONAL")return"Operacional";
 if(s==="BLOQUEADO")return"Bloqueado";
 if(s==="DESATIVADO")return"Desativado";
+if(s==="ABERTO")return"Aberto";
+if(s==="FINALIZADO")return"Finalizado";
 return status||"Operacional";
 }
 
@@ -163,6 +173,21 @@ document.getElementById("buscaArea").classList.remove("oculto");
 }else{
 document.getElementById("erroLogin").innerText="Usuário ou senha inválidos.";
 }
+}
+
+async function carregarAcademia(academiaId){
+const {data,error}=await supabaseClient
+.from("academias")
+.select("*")
+.eq("id",academiaId)
+.maybeSingle();
+
+if(error){
+console.error("Erro ao buscar academia:",error);
+return null;
+}
+
+return data;
 }
 
 async function carregarEquipamentoPorId(id){
@@ -215,8 +240,9 @@ return;
 mostrarEquipamento(data);
 }
 
-function mostrarEquipamento(data){
+async function mostrarEquipamento(data){
 equipamentoAtual=data;
+academiaAtual=await carregarAcademia(data.academia_id||1);
 
 document.getElementById("buscaArea").classList.add("oculto");
 document.getElementById("painelEquipamento").classList.remove("oculto");
@@ -248,6 +274,7 @@ document.getElementById("painelEquipamento").classList.add("oculto");
 document.getElementById("buscaArea").classList.remove("oculto");
 document.getElementById("codigoEquipamento").value="";
 equipamentoAtual=null;
+academiaAtual=null;
 }
 
 async function verificarChamadoAberto(){
@@ -276,6 +303,51 @@ tipo_evento:tipoEvento,
 descricao:descricao,
 status:status
 }]);
+}
+
+async function enviarEmailNotificacao(chamado,tipoProblema,prioridade,descricao){
+try{
+const emailDestino=academiaAtual?.email_notificacao;
+
+if(!emailDestino){
+console.warn("Nenhum e-mail de notificação configurado para a academia.");
+return;
+}
+
+const dadosEmail={
+email_destino:emailDestino,
+academia_nome:academiaAtual?.nome||"Academia",
+equipamento_nome:equipamentoAtual?.nome||"Equipamento",
+equipamento_codigo:equipamentoAtual?.codigo_publico||"-",
+equipamento_localizacao:equipamentoAtual?.localizacao||"-",
+tipo_problema:tipoProblema,
+prioridade:prioridade,
+descricao:descricao,
+status:"Aberto",
+data_hora:new Date().toLocaleString("pt-BR")
+};
+
+await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,dadosEmail);
+
+await registrarHistorico(
+equipamentoAtual.id,
+chamado.id,
+"E-mail enviado",
+"Notificação enviada para "+emailDestino,
+"ABERTO"
+);
+
+}catch(error){
+console.error("Erro ao enviar e-mail:",error);
+
+await registrarHistorico(
+equipamentoAtual.id,
+chamado.id,
+"Falha no envio de e-mail",
+"Erro ao tentar enviar notificação por e-mail.",
+"ABERTO"
+);
+}
 }
 
 async function abrirChamado(){
@@ -337,7 +409,9 @@ novoChamado.id,
 "ABERTO"
 );
 
-document.getElementById("mensagem").innerText="Chamado aberto com sucesso.";
+await enviarEmailNotificacao(novoChamado,tipoProblema,prioridade,descricao);
+
+document.getElementById("mensagem").innerText="Chamado aberto com sucesso. A academia foi notificada por e-mail.";
 document.getElementById("mensagem").className="msg sucesso";
 document.getElementById("btnAbrirChamado").disabled=true;
 document.getElementById("btnAbrirChamado").style.opacity=".5";
