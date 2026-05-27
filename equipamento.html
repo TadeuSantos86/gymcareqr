@@ -4,7 +4,26 @@
 <script>
 const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const EMAILJS_SERVICE_ID="service_i6mlqzr";const EMAILJS_TEMPLATE_ID="template_dec814j";const EMAILJS_PUBLIC_KEY="aXBqSvpRwjN9R_QNu";emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});let equipamentoAtual=null,academiaAtual=null;function param(n){return new URLSearchParams(location.search).get(n)}function academiaIdAtual(){return Number(param("academia_id"))||1}function normalizarStatus(s){if(s==="MANUTENCAO"||s==="EM MANUTENCAO")return"EM_MANUTENCAO";if(s==="OPERACIONAL")return"OPERACIONAL";if(s==="BLOQUEADO")return"BLOQUEADO";if(s==="DESATIVADO")return"DESATIVADO";return s||"OPERACIONAL"}function textoStatus(s){const x=normalizarStatus(s);return x==="EM_MANUTENCAO"?"Em manutenção":x==="OPERACIONAL"?"Operacional":x==="BLOQUEADO"?"Bloqueado":x==="DESATIVADO"?"Desativado":x==="ABERTO"?"Aberto":x==="FINALIZADO"?"Finalizado":s||"Operacional"}function classeStatus(s){const x=normalizarStatus(s);if(x==="OPERACIONAL")return"status status-operacional";if(x==="EM_MANUTENCAO")return"status status-manutencao";if(x==="BLOQUEADO")return"status status-bloqueado";return"status status-desativado"}async function carregarAcademia(id){const {data}=await supabaseClient.from("academias").select("*").eq("id",id).maybeSingle();academiaAtual=data||{};document.documentElement.style.setProperty("--cor",academiaAtual.cor_primaria||"#93D500");document.getElementById("tituloLogin").innerText=academiaAtual.titulo_sistema||"ConetFacility";document.getElementById("subtituloLogin").innerText=academiaAtual.subtitulo_sistema||"";const logo=document.getElementById("logoCliente");if(academiaAtual.logo_url){logo.src=academiaAtual.logo_url;logo.classList.remove("oculto")}else logo.classList.add("oculto")}carregarAcademia(academiaIdAtual());
 function fazerLogin(){const u=document.getElementById("usuario").value.trim(),s=document.getElementById("senha").value.trim();if(u==="equipamento01"&&s==="teste01"){document.getElementById("loginArea").classList.add("oculto");const id=param("id");if(id)carregarEquipamentoPorId(id);else document.getElementById("buscaArea").classList.remove("oculto")}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."}
-async function carregarEquipamentoPorId(id){const {data}=await supabaseClient.from("equipamentos").select("*").eq("id",Number(id)).maybeSingle();if(!data){document.getElementById("buscaArea").classList.remove("oculto");document.getElementById("erroBusca").innerText="Equipamento não encontrado. Digite o ID discreto.";return}await carregarAcademia(data.academia_id||1);mostrarEquipamento(data)}
+async function carregarEquipamentoPorId(id){
+const {data}=await supabaseClient.from("equipamentos").select("*").eq("id",Number(id)).maybeSingle();
+
+if(!data){
+document.getElementById("buscaArea").classList.remove("oculto");
+document.getElementById("erroBusca").innerText="Equipamento não encontrado. Digite o ID discreto.";
+return;
+}
+
+await carregarAcademia(data.academia_id||1);
+
+const params=new URLSearchParams(location.search);
+if(String(params.get("academia_id")||"")!==String(data.academia_id||"")){
+params.set("academia_id",data.academia_id||1);
+params.set("id",data.id);
+history.replaceState(null,"",location.pathname+"?"+params.toString());
+}
+
+mostrarEquipamento(data);
+}
 async function buscarPorCodigo(){const codigo=document.getElementById("codigoEquipamento").value.trim().toUpperCase();if(!codigo){document.getElementById("erroBusca").innerText="Digite o ID do equipamento.";return}const {data}=await supabaseClient.from("equipamentos").select("*").eq("codigo_publico",codigo).eq("academia_id",academiaIdAtual()).maybeSingle();if(!data){document.getElementById("erroBusca").innerText="Equipamento não encontrado.";return}mostrarEquipamento(data)}
 function mostrarEquipamento(d){equipamentoAtual=d;document.getElementById("buscaArea").classList.add("oculto");document.getElementById("painelEquipamento").classList.remove("oculto");document.getElementById("nomeEquipamento").innerText=d.nome||"Equipamento";["categoria","marca","modelo","localizacao"].forEach(k=>document.getElementById(k).innerText=d[k]||"-");document.getElementById("serie").innerText=d.numero_serie||"-";document.getElementById("codigoPublico").innerText=d.codigo_publico||"-";const se=document.getElementById("status");se.innerText=textoStatus(d.status);se.className=classeStatus(d.status);document.getElementById("descricao").value="";document.getElementById("mensagem").innerText="";document.getElementById("avisoChamado").classList.add("oculto");document.getElementById("btnAbrirChamado").disabled=false;document.getElementById("btnAbrirChamado").style.opacity="1";verificarChamadoAberto()}
 function voltarBusca(){document.getElementById("painelEquipamento").classList.add("oculto");document.getElementById("buscaArea").classList.remove("oculto");document.getElementById("codigoEquipamento").value="";equipamentoAtual=null}
