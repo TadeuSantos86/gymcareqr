@@ -17,7 +17,9 @@
   margin:25px 0;
   align-items:stretch;
 }
-.layout-dashboard .bloco{min-height:340px}
+.layout-dashboard .bloco{
+  min-height:340px;
+}
 .layout-config{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -26,8 +28,66 @@
   align-items:start;
 }
 @media(max-width:1100px){
-  .layout-dashboard{grid-template-columns:1fr}
-  .layout-config{grid-template-columns:1fr}
+  .layout-dashboard{
+    grid-template-columns:1fr;
+  }
+  .layout-config{
+    grid-template-columns:1fr;
+  }
+}
+
+
+/* FIX DEFINITIVO DO LAYOUT DO DASHBOARD */
+.layout-dashboard{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(280px,1fr)) !important;
+  gap:20px !important;
+  margin:25px 0 !important;
+  align-items:stretch !important;
+}
+
+.layout-dashboard .bloco{
+  min-height:340px !important;
+  max-height:380px !important;
+  overflow:hidden !important;
+}
+
+.layout-dashboard canvas{
+  width:100% !important;
+  height:250px !important;
+  max-height:250px !important;
+}
+
+#boxLogoResumo{
+  min-height:340px !important;
+  max-height:380px !important;
+}
+
+#resumoCliente img{
+  max-width:150px !important;
+  max-height:90px !important;
+  object-fit:contain !important;
+  margin:10px 0 !important;
+}
+
+.layout-config{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:20px !important;
+  margin:25px 0 !important;
+  align-items:start !important;
+}
+
+@media(max-width:1100px){
+  .layout-dashboard{
+    grid-template-columns:1fr !important;
+  }
+  .layout-dashboard .bloco{
+    max-height:none !important;
+  }
+  .layout-config{
+    grid-template-columns:1fr !important;
+  }
 }
 
 </style></head><body>
@@ -39,26 +99,26 @@
 
 
 <div class="layout-dashboard">
-<div class="bloco" id="boxLogoResumo">
-<h3>Identidade do Cliente</h3>
-<div id="resumoCliente"></div>
-</div>
+  <div class="bloco" id="boxLogoResumo">
+    <h3>Identidade do Cliente</h3>
+    <div id="resumoCliente"></div>
+  </div>
 
-<div class="bloco">
-<h3>Status dos Chamados</h3>
-<canvas id="graficoStatus"></canvas>
-</div>
+  <div class="bloco">
+    <h3>Status dos Chamados</h3>
+    <canvas id="graficoStatus" style="height:250px;max-height:250px;"></canvas>
+  </div>
 
-<div class="bloco">
-<h3>Prioridade dos Chamados</h3>
-<canvas id="graficoPrioridade"></canvas>
-</div>
+  <div class="bloco">
+    <h3>Prioridade dos Chamados</h3>
+    <canvas id="graficoPrioridade" style="height:250px;max-height:250px;"></canvas>
+  </div>
 </div>
 
 
 <div class="layout-config">
-<div class="bloco"><h2>Configurações da academia</h2><label>E-mail para receber chamados</label><input type="email" id="emailNotificacao"><button class="btn-verde" onclick="salvarEmailNotificacao()">Salvar e-mail</button><p id="msgEmailNotificacao" class="sucesso"></p><p id="erroEmailNotificacao" class="erro"></p></div>
-<div class="bloco">
+  <div class="bloco"><h2>Configurações da academia</h2><label>E-mail para receber chamados</label><input type="email" id="emailNotificacao"><button class="btn-verde" onclick="salvarEmailNotificacao()">Salvar e-mail</button><p id="msgEmailNotificacao" class="sucesso"></p><p id="erroEmailNotificacao" class="erro"></p></div>
+  <div class="bloco">
 <h2>Usuários para abertura de chamados</h2>
 <p style="margin:8px 0 18px;color:#6b7280;">Cadastre os responsáveis que poderão acessar a tela do QR/ID e abrir chamados.</p>
 
