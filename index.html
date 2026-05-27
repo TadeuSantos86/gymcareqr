@@ -14,10 +14,9 @@
 <div id="telaAdmin" class="oculto"><header id="cabecalho"><div class="brand"><img id="logoCliente" class="oculto"><div><h1 id="tituloSistema">ConetFacility</h1><p id="subtituloSistema"></p></div></div><button class="btn-cinza" onclick="sair()">Sair</button></header>
 <div class="container">
 <div class="cards"><div class="card"><h3>Equipamentos ativos</h3><div class="numero" id="totalEquipamentos">0</div></div><div class="card"><h3>Chamados abertos</h3><div class="numero" id="chamadosAbertos">0</div></div><div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div><div class="card"><h3>Disponibilidade</h3><div class="numero" id="disponibilidade">0%</div></div></div>
-
 <div class="bloco" id="boxLogoResumo">
 <h2>Identidade do cliente</h2>
-<div id="resumoCliente">Carregando...</div>
+<div id="resumoCliente"></div>
 </div>
 
 <br>
@@ -141,49 +140,15 @@ function atualizarCards(){const ativos=equipamentos.filter(e=>normalizarStatus(e
 function renderizarResumoCliente(){
 const ativos=equipamentos.filter(e=>normalizarStatus(e.status)!=="DESATIVADO").length;
 const manut=equipamentos.filter(e=>normalizarStatus(e.status)==="EM_MANUTENCAO").length;
-const abertos=chamados.filter(c=>normalizarStatus(c.status)==="ABERTO").length;
 const ult=chamados[0]?`Chamado #${chamados[0].id}`:"Sem chamados";
-const disponibilidade=ativos>0?Math.round(((ativos-manut)/ativos)*100):0;
 
 document.getElementById("resumoCliente").innerHTML=`
-<div style="display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:center;">
-<div style="text-align:center;">
-${academiaAtual.logo_url?`<img src="${academiaAtual.logo_url}" style="max-width:210px;max-height:120px;object-fit:contain;background:#fff;border-radius:14px;padding:10px;border:1px solid #e5e7eb;">`:`<div style="height:120px;display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-radius:14px;color:#6b7280;">Sem logo</div>`}
-</div>
-
-<div>
-<h2 style="margin-bottom:8px;">${academiaAtual.nome||"Cliente"}</h2>
-<p><strong>Nome do sistema:</strong> ${academiaAtual.titulo_sistema||"ConetFacility"}</p>
-<p><strong>Plano:</strong> <span class="status status-operacional">${academiaAtual.plano||"-"}</span></p>
-<p><strong>E-mail de chamados:</strong> ${academiaAtual.email_notificacao||"-"}</p>
-<br>
-
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
-<div style="background:#f9fafb;border-radius:14px;padding:14px;">
-<strong>Equipamentos ativos</strong>
-<div class="numero" style="font-size:26px;">${ativos}</div>
-</div>
-
-<div style="background:#f9fafb;border-radius:14px;padding:14px;">
-<strong>Em manutenção</strong>
-<div class="numero" style="font-size:26px;">${manut}</div>
-</div>
-
-<div style="background:#f9fafb;border-radius:14px;padding:14px;">
-<strong>Chamados abertos</strong>
-<div class="numero" style="font-size:26px;">${abertos}</div>
-</div>
-
-<div style="background:#f9fafb;border-radius:14px;padding:14px;">
-<strong>Disponibilidade</strong>
-<div class="numero" style="font-size:26px;">${disponibilidade}%</div>
-</div>
-</div>
-
-<br>
-<p><strong>Última atividade:</strong> ${ult}</p>
-</div>
-</div>
+${academiaAtual.logo_url?`<img src="${academiaAtual.logo_url}" style="max-width:180px;max-height:90px;object-fit:contain;margin:10px 0;">`:""}
+<p><strong>Cliente:</strong> ${academiaAtual.nome||"-"}</p>
+<p><strong>Plano:</strong> ${academiaAtual.plano||"-"}</p>
+<p><strong>Equipamentos ativos:</strong> ${ativos}</p>
+<p><strong>Em manutenção:</strong> ${manut}</p>
+<p><strong>Último chamado:</strong> ${ult}</p>
 `;
 }
 
