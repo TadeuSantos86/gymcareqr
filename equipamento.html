@@ -3,7 +3,67 @@
 </style></head><body><div class="card"><img id="logoCliente" class="logo oculto"><div id="loginArea"><h1 id="tituloLogin">ConetFacility</h1><p class="subtitulo" id="subtituloLogin"></p><label>Usuário</label><input type="text" id="usuario" placeholder="equipamento01"><label>Senha</label><input type="password" id="senha" placeholder="teste01"><button onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="msg erro"></p></div><div id="buscaArea" class="oculto"><h1>Identificar equipamento</h1><p class="subtitulo">Escaneie o QR Code ou digite o ID discreto do equipamento.</p><label>ID do equipamento</label><input type="text" id="codigoEquipamento" placeholder="Exemplo: EQ-001"><button onclick="buscarPorCodigo()">Buscar equipamento</button><p id="erroBusca" class="msg erro"></p></div><div id="painelEquipamento" class="oculto"><h1 id="nomeEquipamento">Equipamento</h1><p class="subtitulo">Solicitação de manutenção</p><div class="info"><p><strong>Categoria / Área:</strong> <span id="categoria"></span></p><p><strong>Marca:</strong> <span id="marca"></span></p><p><strong>Modelo:</strong> <span id="modelo"></span></p><p><strong>Número de série:</strong> <span id="serie"></span></p><p><strong>Localização:</strong> <span id="localizacao"></span></p><p><strong>ID discreto:</strong> <span id="codigoPublico"></span></p><p><strong>Status:</strong> <span id="status" class="status"></span></p></div><div id="avisoChamado" class="alerta oculto">Já existe uma solicitação em andamento para este equipamento.</div><label>Tipo do problema</label><select id="tipoProblema"><option value="Quebrado">Quebrado</option><option value="Barulho estranho">Barulho estranho</option><option value="Falha elétrica">Falha elétrica</option><option value="Revisão preventiva">Revisão preventiva</option><option value="Outro">Outro</option></select><label>Prioridade</label><select id="prioridade"><option value="BAIXA">Baixa</option><option value="MEDIA">Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select><label>Descrição</label><textarea id="descricao"></textarea><button id="btnAbrirChamado" onclick="abrirChamado()">Solicitar manutenção</button><button class="btn-cinza" onclick="voltarBusca()">Escolher outro equipamento</button><p id="mensagem" class="msg"></p></div></div>
 <script>
 const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const EMAILJS_SERVICE_ID="service_i6mlqzr";const EMAILJS_TEMPLATE_ID="template_dec814j";const EMAILJS_PUBLIC_KEY="aXBqSvpRwjN9R_QNu";emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});let equipamentoAtual=null,academiaAtual=null;function param(n){return new URLSearchParams(location.search).get(n)}function academiaIdAtual(){return Number(param("academia_id"))||1}function normalizarStatus(s){if(s==="MANUTENCAO"||s==="EM MANUTENCAO")return"EM_MANUTENCAO";if(s==="OPERACIONAL")return"OPERACIONAL";if(s==="BLOQUEADO")return"BLOQUEADO";if(s==="DESATIVADO")return"DESATIVADO";return s||"OPERACIONAL"}function textoStatus(s){const x=normalizarStatus(s);return x==="EM_MANUTENCAO"?"Em manutenção":x==="OPERACIONAL"?"Operacional":x==="BLOQUEADO"?"Bloqueado":x==="DESATIVADO"?"Desativado":x==="ABERTO"?"Aberto":x==="FINALIZADO"?"Finalizado":s||"Operacional"}function classeStatus(s){const x=normalizarStatus(s);if(x==="OPERACIONAL")return"status status-operacional";if(x==="EM_MANUTENCAO")return"status status-manutencao";if(x==="BLOQUEADO")return"status status-bloqueado";return"status status-desativado"}async function carregarAcademia(id){const {data}=await supabaseClient.from("academias").select("*").eq("id",id).maybeSingle();academiaAtual=data||{};document.documentElement.style.setProperty("--cor",academiaAtual.cor_primaria||"#93D500");document.getElementById("tituloLogin").innerText=academiaAtual.titulo_sistema||"ConetFacility";document.getElementById("subtituloLogin").innerText=academiaAtual.subtitulo_sistema||"";const logo=document.getElementById("logoCliente");if(academiaAtual.logo_url){logo.src=academiaAtual.logo_url;logo.classList.remove("oculto")}else logo.classList.add("oculto")}carregarAcademia(academiaIdAtual());
-function fazerLogin(){const u=document.getElementById("usuario").value.trim(),s=document.getElementById("senha").value.trim();if(u==="equipamento01"&&s==="teste01"){document.getElementById("loginArea").classList.add("oculto");const id=param("id");if(id)carregarEquipamentoPorId(id);else document.getElementById("buscaArea").classList.remove("oculto")}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."}
+async function validarUsuarioChamado(usuario,senha,academiaId){
+const {data,error}=await supabaseClient
+.from("usuarios_chamados")
+.select("*")
+.eq("academia_id",academiaId)
+.eq("usuario",usuario)
+.eq("senha",senha)
+.eq("status","ATIVO")
+.maybeSingle();
+
+if(error){
+console.error("Erro ao validar usuário:",error);
+return false;
+}
+
+if(data)return true;
+
+/* acesso padrão temporário para testes, até todos os clientes terem usuários cadastrados */
+if(usuario==="equipamento01"&&senha==="teste01"){
+return true;
+}
+
+return false;
+}
+
+async function fazerLogin(){
+const u=document.getElementById("usuario").value.trim();
+const s=document.getElementById("senha").value.trim();
+
+let academiaLoginId=academiaIdAtual();
+const idEquipamento=param("id");
+
+if(idEquipamento){
+const {data:eqTemp}=await supabaseClient
+.from("equipamentos")
+.select("academia_id")
+.eq("id",Number(idEquipamento))
+.maybeSingle();
+
+if(eqTemp?.academia_id){
+academiaLoginId=eqTemp.academia_id;
+await carregarAcademia(academiaLoginId);
+}
+}
+
+const permitido=await validarUsuarioChamado(u,s,academiaLoginId);
+
+if(permitido){
+document.getElementById("loginArea").classList.add("oculto");
+
+const id=param("id");
+
+if(id){
+carregarEquipamentoPorId(id);
+}else{
+document.getElementById("buscaArea").classList.remove("oculto");
+}
+}else{
+document.getElementById("erroLogin").innerText="Usuário ou senha inválidos.";
+}
+}
 async function carregarEquipamentoPorId(id){
 const {data}=await supabaseClient.from("equipamentos").select("*").eq("id",Number(id)).maybeSingle();
 
