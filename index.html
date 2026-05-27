@@ -15,6 +15,15 @@
 <div class="container">
 <div class="cards"><div class="card"><h3>Equipamentos ativos</h3><div class="numero" id="totalEquipamentos">0</div></div><div class="card"><h3>Chamados abertos</h3><div class="numero" id="chamadosAbertos">0</div></div><div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div><div class="card"><h3>Disponibilidade</h3><div class="numero" id="disponibilidade">0%</div></div></div>
 <div class="bloco"><h2>Configurações da academia</h2><label>E-mail para receber chamados</label><input type="email" id="emailNotificacao"><button class="btn-verde" onclick="salvarEmailNotificacao()">Salvar e-mail</button><p id="msgEmailNotificacao" class="sucesso"></p><p id="erroEmailNotificacao" class="erro"></p></div><br>
+
+<div class="bloco">
+<h2>Manutenção Preventiva / Próximas Revisões</h2>
+<p style="margin:8px 0 18px;color:#6b7280;">Acompanhe equipamentos com revisão vencida, próxima ou programada.</p>
+<div id="listaPreventivas">Carregando...</div>
+</div>
+
+<br>
+
 <div class="grid-graficos"><div class="bloco"><h3>Status dos chamados</h3><canvas id="graficoStatus"></canvas></div><div class="bloco"><h3>Prioridades dos chamados</h3><canvas id="graficoPrioridade"></canvas></div><div class="bloco" id="boxLogoResumo"><h3>Identidade do cliente</h3><div id="resumoCliente"></div></div></div>
 <div class="bloco">
 <h2>Usuários para abertura de chamados</h2>
@@ -118,12 +127,13 @@ renderizarResumoCliente();
 renderizarEquipamentos();
 renderizarChamados();
 renderizarUsuariosChamados();
+renderizarPreventivas();
 }
 function atualizarCards(){const ativos=equipamentos.filter(e=>normalizarStatus(e.status)!=="DESATIVADO").length;const manut=equipamentos.filter(e=>normalizarStatus(e.status)==="EM_MANUTENCAO").length;document.getElementById("totalEquipamentos").innerText=ativos;document.getElementById("chamadosAbertos").innerText=chamados.filter(c=>normalizarStatus(c.status)==="ABERTO").length;document.getElementById("emManutencao").innerText=manut;document.getElementById("disponibilidade").innerText=(ativos>0?Math.round(((ativos-manut)/ativos)*100):0)+"%"}
 function renderizarResumoCliente(){const ativos=equipamentos.filter(e=>normalizarStatus(e.status)!=="DESATIVADO").length;const manut=equipamentos.filter(e=>normalizarStatus(e.status)==="EM_MANUTENCAO").length;const ult=chamados[0]?`Chamado #${chamados[0].id}`:"Sem chamados";document.getElementById("resumoCliente").innerHTML=`${academiaAtual.logo_url?`<img src="${academiaAtual.logo_url}" style="max-width:180px;max-height:90px;object-fit:contain;margin:10px 0;">`:""}<p><strong>Cliente:</strong> ${academiaAtual.nome||"-"}</p><p><strong>Plano:</strong> ${academiaAtual.plano||"-"}</p><p><strong>Equipamentos ativos:</strong> ${ativos}</p><p><strong>Em manutenção:</strong> ${manut}</p><p><strong>Último chamado:</strong> ${ult}</p>`}
 function renderizarGraficos(){const st={ABERTO:0,EM_MANUTENCAO:0,FINALIZADO:0},pr={URGENTE:0,ALTA:0,MEDIA:0,BAIXA:0};chamados.forEach(c=>{const s=normalizarStatus(c.status);if(s==="ABERTO")st.ABERTO++;else if(s==="EM_MANUTENCAO")st.EM_MANUTENCAO++;else if(s==="FINALIZADO")st.FINALIZADO++;if(c.prioridade==="URGENTE")pr.URGENTE++;else if(c.prioridade==="ALTA")pr.ALTA++;else if(c.prioridade==="MEDIA")pr.MEDIA++;else pr.BAIXA++});if(graficoStatus)graficoStatus.destroy();if(graficoPrioridade)graficoPrioridade.destroy();graficoStatus=new Chart(document.getElementById("graficoStatus"),{type:"doughnut",data:{labels:["Aberto","Em manutenção","Finalizado"],datasets:[{data:[st.ABERTO,st.EM_MANUTENCAO,st.FINALIZADO],backgroundColor:["#3B82F6","#FACC15","#93D500"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}}}});graficoPrioridade=new Chart(document.getElementById("graficoPrioridade"),{type:"bar",data:{labels:["Urgente","Alta","Média","Baixa"],datasets:[{data:[pr.URGENTE,pr.ALTA,pr.MEDIA,pr.BAIXA],backgroundColor:["#EF4444","#F97316","#FACC15","#93D500"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}})}
 async function cadastrarEquipamento(){const nome=document.getElementById("novoNome").value.trim(),codigo=document.getElementById("novoCodigo").value.trim().toUpperCase();if(!nome||!codigo){document.getElementById("erroCadastro").innerText="Nome e ID são obrigatórios.";return}const item={academia_id:academiaIdAtual(),nome,categoria:document.getElementById("novaCategoria").value.trim(),marca:document.getElementById("novaMarca").value.trim(),modelo:document.getElementById("novoModelo").value.trim(),numero_serie:document.getElementById("novoSerie").value.trim(),localizacao:document.getElementById("novaLocalizacao").value.trim(),status:"OPERACIONAL",codigo_publico:codigo,proxima_revisao:document.getElementById("novaProximaRevisao").value||null};const {data,error}=await supabaseClient.from("equipamentos").insert([item]).select().single();if(error){document.getElementById("erroCadastro").innerText=error.message;return}await supabaseClient.from("equipamentos").update({qr_code:`https://conetfacility.vercel.app/equipamento.html?id=${data.id}&academia_id=${academiaIdAtual()}`}).eq("id",data.id);document.getElementById("formCadastroEquipamento").classList.add("oculto");carregarDados()}
-function renderizarEquipamentos(){const busca=document.getElementById("buscaEquipamento").value.toLowerCase(),filtro=document.getElementById("filtroStatusEquipamento").value;let html="";equipamentos.filter(eq=>{const mb=(eq.nome||"").toLowerCase().includes(busca)||(eq.categoria||"").toLowerCase().includes(busca)||(eq.codigo_publico||"").toLowerCase().includes(busca)||(eq.localizacao||"").toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||normalizarStatus(eq.status)===normalizarStatus(filtro))}).forEach(eq=>{html+=`<div class="item"><h3>${eq.nome}</h3><p><strong>Categoria:</strong> ${eq.categoria||"-"}</p><p><strong>ID:</strong> ${eq.codigo_publico||"-"}</p><p><strong>Local:</strong> ${eq.localizacao||"-"}</p><div class="${classeStatus(eq.status)}">${textoStatus(eq.status)}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${eq.id})">Editar</button><button class="btn-verde" onclick="abrirEtiquetaQR(${eq.id})">QR Premium</button><button class="btn-cinza" onclick="abrirHistorico(${eq.id},'${limparTexto(eq.nome)}')">Histórico</button><button class="btn-vermelho" onclick="desativarEquipamento(${eq.id},'${limparTexto(eq.nome)}')">Desativar</button></div></div>`});document.getElementById("listaEquipamentos").innerHTML=html||"<p>Nenhum equipamento cadastrado.</p>"}
+function renderizarEquipamentos(){const busca=document.getElementById("buscaEquipamento").value.toLowerCase(),filtro=document.getElementById("filtroStatusEquipamento").value;let html="";equipamentos.filter(eq=>{const mb=(eq.nome||"").toLowerCase().includes(busca)||(eq.categoria||"").toLowerCase().includes(busca)||(eq.codigo_publico||"").toLowerCase().includes(busca)||(eq.localizacao||"").toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||normalizarStatus(eq.status)===normalizarStatus(filtro))}).forEach(eq=>{html+=`<div class="item"><h3>${eq.nome}</h3><p><strong>Categoria:</strong> ${eq.categoria||"-"}</p><p><strong>ID:</strong> ${eq.codigo_publico||"-"}</p><p><strong>Local:</strong> ${eq.localizacao||"-"}</p><p><strong>Próxima revisão:</strong> ${formatarDataBR(eq.proxima_revisao)}</p><span class="${statusRevisaoClasse(eq.proxima_revisao)}">${statusRevisaoTexto(eq.proxima_revisao)}</span><br><div class="${classeStatus(eq.status)}">${textoStatus(eq.status)}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${eq.id})">Editar</button><button class="btn-verde" onclick="abrirEtiquetaQR(${eq.id})">QR Premium</button><button class="btn-cinza" onclick="abrirHistorico(${eq.id},'${limparTexto(eq.nome)}')">Histórico</button><button class="btn-vermelho" onclick="desativarEquipamento(${eq.id},'${limparTexto(eq.nome)}')">Desativar</button></div></div>`});document.getElementById("listaEquipamentos").innerHTML=html||"<p>Nenhum equipamento cadastrado.</p>"}
 function renderizarChamados(){let html="";chamados.forEach(ch=>{const eq=equipamentos.find(e=>e.id===ch.equipamento_id);html+=`<div class="item"><h3>Chamado #${ch.id}</h3><p><strong>Equipamento:</strong> ${eq?.nome||"-"}</p><p><strong>Tipo:</strong> ${ch.tipo_problema||"-"}</p><p><strong>Descrição:</strong> ${ch.descricao||"-"}</p><p><strong>Prioridade:</strong> ${ch.prioridade||"-"}</p><p><strong>Status:</strong> <span class="${classeStatus(ch.status)}">${textoStatus(ch.status)}</span></p><div class="botoes"><button class="btn-amarelo" onclick="alterarStatusChamado(${ch.id},${ch.equipamento_id},'EM MANUTENCAO')">Em manutenção</button><button class="btn-verde" onclick="alterarStatusChamado(${ch.id},${ch.equipamento_id},'FINALIZADO')">Finalizar</button><button class="btn-cinza" onclick="alterarStatusChamado(${ch.id},${ch.equipamento_id},'ABERTO')">Reabrir</button><button class="btn-cinza" onclick="abrirHistoricoChamado(${ch.id},${ch.equipamento_id},'${limparTexto(eq?.nome||"Equipamento")}')">Histórico</button></div></div>`});document.getElementById("listaChamados").innerHTML=html||"<p>Nenhum chamado encontrado.</p>"}
 async function alterarStatusChamado(chamadoId,equipamentoId,novoStatus){await supabaseClient.from("chamados").update({status:novoStatus}).eq("id",chamadoId);await supabaseClient.from("equipamentos").update({status:normalizarStatus(novoStatus)==="EM_MANUTENCAO"?"MANUTENCAO":"OPERACIONAL"}).eq("id",equipamentoId);carregarDados()}
 function abrirEditar(id){const eq=equipamentos.find(e=>e.id===id);if(!eq)return;["editId","editNome","editCategoria","editMarca","editModelo","editSerie","editLocalizacao","editCodigo","editProximaRevisao"].forEach(()=>{});document.getElementById("editId").value=eq.id;document.getElementById("editNome").value=eq.nome||"";document.getElementById("editCategoria").value=eq.categoria||"";document.getElementById("editMarca").value=eq.marca||"";document.getElementById("editModelo").value=eq.modelo||"";document.getElementById("editSerie").value=eq.numero_serie||"";document.getElementById("editLocalizacao").value=eq.localizacao||"";document.getElementById("editCodigo").value=eq.codigo_publico||"";document.getElementById("editProximaRevisao").value=eq.proxima_revisao||"";document.getElementById("editStatus").value=normalizarStatus(eq.status)==="EM_MANUTENCAO"?"MANUTENCAO":(eq.status||"OPERACIONAL");document.getElementById("modalEditar").style.display="flex"}
@@ -296,6 +306,84 @@ a.href=c.toDataURL();
 a.click();
 });
 }
+
+
+function formatarDataBR(dataISO){
+if(!dataISO)return "-";
+const partes=String(dataISO).split("-");
+if(partes.length!==3)return dataISO;
+return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+function diasAteData(dataISO){
+if(!dataISO)return null;
+const hoje=new Date();
+hoje.setHours(0,0,0,0);
+const data=new Date(dataISO+"T00:00:00");
+const diff=data.getTime()-hoje.getTime();
+return Math.ceil(diff/(1000*60*60*24));
+}
+
+function statusRevisaoTexto(dataISO){
+const dias=diasAteData(dataISO);
+if(dias===null)return "Sem data programada";
+if(dias<0)return `Vencida há ${Math.abs(dias)} dia(s)`;
+if(dias===0)return "Vence hoje";
+if(dias<=7)return `Próxima: ${dias} dia(s)`;
+if(dias<=30)return `Programada: ${dias} dia(s)`;
+return `Em dia: ${dias} dia(s)`;
+}
+
+function statusRevisaoClasse(dataISO){
+const dias=diasAteData(dataISO);
+if(dias===null)return"status status-desativado";
+if(dias<0)return"status status-bloqueado";
+if(dias<=7)return"status status-manutencao";
+return"status status-operacional";
+}
+
+function renderizarPreventivas(){
+const container=document.getElementById("listaPreventivas");
+if(!container)return;
+
+const comData=equipamentos
+.filter(e=>e.proxima_revisao)
+.sort((a,b)=>String(a.proxima_revisao).localeCompare(String(b.proxima_revisao)));
+
+const vencidas=comData.filter(e=>diasAteData(e.proxima_revisao)<0);
+const seteDias=comData.filter(e=>diasAteData(e.proxima_revisao)>=0 && diasAteData(e.proxima_revisao)<=7);
+const trintaDias=comData.filter(e=>diasAteData(e.proxima_revisao)>7 && diasAteData(e.proxima_revisao)<=30);
+const futuras=comData.filter(e=>diasAteData(e.proxima_revisao)>30);
+
+function bloco(titulo,lista){
+if(!lista.length)return "";
+let html=`<h3 style="margin-top:18px;">${titulo}</h3>`;
+lista.forEach(eq=>{
+html+=`
+<div class="item">
+<strong>${eq.nome||"-"}</strong>
+<p><strong>ID:</strong> ${eq.codigo_publico||"-"}</p>
+<p><strong>Local:</strong> ${eq.localizacao||"-"}</p>
+<p><strong>Data:</strong> ${formatarDataBR(eq.proxima_revisao)}</p>
+<span class="${statusRevisaoClasse(eq.proxima_revisao)}">${statusRevisaoTexto(eq.proxima_revisao)}</span>
+<div class="botoes">
+<button class="btn-azul" onclick="abrirEditar(${eq.id})">Editar revisão</button>
+<button class="btn-cinza" onclick="abrirHistorico(${eq.id},'${limparTexto(eq.nome)}')">Histórico</button>
+</div>
+</div>`;
+});
+return html;
+}
+
+let html="";
+html+=bloco("Vencidas",vencidas);
+html+=bloco("Próximos 7 dias",seteDias);
+html+=bloco("Próximos 30 dias",trintaDias);
+html+=bloco("Futuras",futuras);
+
+container.innerHTML=html||"<p>Nenhuma revisão preventiva programada.</p>";
+}
+
 
 function toggleCadastroUsuario(){
 document.getElementById("formCadastroUsuario").classList.toggle("oculto");
