@@ -16,6 +16,49 @@
 <div class="cards"><div class="card"><h3>Equipamentos ativos</h3><div class="numero" id="totalEquipamentos">0</div></div><div class="card"><h3>Chamados abertos</h3><div class="numero" id="chamadosAbertos">0</div></div><div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div><div class="card"><h3>Disponibilidade</h3><div class="numero" id="disponibilidade">0%</div></div></div>
 <div class="bloco"><h2>Configurações da academia</h2><label>E-mail para receber chamados</label><input type="email" id="emailNotificacao"><button class="btn-verde" onclick="salvarEmailNotificacao()">Salvar e-mail</button><p id="msgEmailNotificacao" class="sucesso"></p><p id="erroEmailNotificacao" class="erro"></p></div><br>
 <div class="grid-graficos"><div class="bloco"><h3>Status dos chamados</h3><canvas id="graficoStatus"></canvas></div><div class="bloco"><h3>Prioridades dos chamados</h3><canvas id="graficoPrioridade"></canvas></div><div class="bloco" id="boxLogoResumo"><h3>Identidade do cliente</h3><div id="resumoCliente"></div></div></div>
+<div class="bloco">
+<h2>Usuários para abertura de chamados</h2>
+<p style="margin:8px 0 18px;color:#6b7280;">Cadastre os responsáveis que poderão acessar a tela do QR/ID e abrir chamados.</p>
+
+<button class="btn-verde" onclick="toggleCadastroUsuario()">+ Novo Usuário</button>
+
+<div id="formCadastroUsuario" class="oculto" style="margin-top:20px;">
+<div class="form-grid">
+<div>
+<label>Nome</label>
+<input type="text" id="novoUsuarioNome" placeholder="Ex: João Manutenção">
+</div>
+
+<div>
+<label>Usuário</label>
+<input type="text" id="novoUsuarioLogin" placeholder="Ex: joao">
+</div>
+
+<div>
+<label>Senha</label>
+<input type="text" id="novoUsuarioSenha" placeholder="Ex: teste01">
+</div>
+
+<div>
+<label>Status</label>
+<select id="novoUsuarioStatus">
+<option value="ATIVO">Ativo</option>
+<option value="INATIVO">Inativo</option>
+</select>
+</div>
+</div>
+
+<button class="btn-verde" onclick="cadastrarUsuarioChamado()">Cadastrar usuário</button>
+<button class="btn-cinza" onclick="toggleCadastroUsuario()">Cancelar</button>
+<p id="erroUsuario" class="erro"></p>
+<p id="sucessoUsuario" class="sucesso"></p>
+</div>
+
+<div id="listaUsuariosChamados" style="margin-top:20px;"></div>
+</div>
+
+<br>
+
 <button class="btn-verde" onclick="toggleCadastroEquipamento()">+ Novo Equipamento</button><br><br>
 <div id="formCadastroEquipamento" class="bloco oculto"><h2>Cadastrar novo equipamento</h2><div class="form-grid"><div><label>Nome</label><input type="text" id="novoNome"></div><div><label>Categoria / Área</label><input type="text" id="novaCategoria"></div><div><label>Marca</label><input type="text" id="novaMarca"></div><div><label>Modelo</label><input type="text" id="novoModelo"></div><div><label>Número de série</label><input type="text" id="novoSerie"></div><div><label>Localização</label><input type="text" id="novaLocalizacao"></div><div><label>ID discreto</label><input type="text" id="novoCodigo"></div><div><label>Próxima revisão</label><input type="date" id="novaProximaRevisao"></div></div><button class="btn-verde" onclick="cadastrarEquipamento()">Cadastrar equipamento</button><button class="btn-cinza" onclick="toggleCadastroEquipamento()">Cancelar</button><p id="erroCadastro" class="erro"></p><p id="sucessoCadastro" class="sucesso"></p></div><br>
 <div class="grid"><div class="bloco"><h2>Equipamentos</h2><label>Buscar equipamento</label><input type="text" id="buscaEquipamento" oninput="renderizarEquipamentos()"><label>Status</label><select id="filtroStatusEquipamento" onchange="renderizarEquipamentos()"><option value="TODOS">Todos</option><option value="OPERACIONAL">Operacional</option><option value="MANUTENCAO">Em manutenção</option><option value="BLOQUEADO">Bloqueado</option><option value="DESATIVADO">Desativado</option></select><div id="listaEquipamentos"></div></div><div class="bloco"><h2>Chamados</h2><div id="listaChamados"></div></div></div></div></div>
@@ -32,12 +75,50 @@
 <div class="modal" id="modalEditar"><div class="modal-box"><h2>Editar equipamento</h2><input type="hidden" id="editId"><label>Nome</label><input id="editNome"><label>Categoria / Área</label><input id="editCategoria"><label>Marca</label><input id="editMarca"><label>Modelo</label><input id="editModelo"><label>Número de série</label><input id="editSerie"><label>Localização</label><input id="editLocalizacao"><label>ID discreto</label><input id="editCodigo"><label>Próxima revisão</label><input type="date" id="editProximaRevisao"><label>Status</label><select id="editStatus"><option value="OPERACIONAL">Operacional</option><option value="MANUTENCAO">Em manutenção</option><option value="BLOQUEADO">Bloqueado</option><option value="DESATIVADO">Desativado</option></select><button class="btn-verde" onclick="salvarEdicaoEquipamento()">Salvar alterações</button><button class="btn-cinza" onclick="fecharEditar()">Cancelar</button></div></div>
 <script>
 const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let equipamentos=[],chamados=[],academiaAtual=null,graficoStatus=null,graficoPrioridade=null;function academiaIdAtual(){const p=new URLSearchParams(location.search);return Number(p.get("academia_id"))||1}
+let equipamentos=[],chamados=[],usuariosChamados=[],academiaAtual=null,graficoStatus=null,graficoPrioridade=null;function academiaIdAtual(){const p=new URLSearchParams(location.search);return Number(p.get("academia_id"))||1}
 function limparTexto(t){return String(t||"").replace(/'/g,"").replace(/"/g,"")}function normalizarStatus(s){if(s==="MANUTENCAO"||s==="EM MANUTENCAO")return"EM_MANUTENCAO";if(s==="FINALIZADO")return"FINALIZADO";if(s==="ABERTO")return"ABERTO";if(s==="OPERACIONAL")return"OPERACIONAL";if(s==="BLOQUEADO")return"BLOQUEADO";if(s==="DESATIVADO")return"DESATIVADO";return s||"-"}function textoStatus(s){const x=normalizarStatus(s);return x==="ABERTO"?"Aberto":x==="EM_MANUTENCAO"?"Em manutenção":x==="FINALIZADO"?"Finalizado":x==="OPERACIONAL"?"Operacional":x==="BLOQUEADO"?"Bloqueado":x==="DESATIVADO"?"Desativado":s||"-"}function classeStatus(s){const x=normalizarStatus(s);if(x==="ABERTO")return"status status-aberto";if(x==="EM_MANUTENCAO")return"status status-manutencao";if(x==="FINALIZADO")return"status status-finalizado";if(x==="OPERACIONAL")return"status status-operacional";if(x==="BLOQUEADO")return"status status-bloqueado";return"status status-desativado"}
 function entrarAdmin(){const u=document.getElementById("usuario").value.trim(),s=document.getElementById("senha").value.trim();if(u==="admin"&&s==="teste01"){localStorage.setItem("gymcare_admin_logado","sim");mostrarAdmin()}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."}function verificarLogin(){if(localStorage.getItem("gymcare_admin_logado")==="sim")mostrarAdmin()}function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()}function sair(){localStorage.removeItem("gymcare_admin_logado");location.reload()}function toggleCadastroEquipamento(){document.getElementById("formCadastroEquipamento").classList.toggle("oculto")}
 async function carregarAcademia(){const {data}=await supabaseClient.from("academias").select("*").eq("id",academiaIdAtual()).maybeSingle();academiaAtual=data||{};document.documentElement.style.setProperty("--cor",academiaAtual.cor_primaria||"#93D500");document.documentElement.style.setProperty("--header",academiaAtual.cor_header||"#323E48");document.getElementById("tituloSistema").innerText=academiaAtual.titulo_sistema||"ConetFacility";document.getElementById("subtituloSistema").innerText=academiaAtual.subtitulo_sistema||"";document.getElementById("emailNotificacao").value=academiaAtual.email_notificacao||"";document.getElementById("etiquetaNomeAcademia").innerText=academiaAtual.nome||"Academia";const logo=document.getElementById("logoCliente");if(academiaAtual.logo_url){logo.src=academiaAtual.logo_url;logo.classList.remove("oculto")}else logo.classList.add("oculto")}
 async function salvarEmailNotificacao(){document.getElementById("msgEmailNotificacao").innerText="";document.getElementById("erroEmailNotificacao").innerText="";const email=document.getElementById("emailNotificacao").value.trim();const {error}=await supabaseClient.from("academias").update({email_notificacao:email}).eq("id",academiaIdAtual());if(error){document.getElementById("erroEmailNotificacao").innerText=error.message;return}document.getElementById("msgEmailNotificacao").innerText="E-mail salvo com sucesso.";carregarAcademia()}
-async function carregarDados(){await carregarAcademia();const aid=academiaIdAtual();const {data:eqs}=await supabaseClient.from("equipamentos").select("*").eq("academia_id",aid).order("id",{ascending:true});const ids=(eqs||[]).map(e=>e.id);let chs=[];if(ids.length){const {data}=await supabaseClient.from("chamados").select("*").in("equipamento_id",ids).order("id",{ascending:false});chs=data||[]}equipamentos=eqs||[];chamados=chs;atualizarCards();renderizarGraficos();renderizarResumoCliente();renderizarEquipamentos();renderizarChamados()}
+async function carregarDados(){
+await carregarAcademia();
+const aid=academiaIdAtual();
+
+const {data:eqs}=await supabaseClient
+.from("equipamentos")
+.select("*")
+.eq("academia_id",aid)
+.order("id",{ascending:true});
+
+const {data:users}=await supabaseClient
+.from("usuarios_chamados")
+.select("*")
+.eq("academia_id",aid)
+.order("id",{ascending:true});
+
+const ids=(eqs||[]).map(e=>e.id);
+let chs=[];
+
+if(ids.length){
+const {data}=await supabaseClient
+.from("chamados")
+.select("*")
+.in("equipamento_id",ids)
+.order("id",{ascending:false});
+chs=data||[];
+}
+
+equipamentos=eqs||[];
+chamados=chs;
+usuariosChamados=users||[];
+
+atualizarCards();
+renderizarGraficos();
+renderizarResumoCliente();
+renderizarEquipamentos();
+renderizarChamados();
+renderizarUsuariosChamados();
+}
 function atualizarCards(){const ativos=equipamentos.filter(e=>normalizarStatus(e.status)!=="DESATIVADO").length;const manut=equipamentos.filter(e=>normalizarStatus(e.status)==="EM_MANUTENCAO").length;document.getElementById("totalEquipamentos").innerText=ativos;document.getElementById("chamadosAbertos").innerText=chamados.filter(c=>normalizarStatus(c.status)==="ABERTO").length;document.getElementById("emManutencao").innerText=manut;document.getElementById("disponibilidade").innerText=(ativos>0?Math.round(((ativos-manut)/ativos)*100):0)+"%"}
 function renderizarResumoCliente(){const ativos=equipamentos.filter(e=>normalizarStatus(e.status)!=="DESATIVADO").length;const manut=equipamentos.filter(e=>normalizarStatus(e.status)==="EM_MANUTENCAO").length;const ult=chamados[0]?`Chamado #${chamados[0].id}`:"Sem chamados";document.getElementById("resumoCliente").innerHTML=`${academiaAtual.logo_url?`<img src="${academiaAtual.logo_url}" style="max-width:180px;max-height:90px;object-fit:contain;margin:10px 0;">`:""}<p><strong>Cliente:</strong> ${academiaAtual.nome||"-"}</p><p><strong>Plano:</strong> ${academiaAtual.plano||"-"}</p><p><strong>Equipamentos ativos:</strong> ${ativos}</p><p><strong>Em manutenção:</strong> ${manut}</p><p><strong>Último chamado:</strong> ${ult}</p>`}
 function renderizarGraficos(){const st={ABERTO:0,EM_MANUTENCAO:0,FINALIZADO:0},pr={URGENTE:0,ALTA:0,MEDIA:0,BAIXA:0};chamados.forEach(c=>{const s=normalizarStatus(c.status);if(s==="ABERTO")st.ABERTO++;else if(s==="EM_MANUTENCAO")st.EM_MANUTENCAO++;else if(s==="FINALIZADO")st.FINALIZADO++;if(c.prioridade==="URGENTE")pr.URGENTE++;else if(c.prioridade==="ALTA")pr.ALTA++;else if(c.prioridade==="MEDIA")pr.MEDIA++;else pr.BAIXA++});if(graficoStatus)graficoStatus.destroy();if(graficoPrioridade)graficoPrioridade.destroy();graficoStatus=new Chart(document.getElementById("graficoStatus"),{type:"doughnut",data:{labels:["Aberto","Em manutenção","Finalizado"],datasets:[{data:[st.ABERTO,st.EM_MANUTENCAO,st.FINALIZADO],backgroundColor:["#3B82F6","#FACC15","#93D500"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}}}});graficoPrioridade=new Chart(document.getElementById("graficoPrioridade"),{type:"bar",data:{labels:["Urgente","Alta","Média","Baixa"],datasets:[{data:[pr.URGENTE,pr.ALTA,pr.MEDIA,pr.BAIXA],backgroundColor:["#EF4444","#F97316","#FACC15","#93D500"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}})}
@@ -118,5 +199,89 @@ a.href=c.toDataURL();
 a.click();
 });
 }
+
+function toggleCadastroUsuario(){
+document.getElementById("formCadastroUsuario").classList.toggle("oculto");
+}
+
+async function cadastrarUsuarioChamado(){
+document.getElementById("erroUsuario").innerText="";
+document.getElementById("sucessoUsuario").innerText="";
+
+const nome=document.getElementById("novoUsuarioNome").value.trim();
+const usuario=document.getElementById("novoUsuarioLogin").value.trim();
+const senha=document.getElementById("novoUsuarioSenha").value.trim();
+const status=document.getElementById("novoUsuarioStatus").value;
+
+if(!usuario||!senha){
+document.getElementById("erroUsuario").innerText="Usuário e senha são obrigatórios.";
+return;
+}
+
+const {error}=await supabaseClient
+.from("usuarios_chamados")
+.insert([{
+academia_id:academiaIdAtual(),
+nome:nome,
+usuario:usuario,
+senha:senha,
+status:status
+}]);
+
+if(error){
+document.getElementById("erroUsuario").innerText=error.message;
+return;
+}
+
+document.getElementById("novoUsuarioNome").value="";
+document.getElementById("novoUsuarioLogin").value="";
+document.getElementById("novoUsuarioSenha").value="";
+document.getElementById("novoUsuarioStatus").value="ATIVO";
+document.getElementById("sucessoUsuario").innerText="Usuário cadastrado com sucesso.";
+document.getElementById("formCadastroUsuario").classList.add("oculto");
+
+carregarDados();
+}
+
+function renderizarUsuariosChamados(){
+let html="";
+
+usuariosChamados.forEach(u=>{
+html+=`
+<div class="item">
+<h3>${u.nome||u.usuario}</h3>
+<p><strong>Usuário:</strong> ${u.usuario}</p>
+<p><strong>Status:</strong> ${u.status||"ATIVO"}</p>
+<div class="botoes">
+<button class="btn-cinza" onclick="alterarStatusUsuario(${u.id},'${u.status==="ATIVO"?"INATIVO":"ATIVO"}')">${u.status==="ATIVO"?"Inativar":"Ativar"}</button>
+<button class="btn-vermelho" onclick="excluirUsuario(${u.id})">Excluir</button>
+</div>
+</div>`;
+});
+
+document.getElementById("listaUsuariosChamados").innerHTML=html||"<p>Nenhum usuário cadastrado. O acesso padrão temporário ainda funciona: equipamento01 / teste01.</p>";
+}
+
+async function alterarStatusUsuario(id,status){
+await supabaseClient
+.from("usuarios_chamados")
+.update({status:status})
+.eq("id",id);
+
+carregarDados();
+}
+
+async function excluirUsuario(id){
+if(!confirm("Deseja excluir este usuário?"))return;
+
+await supabaseClient
+.from("usuarios_chamados")
+.delete()
+.eq("id",id);
+
+carregarDados();
+}
+
+
 verificarLogin();
 </script></body></html>
