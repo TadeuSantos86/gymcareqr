@@ -280,8 +280,8 @@ renderizarChamados();
 function renderizarChamados(){
 let html="";
 
-const ativos=chamados.filter(ch=>normalizarStatus(ch.status)!=="FINALIZADO");
-const encerrados=chamados.filter(ch=>normalizarStatus(ch.status)==="FINALIZADO");
+const ativos=chamados.filter(ch=>statusChamadoAtivo(ch.status));
+const encerrados=chamados.filter(ch=>!statusChamadoAtivo(ch.status));
 const lista=visualizacaoChamados==="ENCERRADOS"?encerrados:ativos;
 
 html+=`
@@ -321,6 +321,8 @@ html+=visualizacaoChamados==="ENCERRADOS"
 document.getElementById("listaChamados").innerHTML=html;
 }
 
+
+function statusChamadoAtivo(status){const s=String(status||"").trim().toUpperCase();return ["ABERTO","EM MANUTENCAO","MANUTENCAO","REABERTO"].includes(s);}
 
 function calcularTempoTotal(dataAbertura,dataEncerramento){
 if(!dataAbertura||!dataEncerramento)return "-";
@@ -366,6 +368,7 @@ EMAILJS_SERVICE_ID,
 EMAILJS_TEMPLATE_ENCERRAMENTO_ID,
 {
 email_destino:emailDestino,
+from_name:"ConetFacility",
 academia_nome:academiaAtual?.nome||"Academia",
 equipamento_nome:equipamento?.nome||"-",
 equipamento_codigo:equipamento?.codigo_publico||"-",
