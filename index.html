@@ -328,8 +328,9 @@ function calcularTempoTotal(dataAbertura,dataEncerramento){
 if(!dataAbertura||!dataEncerramento)return "-";
 const ini=new Date(dataAbertura);
 const fim=new Date(dataEncerramento);
+if(isNaN(ini.getTime())||isNaN(fim.getTime()))return "-";
 const diff=fim.getTime()-ini.getTime();
-if(isNaN(diff)||diff<0)return "-";
+if(diff<0)return "-";
 const minutos=Math.floor(diff/60000);
 const dias=Math.floor(minutos/1440);
 const horas=Math.floor((minutos%1440)/60);
@@ -341,10 +342,24 @@ partes.push(mins+" minuto(s)");
 return partes.join(", ");
 }
 
+
+function obterDataAberturaChamado(chamado){
+return chamado.criado_em || chamado.created_at || chamado.data_abertura || chamado.inserted_at || null;
+}
+
+function obterDataEncerramentoChamado(chamado){
+return chamado.encerrado_em || chamado.data_encerramento || null;
+}
+
 function formatarDataHora(data){
 if(!data)return "-";
-try{return new Date(data).toLocaleString("pt-BR");}
-catch(e){return "-";}
+try{
+const d=new Date(data);
+if(isNaN(d.getTime()))return "-";
+return d.toLocaleString("pt-BR");
+}catch(e){
+return "-";
+}
 }
 
 async function enviarEmailEncerramento(chamado,equipamento,observacao,usuarioEncerramento,dataEncerramento){
@@ -516,6 +531,10 @@ html+=`
 <p><strong>Problema:</strong> ${ch.tipo_problema||"-"}</p>
 <p><strong>Prioridade:</strong> ${ch.prioridade||"-"}</p>
 <p><strong>Status:</strong> ${textoStatus(ch.status)}</p>
+<p><strong>Aberto em:</strong> ${formatarDataHora(obterDataAberturaChamado(ch))}</p>
+<p><strong>Encerrado em:</strong> ${formatarDataHora(obterDataEncerramentoChamado(ch))}</p>
+<p><strong>Aberto por:</strong> ${ch.aberto_por||"Não informado"}</p>
+<p><strong>Encerrado por:</strong> ${ch.encerrado_por||"-"}</p>
 <p><strong>Descrição:</strong> ${ch.descricao||"-"}</p>
 </div>`;
 });
@@ -556,19 +575,29 @@ const {data:historico}=await supabaseClient
 let html="";
 
 if(chamado){
+const dataAbertura=obterDataAberturaChamado(chamado);
+const dataEncerramento=obterDataEncerramentoChamado(chamado);
+const tempoTotal=calcularTempoTotal(dataAbertura,dataEncerramento);
+
 html+=`
-<h3>Dados do chamado</h3>
+<h3>Resumo do chamado</h3>
 <div class="evento">
 <strong>Chamado #${chamado.id}</strong>
 <p><strong>Equipamento:</strong> ${nomeEquipamento||"-"}</p>
 <p><strong>Problema:</strong> ${chamado.tipo_problema||"-"}</p>
 <p><strong>Prioridade:</strong> ${chamado.prioridade||"-"}</p>
 <p><strong>Status:</strong> ${textoStatus(chamado.status)}</p>
+<p><strong>Descrição inicial:</strong> ${chamado.descricao||"-"}</p>
+</div>
+
+<h3>Datas e responsáveis</h3>
+<div class="evento">
+<p><strong>Aberto em:</strong> ${formatarDataHora(dataAbertura)}</p>
 <p><strong>Aberto por:</strong> ${chamado.aberto_por||"Não informado"}</p>
+<p><strong>Encerrado em:</strong> ${formatarDataHora(dataEncerramento)}</p>
 <p><strong>Encerrado por:</strong> ${chamado.encerrado_por||"-"}</p>
-<p><strong>Encerrado em:</strong> ${chamado.encerrado_em?formatarDataHora(chamado.encerrado_em):"-"}</p>
+<p><strong>Tempo total:</strong> ${tempoTotal}</p>
 <p><strong>Observações de encerramento:</strong> ${chamado.observacao_encerramento||"-"}</p>
-<p><strong>Descrição:</strong> ${chamado.descricao||"-"}</p>
 </div>`;
 }
 
@@ -580,7 +609,7 @@ html+=`
 <strong>${ev.tipo_evento||"Evento"}</strong>
 <p>${ev.descricao||"-"}</p>
 <p><strong>Status:</strong> ${textoStatus(ev.status)}</p>
-<p><strong>Data:</strong> ${ev.criado_em?new Date(ev.criado_em).toLocaleString("pt-BR"):"-"}</p>
+<p><strong>Data/hora:</strong> ${formatarDataHora(ev.criado_em)}</p>
 </div>`;
 });
 }else{
@@ -589,7 +618,6 @@ html+=`<p>Nenhum evento adicional encontrado para este chamado.</p>`;
 
 document.getElementById("conteudoHistorico").innerHTML=html;
 }
-
 
 function fecharHistorico(){document.getElementById("modalHistorico").style.display="none"}async function buscarAcademiaDoEquipamento(eq){
 if(!eq || !eq.academia_id){
