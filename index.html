@@ -150,7 +150,8 @@
 
 
 <div class="layout-config">
-  <div class="bloco"><h2>Configurações da academia</h2><label>E-mail para receber chamados</label><input type="email" id="emailNotificacao"><button class="btn-verde" onclick="salvarEmailNotificacao()">Salvar e-mail</button><p id="msgEmailNotificacao" class="sucesso"></p><p id="erroEmailNotificacao" class="erro"></p></div>
+  <div class="bloco"><h2>Configurações da academia</h2><label>E-mails para receber chamados</label><textarea id="emailNotificacao" placeholder="gerente@academia.com.br; manutencao@academia.com.br" style="min-height:90px;"></textarea>
+<p style="font-size:13px;color:#6b7280;margin-top:-8px;margin-bottom:12px;">Separe mais de um e-mail por vírgula, ponto e vírgula ou uma linha para cada e-mail.</p><button class="btn-verde" onclick="salvarEmailNotificacao()">Salvar e-mails</button><p id="msgEmailNotificacao" class="sucesso"></p><p id="erroEmailNotificacao" class="erro"></p></div>
 
 <div class="bloco">
 <h2>Exportar Históricos</h2>
@@ -195,8 +196,8 @@
 <input type="number" id="exportAno" min="2024" max="2100" placeholder="Ex: 2026">
 </div>
 
-<label>E-mail de destino</label>
-<input type="email" id="exportEmail" placeholder="email@academia.com.br">
+<label>E-mails de destino</label>
+<input type="email" id="exportEmail" placeholder="email1@academia.com.br; email2@academia.com.br">
 
 <div class="export-actions">
 <button class="btn-verde" onclick="exportarHistoricoExcel()">Baixar Excel</button>
@@ -294,7 +295,31 @@ function limparTexto(t){return String(t||"").replace(/'/g,"").replace(/"/g,"")}f
 function entrarAdmin(){const u=document.getElementById("usuario").value.trim(),s=document.getElementById("senha").value.trim();if(u==="admin"&&s==="teste01"){localStorage.setItem("gymcare_admin_logado","sim");mostrarAdmin()}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."}function verificarLogin(){if(localStorage.getItem("gymcare_admin_logado")==="sim")mostrarAdmin()}function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()}function sair(){localStorage.removeItem("gymcare_admin_logado");location.reload()}function toggleCadastroEquipamento(){document.getElementById("formCadastroEquipamento").classList.toggle("oculto")}
 async function carregarAcademia(){const {data}=await supabaseClient.from("academias").select("*").eq("id",academiaIdAtual()).maybeSingle();academiaAtual=data||{};document.documentElement.style.setProperty("--cor",academiaAtual.cor_primaria||"#93D500");document.documentElement.style.setProperty("--header",academiaAtual.cor_header||"#323E48");document.getElementById("tituloSistema").innerText=academiaAtual.titulo_sistema||"ConetFacility";document.getElementById("subtituloSistema").innerText=academiaAtual.subtitulo_sistema||"";document.getElementById("emailNotificacao").value=academiaAtual.email_notificacao||"";
 const exportEmail=document.getElementById("exportEmail"); if(exportEmail) exportEmail.value=academiaAtual.email_notificacao||"";document.getElementById("etiquetaNomeAcademia").innerText=academiaAtual.nome||"Academia";const logo=document.getElementById("logoCliente");if(academiaAtual.logo_url){logo.src=academiaAtual.logo_url;logo.classList.remove("oculto")}else logo.classList.add("oculto")}
-async function salvarEmailNotificacao(){document.getElementById("msgEmailNotificacao").innerText="";document.getElementById("erroEmailNotificacao").innerText="";const email=document.getElementById("emailNotificacao").value.trim();const {error}=await supabaseClient.from("academias").update({email_notificacao:email}).eq("id",academiaIdAtual());if(error){document.getElementById("erroEmailNotificacao").innerText=error.message;return}document.getElementById("msgEmailNotificacao").innerText="E-mail salvo com sucesso.";carregarAcademia()}
+async function salvarEmailNotificacao(){
+document.getElementById("msgEmailNotificacao").innerText="";
+document.getElementById("erroEmailNotificacao").innerText="";
+
+const emails=document.getElementById("emailNotificacao").value.trim();
+const lista=obterListaEmails(emails);
+
+if(!lista.length){
+document.getElementById("erroEmailNotificacao").innerText="Informe pelo menos um e-mail válido.";
+return;
+}
+
+const {error}=await supabaseClient
+.from("academias")
+.update({email_notificacao:lista.join("; ")})
+.eq("id",academiaIdAtual());
+
+if(error){
+document.getElementById("erroEmailNotificacao").innerText=error.message;
+return;
+}
+
+document.getElementById("msgEmailNotificacao").innerText="E-mails salvos com sucesso.";
+carregarAcademia();
+}
 async function carregarDados(){
 await carregarAcademia();
 const aid=academiaIdAtual();
@@ -514,12 +539,9 @@ return;
 const tempoTotal=calcularTempoTotal(chamado.criado_em||chamado.created_at,chamado.encerrado_em||dataEncerramento);
 const relatorio=`O chamado #${chamado.id} foi encerrado no ConetFacility. O equipamento ${equipamento?.nome||"-"} foi atendido e o status foi atualizado para Finalizado.`;
 
-await emailjs.send(
-EMAILJS_SERVICE_ID,
+await enviarEmailParaLista(
 EMAILJS_TEMPLATE_ENCERRAMENTO_ID,
 {
-email_destino:emailDestino,
-from_name:"ConetFacility",
 academia_nome:academiaAtual?.nome||"Academia",
 equipamento_nome:equipamento?.nome||"-",
 equipamento_codigo:equipamento?.codigo_publico||"-",
@@ -527,14 +549,15 @@ equipamento_localizacao:equipamento?.localizacao||"-",
 tipo_problema:chamado.tipo_problema||"-",
 prioridade:chamado.prioridade||"-",
 descricao:chamado.descricao||"-",
-data_abertura:formatarDataHoraBR(chamado.criado_em||chamado.created_at),
-data_encerramento:formatarDataHoraBR(dataEncerramento),
+data_abertura:formatarDataHoraBR ? formatarDataHoraBR(chamado.criado_em||chamado.created_at) : formatarDataHora(chamado.criado_em||chamado.created_at),
+data_encerramento:formatarDataHoraBR ? formatarDataHoraBR(dataEncerramento) : formatarDataHora(dataEncerramento),
 tempo_total:tempoTotal,
 usuario_abertura:chamado.aberto_por||"Não informado",
 usuario_encerramento:usuarioEncerramento||"Admin",
 observacao_encerramento:observacao||"-",
 relatorio_chamado:relatorio
-}
+},
+emailDestino
 );
 
 await supabaseClient.from("historico_manutencao").insert([{
@@ -1014,6 +1037,31 @@ carregarDados();
 
 
 
+
+function obterListaEmails(valor){
+return String(valor||"")
+.split(/[,;\n]+/)
+.map(e=>e.trim())
+.filter(e=>e && e.includes("@"));
+}
+
+async function enviarEmailParaLista(templateId,parametrosBase,emails){
+const lista=obterListaEmails(emails);
+if(!lista.length)return;
+
+for(const email of lista){
+await emailjs.send(
+EMAILJS_SERVICE_ID,
+templateId,
+{
+...parametrosBase,
+email_destino:email,
+from_name:"ConetFacility"
+}
+);
+}
+}
+
 function atualizarCamposExportacao(){
 const tipo=document.getElementById("tipoFiltroExportacao").value;
 document.getElementById("campoFiltroDia").classList.toggle("oculto",tipo!=="DIA");
@@ -1331,8 +1379,8 @@ return;
 }
 
 const emailDestino=document.getElementById("exportEmail").value.trim()||academiaAtual?.email_notificacao;
-if(!emailDestino){
-document.getElementById("erroExportacao").innerText="Informe um e-mail de destino.";
+if(!obterListaEmails(emailDestino).length){
+document.getElementById("erroExportacao").innerText="Informe pelo menos um e-mail de destino válido.";
 return;
 }
 
@@ -1341,12 +1389,11 @@ const resumo=dados.linhas.map(l=>
 ).join("\\n");
 
 try{
-await emailjs.send(
-EMAILJS_SERVICE_ID,
+await enviarEmailParaLista(
 EMAILJS_TEMPLATE_EXPORTACAO_ID,
 {
-email_destino:emailDestino,
-from_name:"ConetFacility",
+
+
 academia_nome:academiaAtual?.nome||"Academia",
 equipamento_nome:"Relatório de históricos",
 equipamento_codigo:"-",
@@ -1357,7 +1404,8 @@ descricao:`Relatório de históricos do período ${dados.periodo.rotulo}\\n\\n${
 status:"Relatório",
 data_hora:agoraBrasilFormatado ? agoraBrasilFormatado() : new Date().toLocaleString("pt-BR"),
 relatorio_chamado:resumo
-}
+},
+emailDestino
 );
 
 document.getElementById("msgExportacao").innerText="Relatório enviado por e-mail com sucesso.";
