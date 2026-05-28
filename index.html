@@ -123,6 +123,63 @@
   }
 }
 
+
+/* LAYOUT DE MÚLTIPLOS E-MAILS */
+.email-manager{
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:14px;
+  margin:8px 0 16px;
+}
+.email-add-row{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:end;
+}
+.email-add-row input{
+  margin-bottom:0!important;
+}
+.email-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:14px;
+}
+.email-chip{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:white;
+  border:1px solid #d1d5db;
+  border-radius:999px;
+  padding:8px 10px 8px 12px;
+  font-size:13px;
+  color:#111827;
+}
+.email-chip button{
+  padding:3px 7px!important;
+  margin:0!important;
+  border-radius:999px!important;
+  background:#ef4444!important;
+  color:white!important;
+  font-size:11px!important;
+}
+.email-helper{
+  font-size:13px;
+  color:#6b7280;
+  margin-top:10px;
+}
+.email-hidden{
+  display:none!important;
+}
+@media(max-width:700px){
+  .email-add-row{
+    grid-template-columns:1fr;
+  }
+}
+
 </style></head><body>
 <div id="telaLogin" class="login"><h1>ConetFacility</h1><p>Login administrativo</p><label>Usuário</label><input type="text" id="usuario" placeholder="admin"><label>Senha</label><input type="password" id="senha" placeholder="teste01"><button class="btn-verde" onclick="entrarAdmin()">Entrar</button><p id="erroLogin" class="erro"></p></div>
 <div id="telaAdmin" class="oculto"><header id="cabecalho"><div class="brand"><img id="logoCliente" class="oculto"><div><h1 id="tituloSistema">ConetFacility</h1><p id="subtituloSistema"></p></div></div><button class="btn-cinza" onclick="sair()">Sair</button></header>
@@ -150,8 +207,24 @@
 
 
 <div class="layout-config">
-  <div class="bloco"><h2>Configurações da academia</h2><label>E-mails para receber chamados</label><textarea id="emailNotificacao" placeholder="gerente@academia.com.br; manutencao@academia.com.br" style="min-height:90px;"></textarea>
-<p style="font-size:13px;color:#6b7280;margin-top:-8px;margin-bottom:12px;">Separe mais de um e-mail por vírgula, ponto e vírgula ou uma linha para cada e-mail.</p><button class="btn-verde" onclick="salvarEmailNotificacao()">Salvar e-mails</button><p id="msgEmailNotificacao" class="sucesso"></p><p id="erroEmailNotificacao" class="erro"></p></div>
+  <div class="bloco"><h2>Configurações da academia</h2><label>E-mails para receber chamados</label>
+
+<div class="email-manager">
+  <div class="email-add-row">
+    <div>
+      <input type="email" id="novoEmailNotificacao" placeholder="Digite um e-mail e clique em Adicionar">
+    </div>
+    <button class="btn-verde" type="button" onclick="adicionarEmailNotificacao()">Adicionar</button>
+  </div>
+
+  <div id="listaEmailsNotificacao" class="email-list"></div>
+
+  <p class="email-helper">
+    Você pode cadastrar gerente, manutenção, regional ou empresa terceirizada. Todos receberão abertura e encerramento dos chamados.
+  </p>
+</div>
+
+<textarea id="emailNotificacao" class="email-hidden"></textarea><button class="btn-verde" onclick="salvarEmailNotificacao()">Salvar e-mails</button><p id="msgEmailNotificacao" class="sucesso"></p><p id="erroEmailNotificacao" class="erro"></p></div>
 
 <div class="bloco">
 <h2>Exportar Históricos</h2>
@@ -293,7 +366,7 @@ emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});
 let equipamentos=[],chamados=[],usuariosChamados=[],academiaAtual=null,graficoStatus=null,graficoPrioridade=null; let visualizacaoChamados='ATIVOS';function academiaIdAtual(){const p=new URLSearchParams(location.search);return Number(p.get("academia_id"))||1}
 function limparTexto(t){return String(t||"").replace(/'/g,"").replace(/"/g,"")}function normalizarStatus(s){if(s==="MANUTENCAO"||s==="EM MANUTENCAO")return"EM_MANUTENCAO";if(s==="FINALIZADO")return"FINALIZADO";if(s==="ABERTO")return"ABERTO";if(s==="OPERACIONAL")return"OPERACIONAL";if(s==="BLOQUEADO")return"BLOQUEADO";if(s==="DESATIVADO")return"DESATIVADO";return s||"-"}function textoStatus(s){const x=normalizarStatus(s);return x==="ABERTO"?"Aberto":x==="EM_MANUTENCAO"?"Em manutenção":x==="FINALIZADO"?"Finalizado":x==="OPERACIONAL"?"Operacional":x==="BLOQUEADO"?"Bloqueado":x==="DESATIVADO"?"Desativado":s||"-"}function classeStatus(s){const x=normalizarStatus(s);if(x==="ABERTO")return"status status-aberto";if(x==="EM_MANUTENCAO")return"status status-manutencao";if(x==="FINALIZADO")return"status status-finalizado";if(x==="OPERACIONAL")return"status status-operacional";if(x==="BLOQUEADO")return"status status-bloqueado";return"status status-desativado"}
 function entrarAdmin(){const u=document.getElementById("usuario").value.trim(),s=document.getElementById("senha").value.trim();if(u==="admin"&&s==="teste01"){localStorage.setItem("gymcare_admin_logado","sim");mostrarAdmin()}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."}function verificarLogin(){if(localStorage.getItem("gymcare_admin_logado")==="sim")mostrarAdmin()}function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()}function sair(){localStorage.removeItem("gymcare_admin_logado");location.reload()}function toggleCadastroEquipamento(){document.getElementById("formCadastroEquipamento").classList.toggle("oculto")}
-async function carregarAcademia(){const {data}=await supabaseClient.from("academias").select("*").eq("id",academiaIdAtual()).maybeSingle();academiaAtual=data||{};document.documentElement.style.setProperty("--cor",academiaAtual.cor_primaria||"#93D500");document.documentElement.style.setProperty("--header",academiaAtual.cor_header||"#323E48");document.getElementById("tituloSistema").innerText=academiaAtual.titulo_sistema||"ConetFacility";document.getElementById("subtituloSistema").innerText=academiaAtual.subtitulo_sistema||"";document.getElementById("emailNotificacao").value=academiaAtual.email_notificacao||"";
+async function carregarAcademia(){const {data}=await supabaseClient.from("academias").select("*").eq("id",academiaIdAtual()).maybeSingle();academiaAtual=data||{};document.documentElement.style.setProperty("--cor",academiaAtual.cor_primaria||"#93D500");document.documentElement.style.setProperty("--header",academiaAtual.cor_header||"#323E48");document.getElementById("tituloSistema").innerText=academiaAtual.titulo_sistema||"ConetFacility";document.getElementById("subtituloSistema").innerText=academiaAtual.subtitulo_sistema||"";carregarEmailsNoCampoVisual(academiaAtual.email_notificacao||"");
 const exportEmail=document.getElementById("exportEmail"); if(exportEmail) exportEmail.value=academiaAtual.email_notificacao||"";document.getElementById("etiquetaNomeAcademia").innerText=academiaAtual.nome||"Academia";const logo=document.getElementById("logoCliente");if(academiaAtual.logo_url){logo.src=academiaAtual.logo_url;logo.classList.remove("oculto")}else logo.classList.add("oculto")}
 async function salvarEmailNotificacao(){
 document.getElementById("msgEmailNotificacao").innerText="";
@@ -318,6 +391,7 @@ return;
 }
 
 document.getElementById("msgEmailNotificacao").innerText="E-mails salvos com sucesso.";
+renderizarEmailsNotificacao();
 carregarAcademia();
 }
 async function carregarDados(){
@@ -1045,6 +1119,67 @@ return String(valor||"")
 .filter(e=>e && e.includes("@"));
 }
 
+
+function renderizarEmailsNotificacao(){
+const listaEl=document.getElementById("listaEmailsNotificacao");
+const campo=document.getElementById("emailNotificacao");
+if(!listaEl||!campo)return;
+
+const emails=obterListaEmails(campo.value);
+if(!emails.length){
+listaEl.innerHTML='<p style="color:#6b7280;font-size:13px;">Nenhum e-mail adicionado.</p>';
+return;
+}
+
+listaEl.innerHTML=emails.map(email=>`
+<span class="email-chip">
+${email}
+<button type="button" onclick="removerEmailNotificacao('${email}')">x</button>
+</span>
+`).join("");
+}
+
+function adicionarEmailNotificacao(){
+const input=document.getElementById("novoEmailNotificacao");
+const campo=document.getElementById("emailNotificacao");
+const erro=document.getElementById("erroEmailNotificacao");
+if(!input||!campo)return;
+
+if(erro)erro.innerText="";
+
+const email=input.value.trim();
+
+if(!email||!email.includes("@")){
+if(erro)erro.innerText="Digite um e-mail válido.";
+return;
+}
+
+const emails=obterListaEmails(campo.value);
+if(!emails.includes(email)){
+emails.push(email);
+}
+
+campo.value=emails.join("; ");
+input.value="";
+renderizarEmailsNotificacao();
+}
+
+function removerEmailNotificacao(email){
+const campo=document.getElementById("emailNotificacao");
+if(!campo)return;
+
+const emails=obterListaEmails(campo.value).filter(e=>e!==email);
+campo.value=emails.join("; ");
+renderizarEmailsNotificacao();
+}
+
+function carregarEmailsNoCampoVisual(valor){
+const campo=document.getElementById("emailNotificacao");
+if(!campo)return;
+campo.value=obterListaEmails(valor).join("; ");
+renderizarEmailsNotificacao();
+}
+
 async function enviarEmailParaLista(templateId,parametrosBase,emails){
 const lista=obterListaEmails(emails);
 if(!lista.length)return;
@@ -1422,6 +1557,14 @@ try{
 atualizarCamposExportacao();
 }catch(e){}
 },300);
+
+
+document.addEventListener("keydown",function(e){
+if(e.key==="Enter" && e.target && e.target.id==="novoEmailNotificacao"){
+e.preventDefault();
+adicionarEmailNotificacao();
+}
+});
 
 verificarLogin();
 </script></body></html>
