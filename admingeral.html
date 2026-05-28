@@ -34,7 +34,73 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:999}
 .modal-box{background:white;padding:25px;border-radius:20px;width:100%;max-width:800px;max-height:85vh;overflow:auto}
 @media(max-width:900px){header{flex-direction:column;align-items:flex-start}.container{padding:20px}.grid,.form-grid,.grid-graficos{grid-template-columns:1fr}}
+
+.qr-download-area{
+  position:fixed;
+  left:-99999px;
+  top:-99999px;
+  width:360px;
+}
+.qr-etiqueta-lote{
+  width:340px;
+  min-height:470px;
+  background:#ffffff;
+  border:3px solid #93D500;
+  border-radius:18px;
+  padding:20px;
+  text-align:center;
+  color:#111827;
+}
+.qr-etiqueta-lote h3{
+  margin-bottom:8px;
+  font-size:20px;
+}
+.qr-etiqueta-lote .logo-qr-lote{
+  max-width:170px;
+  max-height:70px;
+  object-fit:contain;
+  margin:8px auto 12px;
+  display:block;
+}
+.qr-etiqueta-lote .qr-box-lote{
+  position:relative;
+  width:210px;
+  height:210px;
+  margin:0 auto;
+}
+.qr-etiqueta-lote .logo-centro-lote{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:50px;
+  height:50px;
+  object-fit:contain;
+  background:white;
+  border-radius:10px;
+  padding:5px;
+}
+.qr-etiqueta-lote .equipamento-nome{
+  margin-top:14px;
+  font-weight:bold;
+  font-size:17px;
+}
+.qr-etiqueta-lote .equipamento-id{
+  font-size:14px;
+  margin-top:4px;
+}
+.qr-etiqueta-lote .rodape{
+  font-size:12px;
+  margin-top:12px;
+  color:#6b7280;
+}
+
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
 </head>
 <body>
 
@@ -122,6 +188,8 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 </div>
 </div>
 
+<div id="qrDownloadArea" class="qr-download-area"></div>
+
 <script>
 const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
@@ -143,11 +211,140 @@ function contarAbertosPorAcademia(id){const ids=equipamentosDaAcademia(id).map(e
 async function uploadLogo(file,academiaId){if(!file)return "";const ext=(file.name.split(".").pop()||"png").toLowerCase();const nomeArquivo=`academia-${academiaId||"novo"}-${Date.now()}.${ext}`;const {error}=await supabaseClient.storage.from("logos").upload(nomeArquivo,file,{cacheControl:"3600",upsert:true});if(error)throw error;const {data}=supabaseClient.storage.from("logos").getPublicUrl(nomeArquivo);return data.publicUrl}
 function renderizarGraficos(){const sc={ATIVO:0,PILOTO:0,INATIVO:0};academias.forEach(a=>{if(a.status_cliente==="PILOTO")sc.PILOTO++;else if(a.status_cliente==="INATIVO")sc.INATIVO++;else sc.ATIVO++});const top=[...academias].map(a=>({nome:a.nome||("Cliente "+a.id),total:contarChamadosPorAcademia(a.id)})).sort((a,b)=>b.total-a.total).slice(0,6);if(graficoStatusClientes)graficoStatusClientes.destroy();if(graficoChamadosCliente)graficoChamadosCliente.destroy();graficoStatusClientes=new Chart(document.getElementById("graficoStatusClientes"),{type:"doughnut",data:{labels:["Ativo","Piloto","Inativo"],datasets:[{data:[sc.ATIVO,sc.PILOTO,sc.INATIVO],backgroundColor:["#93D500","#FACC15","#E5E7EB"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}}}});graficoChamadosCliente=new Chart(document.getElementById("graficoChamadosCliente"),{type:"bar",data:{labels:top.map(c=>c.nome),datasets:[{label:"Chamados",data:top.map(c=>c.total),backgroundColor:"#3B82F6",borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}})}
 async function cadastrarAcademia(){document.getElementById("erroCadastro").innerText="";document.getElementById("sucessoCadastro").innerText="";const nome=document.getElementById("novoNome").value.trim();if(!nome){document.getElementById("erroCadastro").innerText="Informe o nome da academia.";return}const titulo=document.getElementById("novoTituloSistema").value.trim()||"ConetFacility";const item={nome:nome,email_notificacao:document.getElementById("novoEmail").value.trim(),logo_url:"",cor_primaria:document.getElementById("novaCor").value,cor_header:document.getElementById("novaCorHeader").value,titulo_sistema:titulo,subtitulo_sistema:document.getElementById("novoSubtituloSistema").value.trim()||"",status_cliente:document.getElementById("novoStatusCliente").value,plano:document.getElementById("novoPlano").value,endereco:document.getElementById("novoEndereco").value.trim(),horario_funcionamento:document.getElementById("novoHorario").value.trim(),observacoes:document.getElementById("novaObservacao").value.trim()};const {data,error}=await supabaseClient.from("academias").insert([item]).select().single();if(error){document.getElementById("erroCadastro").innerText=error.message;return}try{const file=document.getElementById("novoLogoArquivo").files[0];if(file){const url=await uploadLogo(file,data.id);await supabaseClient.from("academias").update({logo_url:url}).eq("id",data.id)}}catch(e){document.getElementById("erroCadastro").innerText="Cliente criado, mas falhou o upload da logo: "+e.message}document.getElementById("sucessoCadastro").innerText="Cliente cadastrado com sucesso.";["novoNome","novoEmail","novoTituloSistema","novoSubtituloSistema","novoEndereco","novoHorario","novaObservacao"].forEach(id=>document.getElementById(id).value="");document.getElementById("novoLogoArquivo").value="";document.getElementById("novaCor").value="#93D500";document.getElementById("novaCorHeader").value="#323E48";carregarDados()}
-function renderizarAcademias(){const busca=document.getElementById("buscaCliente").value.toLowerCase();const filtro=document.getElementById("filtroStatusCliente").value;let html="";academias.filter(a=>{const st=a.status_cliente||"ATIVO";const mb=(a.nome||"").toLowerCase().includes(busca)||(a.titulo_sistema||"").toLowerCase().includes(busca)||(a.email_notificacao||"").toLowerCase().includes(busca)||(a.plano||"").toLowerCase().includes(busca)||st.toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||st===filtro)}).forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);html+=`<div class="item"><h3>${a.nome||"Cliente sem nome"}</h3>${a.logo_url?`<img class="logo-preview" src="${a.logo_url}" onerror="this.style.display='none'">`:""}<p><strong>Nome do Sistema:</strong> ${a.titulo_sistema||a.nome||"-"}</p><p><strong>Descrição complementar:</strong> ${a.subtitulo_sistema||"-"}</p><p><span class="cor-preview" style="background:${a.cor_primaria||"#93D500"}"></span><strong>Cor principal:</strong> ${a.cor_primaria||"#93D500"}</p><p><span class="cor-preview" style="background:${a.cor_header||"#323E48"}"></span><strong>Cor topo:</strong> ${a.cor_header||"#323E48"}</p><p><strong>E-mail chamados:</strong> ${a.email_notificacao||"-"}</p><p><strong>Plano:</strong> ${a.plano||"-"}</p><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><div class="${classeStatusCliente(a.status_cliente||"ATIVO")}">${textoStatusCliente(a.status_cliente||"ATIVO")}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${a.id})">Editar cliente</button><button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir painel cliente</button><button class="btn-verde" onclick="abrirSolicitacaoCliente(${a.id})">Solicitação por ID</button></div></div>`});document.getElementById("listaAcademias").innerHTML=html||"<p>Nenhum cliente encontrado.</p>"}
+function renderizarAcademias(){const busca=document.getElementById("buscaCliente").value.toLowerCase();const filtro=document.getElementById("filtroStatusCliente").value;let html="";academias.filter(a=>{const st=a.status_cliente||"ATIVO";const mb=(a.nome||"").toLowerCase().includes(busca)||(a.titulo_sistema||"").toLowerCase().includes(busca)||(a.email_notificacao||"").toLowerCase().includes(busca)||(a.plano||"").toLowerCase().includes(busca)||st.toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||st===filtro)}).forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);html+=`<div class="item"><h3>${a.nome||"Cliente sem nome"}</h3>${a.logo_url?`<img class="logo-preview" src="${a.logo_url}" onerror="this.style.display='none'">`:""}<p><strong>Nome do Sistema:</strong> ${a.titulo_sistema||a.nome||"-"}</p><p><strong>Descrição complementar:</strong> ${a.subtitulo_sistema||"-"}</p><p><span class="cor-preview" style="background:${a.cor_primaria||"#93D500"}"></span><strong>Cor principal:</strong> ${a.cor_primaria||"#93D500"}</p><p><span class="cor-preview" style="background:${a.cor_header||"#323E48"}"></span><strong>Cor topo:</strong> ${a.cor_header||"#323E48"}</p><p><strong>E-mail chamados:</strong> ${a.email_notificacao||"-"}</p><p><strong>Plano:</strong> ${a.plano||"-"}</p><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><div class="${classeStatusCliente(a.status_cliente||"ATIVO")}">${textoStatusCliente(a.status_cliente||"ATIVO")}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${a.id})">Editar cliente</button><button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir painel cliente</button><button class="btn-verde" onclick="abrirSolicitacaoCliente(${a.id})">Solicitação por ID</button><button class="btn-cinza" onclick="baixarQRCodesCliente(${a.id})">Baixar QR Codes</button></div></div>`});document.getElementById("listaAcademias").innerHTML=html||"<p>Nenhum cliente encontrado.</p>"}
 function renderizarMetricasClientes(){let html="";academias.forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);const em=equipamentosDaAcademia(a.id).filter(e=>e.status==="MANUTENCAO"||e.status==="EM MANUTENCAO").length;const disp=qe>0?Math.round(((qe-em)/qe)*100):0;html+=`<div class="item"><h3>${a.nome||"Cliente"}</h3><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><p><strong>Em manutenção:</strong> ${em}</p><p><strong>Disponibilidade estimada:</strong> ${disp}%</p></div>`});document.getElementById("metricasClientes").innerHTML=html||"<p>Sem métricas disponíveis.</p>"}
 function abrirEditar(id){const a=academias.find(x=>x.id===id);if(!a)return;document.getElementById("editId").value=a.id;document.getElementById("editNome").value=a.nome||"";document.getElementById("editEmail").value=a.email_notificacao||"";document.getElementById("editLogoAtual").value=a.logo_url||"";const img=document.getElementById("editLogoPreview");if(a.logo_url){img.src=a.logo_url;img.style.display="block"}else{img.style.display="none"}document.getElementById("editCor").value=a.cor_primaria||"#93D500";document.getElementById("editCorHeader").value=a.cor_header||"#323E48";document.getElementById("editTituloSistema").value=a.titulo_sistema||"ConetFacility";document.getElementById("editSubtituloSistema").value=a.subtitulo_sistema||"";document.getElementById("editStatusCliente").value=a.status_cliente||"ATIVO";document.getElementById("editPlano").value=a.plano||"MVP";document.getElementById("editEndereco").value=a.endereco||"";document.getElementById("editHorario").value=a.horario_funcionamento||"";document.getElementById("editObservacao").value=a.observacoes||"";document.getElementById("modalEditar").style.display="flex"}
 function fecharEditar(){document.getElementById("modalEditar").style.display="none"}
 async function salvarEdicaoAcademia(){const id=document.getElementById("editId").value;let logoUrl=document.getElementById("editLogoAtual").value;try{const file=document.getElementById("editLogoArquivo").files[0];if(file)logoUrl=await uploadLogo(file,id)}catch(e){document.getElementById("erroEditar").innerText="Falha no upload da logo: "+e.message;return}const item={nome:document.getElementById("editNome").value.trim(),email_notificacao:document.getElementById("editEmail").value.trim(),logo_url:logoUrl,cor_primaria:document.getElementById("editCor").value,cor_header:document.getElementById("editCorHeader").value,titulo_sistema:document.getElementById("editTituloSistema").value.trim(),subtitulo_sistema:document.getElementById("editSubtituloSistema").value.trim(),status_cliente:document.getElementById("editStatusCliente").value,plano:document.getElementById("editPlano").value,endereco:document.getElementById("editEndereco").value.trim(),horario_funcionamento:document.getElementById("editHorario").value.trim(),observacoes:document.getElementById("editObservacao").value.trim()};const {error}=await supabaseClient.from("academias").update(item).eq("id",id);if(error){document.getElementById("erroEditar").innerText=error.message;return}fecharEditar();carregarDados()}
+
+function limparNomeArquivo(texto){
+return String(texto||"arquivo")
+.normalize("NFD")
+.replace(/[\u0300-\u036f]/g,"")
+.replace(/[^a-zA-Z0-9-_]+/g,"-")
+.replace(/-+/g,"-")
+.replace(/^-|-$/g,"")
+.toLowerCase();
+}
+
+function carregarImagemBase64(url){
+return new Promise((resolve)=>{
+if(!url){resolve(null);return;}
+const img=new Image();
+img.crossOrigin="Anonymous";
+img.onload=function(){
+try{
+const canvas=document.createElement("canvas");
+canvas.width=img.naturalWidth;
+canvas.height=img.naturalHeight;
+const ctx=canvas.getContext("2d");
+ctx.drawImage(img,0,0);
+resolve(canvas.toDataURL("image/png"));
+}catch(e){
+resolve(null);
+}
+};
+img.onerror=function(){resolve(null);};
+img.src=url;
+});
+}
+
+async function gerarEtiquetaQRCodeCanvas(academia,equipamento){
+const area=document.getElementById("qrDownloadArea");
+area.innerHTML="";
+
+const cor=academia?.cor_primaria||"#93D500";
+const logoBase64=await carregarImagemBase64(academia?.logo_url);
+
+const linkQR=`https://conetfacility.vercel.app/equipamento.html?id=${equipamento.id}&academia_id=${equipamento.academia_id}`;
+
+const div=document.createElement("div");
+div.className="qr-etiqueta-lote";
+div.style.borderColor=cor;
+
+div.innerHTML=`
+<h3>${academia?.nome||"Academia"}</h3>
+${logoBase64?`<img class="logo-qr-lote" src="${logoBase64}">`:""}
+<div class="qr-box-lote">
+<canvas id="canvasQRLote"></canvas>
+${logoBase64?`<img class="logo-centro-lote" src="${logoBase64}">`:""}
+</div>
+<div class="equipamento-nome">${equipamento.nome||"Equipamento"}</div>
+<div class="equipamento-id">ID: ${equipamento.codigo_publico||"-"}</div>
+<div style="font-size:13px;margin-top:6px;">${equipamento.localizacao||""}</div>
+<div class="rodape">ConetFacility</div>
+`;
+
+area.appendChild(div);
+
+await QRCode.toCanvas(
+div.querySelector("#canvasQRLote"),
+linkQR,
+{
+width:210,
+margin:1,
+errorCorrectionLevel:"H"
+}
+);
+
+const canvas=await html2canvas(div,{
+useCORS:true,
+allowTaint:true,
+backgroundColor:"#ffffff",
+scale:2
+});
+
+return canvas;
+}
+
+async function canvasParaBlob(canvas){
+return new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+}
+
+async function baixarQRCodesCliente(academiaId){
+try{
+const academia=academias.find(a=>Number(a.id)===Number(academiaId));
+
+if(!academia){
+alert("Cliente não encontrado.");
+return;
+}
+
+const equipamentosCliente=equipamentos.filter(e=>Number(e.academia_id)===Number(academiaId));
+
+if(!equipamentosCliente.length){
+alert("Este cliente ainda não possui equipamentos cadastrados.");
+return;
+}
+
+const confirmar=confirm(`Gerar e baixar ${equipamentosCliente.length} QR Code(s) do cliente ${academia.nome}?`);
+if(!confirmar)return;
+
+const zip=new JSZip();
+const pasta=zip.folder(limparNomeArquivo(academia.nome||"cliente"));
+
+for(const eq of equipamentosCliente){
+const canvas=await gerarEtiquetaQRCodeCanvas(academia,eq);
+const blob=await canvasParaBlob(canvas);
+const nomeArquivo=`${limparNomeArquivo(eq.codigo_publico||eq.id)}-${limparNomeArquivo(eq.nome||"equipamento")}.png`;
+pasta.file(nomeArquivo,blob);
+}
+
+const conteudo=await zip.generateAsync({type:"blob"});
+const link=document.createElement("a");
+link.href=URL.createObjectURL(conteudo);
+link.download=`qr-codes-${limparNomeArquivo(academia.nome||"cliente")}.zip`;
+link.click();
+URL.revokeObjectURL(link.href);
+
+document.getElementById("qrDownloadArea").innerHTML="";
+}catch(error){
+console.error(error);
+alert("Erro ao gerar QR Codes. Verifique o console ou tente novamente.");
+}
+}
+
+
 function abrirPainelCliente(id){window.open("https://conetfacility.vercel.app/?academia_id="+id,"_blank")}
 function abrirSolicitacaoCliente(id){window.open("https://conetfacility.vercel.app/equipamento.html?academia_id="+id,"_blank")}
 verificarLogin();
