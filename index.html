@@ -170,7 +170,24 @@
 
 <div id="campoFiltroMes" class="oculto">
 <label>Mês</label>
-<input type="month" id="exportMes">
+<select id="exportMesNumero">
+<option value="">Selecione o mês</option>
+<option value="1">Janeiro</option>
+<option value="2">Fevereiro</option>
+<option value="3">Março</option>
+<option value="4">Abril</option>
+<option value="5">Maio</option>
+<option value="6">Junho</option>
+<option value="7">Julho</option>
+<option value="8">Agosto</option>
+<option value="9">Setembro</option>
+<option value="10">Outubro</option>
+<option value="11">Novembro</option>
+<option value="12">Dezembro</option>
+</select>
+
+<label>Ano do mês</label>
+<input type="number" id="exportAnoMes" min="2024" max="2100" placeholder="Ex: 2026">
 </div>
 
 <div id="campoFiltroAno" class="oculto">
@@ -1002,6 +1019,25 @@ const tipo=document.getElementById("tipoFiltroExportacao").value;
 document.getElementById("campoFiltroDia").classList.toggle("oculto",tipo!=="DIA");
 document.getElementById("campoFiltroMes").classList.toggle("oculto",tipo!=="MES");
 document.getElementById("campoFiltroAno").classList.toggle("oculto",tipo!=="ANO");
+
+const hoje=new Date();
+
+if(tipo==="DIA"&&!document.getElementById("exportDia").value){
+document.getElementById("exportDia").value=hoje.toISOString().slice(0,10);
+}
+
+if(tipo==="MES"){
+if(!document.getElementById("exportMesNumero").value){
+document.getElementById("exportMesNumero").value=String(hoje.getMonth()+1);
+}
+if(!document.getElementById("exportAnoMes").value){
+document.getElementById("exportAnoMes").value=String(hoje.getFullYear());
+}
+}
+
+if(tipo==="ANO"&&!document.getElementById("exportAno").value){
+document.getElementById("exportAno").value=String(hoje.getFullYear());
+}
 }
 
 function obterPeriodoExportacao(){
@@ -1019,14 +1055,31 @@ rotulo=formatarDataHoraBR(inicio).split(" às ")[0];
 }
 
 if(tipo==="MES"){
-const mes=document.getElementById("exportMes").value;
-if(!mes)return null;
-const partes=mes.split("-");
-const ano=Number(partes[0]);
-const mesNumero=Number(partes[1]);
+const mesNumero=Number(document.getElementById("exportMesNumero").value);
+const ano=Number(document.getElementById("exportAnoMes").value);
+
+if(!mesNumero||!ano)return null;
+
 inicio=new Date(ano,mesNumero-1,1,0,0,0);
 fim=new Date(ano,mesNumero,0,23,59,59);
-rotulo=`${String(mesNumero).padStart(2,"0")}/${ano}`;
+
+const nomesMeses=[
+"",
+"Janeiro",
+"Fevereiro",
+"Março",
+"Abril",
+"Maio",
+"Junho",
+"Julho",
+"Agosto",
+"Setembro",
+"Outubro",
+"Novembro",
+"Dezembro"
+];
+
+rotulo=`${nomesMeses[mesNumero]} de ${ano}`;
 }
 
 if(tipo==="ANO"){
@@ -1145,14 +1198,49 @@ const blob=new Blob(["\\ufeff"+csv],{type:"text/csv;charset=utf-8;"});
 const url=URL.createObjectURL(blob);
 const a=document.createElement("a");
 a.href=url;
-a.download=`historico-conetfacility-${dados.periodo.rotulo.replaceAll("/","-")}.csv`;
+a.download=`historico-conetfacility-${String(dados.periodo.rotulo).replaceAll("/","-").replaceAll(" ","-")}.csv`;
 a.click();
 URL.revokeObjectURL(url);
 
 document.getElementById("msgExportacao").innerText="Arquivo Excel/CSV gerado com sucesso.";
 }
 
-function exportarHistoricoPDF(){
+
+function carregarImagemComoDataURL(url){
+return new Promise((resolve)=>{
+if(!url){
+resolve(null);
+return;
+}
+
+const img=new Image();
+img.crossOrigin="Anonymous";
+
+img.onload=function(){
+try{
+const canvas=document.createElement("canvas");
+canvas.width=img.naturalWidth;
+canvas.height=img.naturalHeight;
+const ctx=canvas.getContext("2d");
+ctx.drawImage(img,0,0);
+resolve(canvas.toDataURL("image/png"));
+}catch(e){
+console.warn("Não foi possível converter logo para PDF:",e);
+resolve(null);
+}
+};
+
+img.onerror=function(){
+console.warn("Não foi possível carregar logo do cliente.");
+resolve(null);
+};
+
+img.src=url;
+});
+}
+
+
+async function exportarHistoricoPDF(){
 document.getElementById("msgExportacao").innerText="";
 document.getElementById("erroExportacao").innerText="";
 
@@ -1171,13 +1259,27 @@ const { jsPDF } = window.jspdf;
 const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
 
 let y=15;
+
+const logoDataURL=await carregarImagemComoDataURL(academiaAtual?.logo_url);
+
+if(logoDataURL){
+try{
+doc.addImage(logoDataURL,"PNG",15,y,38,22);
+}catch(e){
+console.warn("Logo carregado, mas não inserido no PDF:",e);
+}
+}
+
 doc.setFontSize(14);
-doc.text("Relatório de Histórico - ConetFacility",15,y);
-y+=8;
+doc.text("Relatório de Histórico - ConetFacility",logoDataURL?60:15,y+6);
 doc.setFontSize(10);
-doc.text(`Cliente: ${academiaAtual?.nome||"-"}`,15,y);
-y+=6;
-doc.text(`Período: ${dados.periodo.rotulo}`,15,y);
+doc.text(`Cliente: ${academiaAtual?.nome||"-"}`,logoDataURL?60:15,y+14);
+doc.text(`Período: ${dados.periodo.rotulo}`,logoDataURL?60:15,y+20);
+
+y+=32;
+
+doc.setDrawColor(220,220,220);
+doc.line(15,y,195,y);
 y+=8;
 
 dados.linhas.forEach((l,idx)=>{
@@ -1209,7 +1311,7 @@ y+=partes.length*5;
 y+=4;
 });
 
-doc.save(`historico-conetfacility-${dados.periodo.rotulo.replaceAll("/","-")}.pdf`);
+doc.save(`historico-conetfacility-${String(dados.periodo.rotulo).replaceAll("/","-").replaceAll(" ","-")}.pdf`);
 document.getElementById("msgExportacao").innerText="PDF gerado com sucesso.";
 }
 
@@ -1265,6 +1367,13 @@ document.getElementById("erroExportacao").innerText="Erro ao enviar e-mail. Veri
 }
 }
 
+
+
+setTimeout(()=>{
+try{
+atualizarCamposExportacao();
+}catch(e){}
+},300);
 
 verificarLogin();
 </script></body></html>
