@@ -1,106 +1,6 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Solicitar Manutenção | ConetFacility</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script><style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}body{background:#f3f4f6;color:#111827;padding:24px}.card{max-width:760px;margin:0 auto;background:white;border-radius:20px;padding:30px;box-shadow:0 5px 20px rgba(0,0,0,.08)}h1{color:var(--cor,#93D500);margin-bottom:10px}.logo{max-height:80px;max-width:220px;object-fit:contain;margin-bottom:18px}.subtitulo{color:#6b7280;margin-bottom:25px}label{display:block;margin-top:18px;margin-bottom:8px;font-weight:bold}input,select,textarea{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;font-size:15px}textarea{resize:none;min-height:120px}button{width:100%;margin-top:20px;padding:16px;border:none;border-radius:14px;background:var(--cor,#93D500);font-size:16px;font-weight:bold;cursor:pointer}.btn-cinza{background:#e5e7eb}.info{background:#f9fafb;padding:18px;border-radius:14px;margin-bottom:20px}.info p{margin:7px 0}.msg{margin-top:20px;text-align:center;font-weight:bold}.sucesso{color:#15803d}.erro{color:#dc2626}.alerta{background:#fef3c7;color:#92400e;padding:14px;border-radius:12px;margin-bottom:20px;font-weight:bold}.oculto{display:none!important}.status{display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:bold}.status-operacional{background:#dcfce7;color:#166534}.status-manutencao{background:#fef3c7;color:#92400e}.status-bloqueado{background:#fef3c7;color:#92400e}.status-desativado{background:#e5e7eb;color:#374151}@media(max-width:700px){body{padding:12px}.card{padding:22px}}
-
-/* TOPO ADMIN GERAL - LOGO CONETFACILITY */
-.admin-logo-topo{
-  max-width:340px;
-  width:100%;
-  height:auto;
-  object-fit:contain;
-  display:block;
-}
-.admin-topo-logo-wrap{
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  padding:18px 42px;
-  background:#323E48;
-}
-@media(max-width:700px){
-  .admin-logo-topo{max-width:240px;}
-  .admin-topo-logo-wrap{padding:16px 24px;}
-}
-
-/* LOGO DISCRETO DO CLIENTE NO LOGIN */
-.logo-cliente-login{
-  max-width:150px;
-  max-height:90px;
-  object-fit:contain;
-  display:block;
-  margin:0 auto 18px;
-  border-radius:12px;
-}
-
-
-/* LOGIN WHITE-LABEL DO CLIENTE */
-.logo-cliente-login{
-  max-width:170px;
-  max-height:120px;
-  width:auto;
-  height:auto;
-  object-fit:contain;
-  display:block;
-  margin:0 auto 26px auto;
-  border-radius:16px;
-}
-.login-white-label-center{
-  text-align:center;
-}
-.login-white-label-center h1,
-#tituloLogin{
-  text-align:center!important;
-  margin-top:0!important;
-}
-.login-white-label-center .subtitulo,
-#subtituloLogin{
-  text-align:center!important;
-}
-@media(max-width:700px){
-  .logo-cliente-login{
-    max-width:135px;
-    max-height:95px;
-    margin-bottom:20px;
-  }
-}
-
-
-/* LOGIN WHITE-LABEL DO CLIENTE - LOGO ÚNICO CENTRAL */
-.logo-cliente-login{
-  max-width:170px;
-  max-height:120px;
-  width:auto;
-  height:auto;
-  object-fit:contain;
-  display:block;
-  margin:0 auto 26px auto;
-  border-radius:16px;
-}
-.login-white-label-center{
-  text-align:center!important;
-}
-.login-white-label-center h1,
-#tituloLogin{
-  text-align:center!important;
-  margin-top:0!important;
-}
-.login-white-label-center .subtitulo,
-#subtituloLogin{
-  text-align:center!important;
-}
-@media(max-width:700px){
-  .logo-cliente-login{
-    max-width:135px;
-    max-height:95px;
-    margin-bottom:20px;
-  }
-}
-
-</style></head><body><div class="card"><img id="logoCliente" class="logo oculto"><div id="loginArea" class="login-white-label-center">
-
-
-
-<img id="logoClienteLoginEquipamento" class="logo-cliente-login" style="display:none;" alt="Logo do cliente">
-<h1 id="tituloLogin">ConetFacility</h1><p class="subtitulo" id="subtituloLogin"></p><label>Usuário</label><input type="text" id="usuario" placeholder="usuario_autorizado"><label>Senha</label><input type="password" id="senha" placeholder="sua_senha"><button onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="msg erro"></p></div><div id="buscaArea" class="oculto"><h1>Identificar equipamento</h1><p class="subtitulo">Escaneie o QR Code ou digite o ID discreto do equipamento.</p><label>ID do equipamento</label><input type="text" id="codigoEquipamento" placeholder="Exemplo: EQ-001"><button onclick="buscarPorCodigo()">Buscar equipamento</button><p id="erroBusca" class="msg erro"></p></div><div id="painelEquipamento" class="oculto"><h1 id="nomeEquipamento">Equipamento</h1><p class="subtitulo">Solicitação de manutenção</p><div class="info"><p><strong>Categoria / Área:</strong> <span id="categoria"></span></p><p><strong>Marca:</strong> <span id="marca"></span></p><p><strong>Modelo:</strong> <span id="modelo"></span></p><p><strong>Número de série:</strong> <span id="serie"></span></p><p><strong>Localização:</strong> <span id="localizacao"></span></p><p><strong>ID discreto:</strong> <span id="codigoPublico"></span></p><p><strong>Status:</strong> <span id="status" class="status"></span></p></div><div id="avisoChamado" class="alerta oculto">Já existe uma solicitação em andamento para este equipamento.</div><label>Tipo do problema</label><select id="tipoProblema"><option value="Quebrado">Quebrado</option><option value="Barulho estranho">Barulho estranho</option><option value="Falha elétrica">Falha elétrica</option><option value="Revisão preventiva">Revisão preventiva</option><option value="Outro">Outro</option></select><label>Prioridade</label><select id="prioridade"><option value="BAIXA">Baixa</option><option value="MEDIA">Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select><label>Descrição</label><textarea id="descricao"></textarea><button id="btnAbrirChamado" onclick="abrirChamado()">Solicitar manutenção</button><button class="btn-cinza" onclick="voltarBusca()">Escolher outro equipamento</button><p id="mensagem" class="msg"></p></div></div>
+</style></head><body><div class="card"><img id="logoCliente" class="logo oculto"><div id="loginArea"><h1 id="tituloLogin">ConetFacility</h1><p class="subtitulo" id="subtituloLogin"></p><label>Usuário</label><input type="text" id="usuario" placeholder="equipamento01"><label>Senha</label><input type="password" id="senha" placeholder="teste01"><button onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="msg erro"></p></div><div id="buscaArea" class="oculto"><h1>Identificar equipamento</h1><p class="subtitulo">Escaneie o QR Code ou digite o ID discreto do equipamento.</p><label>ID do equipamento</label><input type="text" id="codigoEquipamento" placeholder="Exemplo: EQ-001"><button onclick="buscarPorCodigo()">Buscar equipamento</button><p id="erroBusca" class="msg erro"></p></div><div id="painelEquipamento" class="oculto"><h1 id="nomeEquipamento">Equipamento</h1><p class="subtitulo">Solicitação de manutenção</p><div class="info"><p><strong>Categoria / Área:</strong> <span id="categoria"></span></p><p><strong>Marca:</strong> <span id="marca"></span></p><p><strong>Modelo:</strong> <span id="modelo"></span></p><p><strong>Número de série:</strong> <span id="serie"></span></p><p><strong>Localização:</strong> <span id="localizacao"></span></p><p><strong>ID discreto:</strong> <span id="codigoPublico"></span></p><p><strong>Status:</strong> <span id="status" class="status"></span></p></div><div id="avisoChamado" class="alerta oculto">Já existe uma solicitação em andamento para este equipamento.</div><label>Tipo do problema</label><select id="tipoProblema"><option value="Quebrado">Quebrado</option><option value="Barulho estranho">Barulho estranho</option><option value="Falha elétrica">Falha elétrica</option><option value="Revisão preventiva">Revisão preventiva</option><option value="Outro">Outro</option></select><label>Prioridade</label><select id="prioridade"><option value="BAIXA">Baixa</option><option value="MEDIA">Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select><label>Descrição</label><textarea id="descricao"></textarea><button id="btnAbrirChamado" onclick="abrirChamado()">Solicitar manutenção</button><button class="btn-cinza" onclick="voltarBusca()">Escolher outro equipamento</button><p id="mensagem" class="msg"></p></div></div>
 <script>
 const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const EMAILJS_SERVICE_ID="service_i6mlqzr";const EMAILJS_TEMPLATE_ID="template_dec814j";const EMAILJS_PUBLIC_KEY="aXBqSvpRwjN9R_QNu";emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});let equipamentoAtual=null,academiaAtual=null,usuarioLogadoChamado='';
 
@@ -163,37 +63,7 @@ const s=String(status||"").trim().toUpperCase();
 return ["ABERTO","EM MANUTENCAO","MANUTENCAO","REABERTO"].includes(s);
 }
 
-function normalizarStatus(s){if(s==="MANUTENCAO"||s==="EM MANUTENCAO")return"EM_MANUTENCAO";if(s==="OPERACIONAL")return"OPERACIONAL";if(s==="BLOQUEADO")return"BLOQUEADO";if(s==="DESATIVADO")return"DESATIVADO";return s||"OPERACIONAL"}function textoStatus(s){const x=normalizarStatus(s);return x==="EM_MANUTENCAO"?"Em manutenção":x==="OPERACIONAL"?"Operacional":x==="BLOQUEADO"?"Bloqueado":x==="DESATIVADO"?"Desativado":x==="ABERTO"?"Aberto":x==="FINALIZADO"?"Finalizado":s||"Operacional"}function classeStatus(s){const x=normalizarStatus(s);if(x==="OPERACIONAL")return"status status-operacional";if(x==="EM_MANUTENCAO")return"status status-manutencao";if(x==="BLOQUEADO")return"status status-bloqueado";return"status status-desativado"}
-function aplicarLogoClienteLoginEquipamento(){
-const logoLoginEquipamento=document.getElementById("logoClienteLoginEquipamento");
-if(!logoLoginEquipamento)return;
-
-if(academiaAtual && academiaAtual.logo_url){
-logoLoginEquipamento.src=academiaAtual.logo_url;
-logoLoginEquipamento.style.display="block";
-}else{
-logoLoginEquipamento.removeAttribute("src");
-logoLoginEquipamento.style.display="none";
-}
-}else{
-logoLoginEquipamento.removeAttribute("src");
-logoLoginEquipamento.style.display="none";
-}
-}
-
-async function carregarAcademia(id){const {data}=await supabaseClient.from("academias").select("*").eq("id",id).maybeSingle();academiaAtual=data||{};document.documentElement.style.setProperty("--cor",academiaAtual.cor_primaria||"#93D500");
-aplicarLogoClienteLoginEquipamento();
-
-const logoLoginEquipamento=document.getElementById("logoClienteLoginEquipamento");
-if(logoLoginEquipamento){
-  if(academiaAtual.logo_url){
-    logoLoginEquipamento.src=academiaAtual.logo_url;
-    logoLoginEquipamento.style.display="block";
-  }else{
-    logoLoginEquipamento.style.display="none";
-  }
-}
-document.getElementById("tituloLogin").innerText=academiaAtual.titulo_sistema||"ConetFacility";document.getElementById("subtituloLogin").innerText=academiaAtual.subtitulo_sistema||"";const logo=document.getElementById("logoCliente");if(academiaAtual.logo_url){logo.src=academiaAtual.logo_url;logo.classList.remove("oculto")}else logo.classList.add("oculto")}carregarAcademia(academiaIdAtual());
+function normalizarStatus(s){if(s==="MANUTENCAO"||s==="EM MANUTENCAO")return"EM_MANUTENCAO";if(s==="OPERACIONAL")return"OPERACIONAL";if(s==="BLOQUEADO")return"BLOQUEADO";if(s==="DESATIVADO")return"DESATIVADO";return s||"OPERACIONAL"}function textoStatus(s){const x=normalizarStatus(s);return x==="EM_MANUTENCAO"?"Em manutenção":x==="OPERACIONAL"?"Operacional":x==="BLOQUEADO"?"Bloqueado":x==="DESATIVADO"?"Desativado":x==="ABERTO"?"Aberto":x==="FINALIZADO"?"Finalizado":s||"Operacional"}function classeStatus(s){const x=normalizarStatus(s);if(x==="OPERACIONAL")return"status status-operacional";if(x==="EM_MANUTENCAO")return"status status-manutencao";if(x==="BLOQUEADO")return"status status-bloqueado";return"status status-desativado"}async function carregarAcademia(id){const {data}=await supabaseClient.from("academias").select("*").eq("id",id).maybeSingle();academiaAtual=data||{};document.documentElement.style.setProperty("--cor",academiaAtual.cor_primaria||"#93D500");document.getElementById("tituloLogin").innerText=academiaAtual.titulo_sistema||"ConetFacility";document.getElementById("subtituloLogin").innerText=academiaAtual.subtitulo_sistema||"";const logo=document.getElementById("logoCliente");if(academiaAtual.logo_url){logo.src=academiaAtual.logo_url;logo.classList.remove("oculto")}else logo.classList.add("oculto")}carregarAcademia(academiaIdAtual());
 async function validarUsuarioChamado(usuario,senha,academiaId){
 const {data,error}=await supabaseClient
 .from("usuarios_chamados")
