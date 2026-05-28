@@ -3,6 +3,31 @@
 </style></head><body><div class="card"><img id="logoCliente" class="logo oculto"><div id="loginArea"><h1 id="tituloLogin">ConetFacility</h1><p class="subtitulo" id="subtituloLogin"></p><label>Usuário</label><input type="text" id="usuario" placeholder="equipamento01"><label>Senha</label><input type="password" id="senha" placeholder="teste01"><button onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="msg erro"></p></div><div id="buscaArea" class="oculto"><h1>Identificar equipamento</h1><p class="subtitulo">Escaneie o QR Code ou digite o ID discreto do equipamento.</p><label>ID do equipamento</label><input type="text" id="codigoEquipamento" placeholder="Exemplo: EQ-001"><button onclick="buscarPorCodigo()">Buscar equipamento</button><p id="erroBusca" class="msg erro"></p></div><div id="painelEquipamento" class="oculto"><h1 id="nomeEquipamento">Equipamento</h1><p class="subtitulo">Solicitação de manutenção</p><div class="info"><p><strong>Categoria / Área:</strong> <span id="categoria"></span></p><p><strong>Marca:</strong> <span id="marca"></span></p><p><strong>Modelo:</strong> <span id="modelo"></span></p><p><strong>Número de série:</strong> <span id="serie"></span></p><p><strong>Localização:</strong> <span id="localizacao"></span></p><p><strong>ID discreto:</strong> <span id="codigoPublico"></span></p><p><strong>Status:</strong> <span id="status" class="status"></span></p></div><div id="avisoChamado" class="alerta oculto">Já existe uma solicitação em andamento para este equipamento.</div><label>Tipo do problema</label><select id="tipoProblema"><option value="Quebrado">Quebrado</option><option value="Barulho estranho">Barulho estranho</option><option value="Falha elétrica">Falha elétrica</option><option value="Revisão preventiva">Revisão preventiva</option><option value="Outro">Outro</option></select><label>Prioridade</label><select id="prioridade"><option value="BAIXA">Baixa</option><option value="MEDIA">Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select><label>Descrição</label><textarea id="descricao"></textarea><button id="btnAbrirChamado" onclick="abrirChamado()">Solicitar manutenção</button><button class="btn-cinza" onclick="voltarBusca()">Escolher outro equipamento</button><p id="mensagem" class="msg"></p></div></div>
 <script>
 const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const EMAILJS_SERVICE_ID="service_i6mlqzr";const EMAILJS_TEMPLATE_ID="template_dec814j";const EMAILJS_PUBLIC_KEY="aXBqSvpRwjN9R_QNu";emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});let equipamentoAtual=null,academiaAtual=null,usuarioLogadoChamado='';
+
+function obterListaEmails(valor){
+return String(valor||"")
+.split(/[,;\n]+/)
+.map(e=>e.trim())
+.filter(e=>e && e.includes("@"));
+}
+
+async function enviarEmailParaLista(templateId,parametrosBase,emails){
+const lista=obterListaEmails(emails);
+if(!lista.length)return;
+
+for(const email of lista){
+await emailjs.send(
+EMAILJS_SERVICE_ID,
+templateId,
+{
+...parametrosBase,
+email_destino:email,
+from_name:"ConetFacility"
+}
+);
+}
+}
+
 function formatarDataHoraBR(data){
 if(!data)return "-";
 try{
@@ -151,8 +176,54 @@ document.getElementById("btnAbrirChamado").style.opacity="1";
 }
 
 async function registrarHistorico(equipamentoId,chamadoId,tipoEvento,descricao,status){await supabaseClient.from("historico_manutencao").insert([{equipamento_id:equipamentoId,chamado_id:chamadoId,tipo_evento:tipoEvento,descricao,status}])}
-async function enviarEmailNotificacao(ch,tipo,prior,desc){try{const emailDestino=academiaAtual?.email_notificacao;if(!emailDestino)return;await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{email_destino:emailDestino,
-from_name:"ConetFacility",academia_nome:academiaAtual?.nome||"Academia",equipamento_nome:equipamentoAtual?.nome||"Equipamento",equipamento_codigo:equipamentoAtual?.codigo_publico||"-",equipamento_localizacao:equipamentoAtual?.localizacao||"-",tipo_problema:tipo,prioridade:prior,descricao:desc,status:"Aberto",usuario_abertura:usuarioLogadoChamado||"Não informado",data_hora:agoraBrasilFormatado()});await registrarHistorico(equipamentoAtual.id,ch.id,"E-mail enviado","Notificação enviada para "+emailDestino,"ABERTO")}catch(e){await registrarHistorico(equipamentoAtual.id,ch.id,"Falha no envio de e-mail","Erro ao tentar enviar notificação por e-mail.","ABERTO")}}
+async function enviarEmailNotificacao(chamado,tipoProblema,prioridade,descricao){
+try{
+const emailDestino=academiaAtual?.email_notificacao;
+
+if(!emailDestino){
+console.warn("Nenhum e-mail de notificação configurado para a academia.");
+return;
+}
+
+const dadosEmail={
+academia_nome:academiaAtual?.nome||"Academia",
+equipamento_nome:equipamentoAtual?.nome||"Equipamento",
+equipamento_codigo:equipamentoAtual?.codigo_publico||"-",
+equipamento_localizacao:equipamentoAtual?.localizacao||"-",
+tipo_problema:tipoProblema,
+prioridade:prioridade,
+descricao:descricao,
+status:"Aberto",
+usuario_abertura:usuarioLogadoChamado||"Não informado",
+data_hora:typeof agoraBrasilFormatado==="function"?agoraBrasilFormatado():new Date().toLocaleString("pt-BR")
+};
+
+await enviarEmailParaLista(
+EMAILJS_TEMPLATE_ID,
+dadosEmail,
+emailDestino
+);
+
+await registrarHistorico(
+equipamentoAtual.id,
+chamado.id,
+"E-mail enviado",
+"Notificação enviada para "+emailDestino,
+"ABERTO"
+);
+
+}catch(error){
+console.error("Erro ao enviar e-mail:",error);
+
+await registrarHistorico(
+equipamentoAtual.id,
+chamado.id,
+"Falha no envio de e-mail",
+"Erro ao tentar enviar notificação por e-mail.",
+"ABERTO"
+);
+}
+}
 async function abrirChamado(){const tipo=document.getElementById("tipoProblema").value,prior=document.getElementById("prioridade").value,desc=document.getElementById("descricao").value.trim();if(!desc){document.getElementById("mensagem").innerText="Descreva o problema antes de enviar.";document.getElementById("mensagem").className="msg erro";return}const {data:existenteChamados,error:erroExistente}=await supabaseClient
 .from("chamados")
 .select("id,status")
