@@ -250,6 +250,7 @@ renderizarGraficos();
 renderizarResumoCliente();
 renderizarEquipamentos();
 renderizarChamados();
+sincronizarHistoricoChamadosDoCliente();
 renderizarUsuariosChamados();
 renderizarPreventivas();
 }
@@ -272,6 +273,37 @@ ${academiaAtual.logo_url?`<img src="${academiaAtual.logo_url}" style="max-width:
 function renderizarGraficos(){const st={ABERTO:0,EM_MANUTENCAO:0,FINALIZADO:0},pr={URGENTE:0,ALTA:0,MEDIA:0,BAIXA:0};chamados.forEach(c=>{const s=normalizarStatus(c.status);if(s==="ABERTO")st.ABERTO++;else if(s==="EM_MANUTENCAO")st.EM_MANUTENCAO++;else if(s==="FINALIZADO")st.FINALIZADO++;if(c.prioridade==="URGENTE")pr.URGENTE++;else if(c.prioridade==="ALTA")pr.ALTA++;else if(c.prioridade==="MEDIA")pr.MEDIA++;else pr.BAIXA++});if(graficoStatus)graficoStatus.destroy();if(graficoPrioridade)graficoPrioridade.destroy();graficoStatus=new Chart(document.getElementById("graficoStatus"),{type:"doughnut",data:{labels:["Aberto","Em manutenção","Finalizado"],datasets:[{data:[st.ABERTO,st.EM_MANUTENCAO,st.FINALIZADO],backgroundColor:["#3B82F6","#FACC15","#93D500"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}}}});graficoPrioridade=new Chart(document.getElementById("graficoPrioridade"),{type:"bar",data:{labels:["Urgente","Alta","Média","Baixa"],datasets:[{data:[pr.URGENTE,pr.ALTA,pr.MEDIA,pr.BAIXA],backgroundColor:["#EF4444","#F97316","#FACC15","#93D500"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}})}
 async function cadastrarEquipamento(){const nome=document.getElementById("novoNome").value.trim(),codigo=document.getElementById("novoCodigo").value.trim().toUpperCase();if(!nome||!codigo){document.getElementById("erroCadastro").innerText="Nome e ID são obrigatórios.";return}const item={academia_id:academiaIdAtual(),nome,categoria:document.getElementById("novaCategoria").value.trim(),marca:document.getElementById("novaMarca").value.trim(),modelo:document.getElementById("novoModelo").value.trim(),numero_serie:document.getElementById("novoSerie").value.trim(),localizacao:document.getElementById("novaLocalizacao").value.trim(),status:"OPERACIONAL",codigo_publico:codigo,proxima_revisao:document.getElementById("novaProximaRevisao").value||null};const {data,error}=await supabaseClient.from("equipamentos").insert([item]).select().single();if(error){document.getElementById("erroCadastro").innerText=error.message;return}await supabaseClient.from("equipamentos").update({qr_code:`https://conetfacility.vercel.app/equipamento.html?id=${data.id}&academia_id=${academiaIdAtual()}`}).eq("id",data.id);document.getElementById("formCadastroEquipamento").classList.add("oculto");carregarDados()}
 function renderizarEquipamentos(){const busca=document.getElementById("buscaEquipamento").value.toLowerCase(),filtro=document.getElementById("filtroStatusEquipamento").value;let html="";equipamentos.filter(eq=>{const mb=(eq.nome||"").toLowerCase().includes(busca)||(eq.categoria||"").toLowerCase().includes(busca)||(eq.codigo_publico||"").toLowerCase().includes(busca)||(eq.localizacao||"").toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||normalizarStatus(eq.status)===normalizarStatus(filtro))}).forEach(eq=>{html+=`<div class="item"><h3>${eq.nome}</h3><p><strong>Categoria:</strong> ${eq.categoria||"-"}</p><p><strong>ID:</strong> ${eq.codigo_publico||"-"}</p><p><strong>Local:</strong> ${eq.localizacao||"-"}</p><p><strong>Próxima revisão:</strong> ${formatarDataBR(eq.proxima_revisao)}</p><span class="${statusRevisaoClasse(eq.proxima_revisao)}">${statusRevisaoTexto(eq.proxima_revisao)}</span><br><div class="${classeStatus(eq.status)}">${textoStatus(eq.status)}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${eq.id})">Editar</button><button class="btn-verde" onclick="abrirEtiquetaQR(${eq.id})">QR Premium</button><button class="btn-cinza" onclick="abrirHistorico(${eq.id},'${limparTexto(eq.nome)}')">Histórico</button><button class="btn-vermelho" onclick="desativarEquipamento(${eq.id},'${limparTexto(eq.nome)}')">Desativar</button></div></div>`});document.getElementById("listaEquipamentos").innerHTML=html||"<p>Nenhum equipamento cadastrado.</p>"}
+
+async function sincronizarHistoricoChamadosDoCliente(){
+const idsEquipamentos=equipamentos.map(e=>e.id);
+if(!idsEquipamentos.length)return;
+
+const {data:chamadosCliente}=await supabaseClient
+.from("chamados")
+.select("*")
+.in("equipamento_id",idsEquipamentos);
+
+if(!chamadosCliente||!chamadosCliente.length)return;
+
+for(const ch of chamadosCliente){
+const {data:histExistente}=await supabaseClient
+.from("historico_manutencao")
+.select("id")
+.eq("chamado_id",ch.id)
+.limit(1);
+
+if(!histExistente||histExistente.length===0){
+await supabaseClient.from("historico_manutencao").insert([{
+equipamento_id:ch.equipamento_id,
+chamado_id:ch.id,
+tipo_evento:"Chamado registrado",
+descricao:ch.descricao||"Chamado registrado no sistema",
+status:ch.status||"ABERTO"
+}]);
+}
+}
+}
+
 function setVisualizacaoChamados(tipo){
 visualizacaoChamados=tipo;
 renderizarChamados();
@@ -324,6 +356,15 @@ document.getElementById("listaChamados").innerHTML=html;
 
 function statusChamadoAtivo(status){const s=String(status||"").trim().toUpperCase();return ["ABERTO","EM MANUTENCAO","MANUTENCAO","REABERTO"].includes(s);}
 
+
+
+function obterDataAberturaChamado(chamado){
+return chamado.criado_em || chamado.created_at || chamado.data_abertura || chamado.inserted_at || null;
+}
+
+function obterDataEncerramentoChamado(chamado){
+return chamado.encerrado_em || chamado.data_encerramento || null;
+}
 
 function formatarDataHoraBR(data){
 if(!data)return "-";
@@ -521,61 +562,83 @@ async function abrirHistorico(id,nome){
 document.getElementById("tituloHistorico").innerText="Histórico do equipamento - "+nome;
 document.getElementById("modalHistorico").style.display="flex";
 
-const {data:historico}=await supabaseClient
-.from("historico_manutencao")
-.select("*")
-.eq("equipamento_id",id)
-.order("criado_em",{ascending:false});
-
-const {data:chamadosEquipamento}=await supabaseClient
+const {data:chamadosEquipamento,error:erroChamados}=await supabaseClient
 .from("chamados")
 .select("*")
 .eq("equipamento_id",id)
 .order("id",{ascending:false});
 
+const {data:historico,error:erroHistorico}=await supabaseClient
+.from("historico_manutencao")
+.select("*")
+.eq("equipamento_id",id)
+.order("criado_em",{ascending:false});
+
 let html="";
 
+if(erroChamados){
+html+=`<p class="erro">Erro ao carregar chamados do equipamento.</p>`;
+}
+
+if(erroHistorico){
+html+=`<p class="erro">Erro ao carregar eventos do histórico.</p>`;
+}
+
 if(chamadosEquipamento && chamadosEquipamento.length){
-html+=`<h3>Chamados registrados</h3>`;
+html+=`<h3>Chamados registrados neste equipamento</h3>`;
+
 chamadosEquipamento.forEach(ch=>{
+const dataAbertura=obterDataAberturaChamado(ch);
+const dataEncerramento=obterDataEncerramentoChamado(ch);
+
 html+=`
 <div class="evento">
 <strong>Chamado #${ch.id}</strong>
 <p><strong>Problema:</strong> ${ch.tipo_problema||"-"}</p>
 <p><strong>Prioridade:</strong> ${ch.prioridade||"-"}</p>
 <p><strong>Status:</strong> ${textoStatus(ch.status)}</p>
+<p><strong>Aberto em:</strong> ${formatarDataHoraBR(dataAbertura)}</p>
+<p><strong>Aberto por:</strong> ${ch.aberto_por||"Não informado"}</p>
+<p><strong>Encerrado em:</strong> ${formatarDataHoraBR(dataEncerramento)}</p>
+<p><strong>Encerrado por:</strong> ${ch.encerrado_por||"-"}</p>
+<p><strong>Observações de encerramento:</strong> ${ch.observacao_encerramento||"-"}</p>
 <p><strong>Descrição:</strong> ${ch.descricao||"-"}</p>
+<div class="botoes">
+<button class="btn-cinza" onclick="abrirHistoricoChamado(${ch.id},${ch.equipamento_id},'${limparTexto(nome)}')">Ver histórico do chamado</button>
+</div>
 </div>`;
 });
 }
 
 if(historico && historico.length){
-html+=`<h3>Linha do tempo</h3>`;
+html+=`<h3>Linha do tempo geral do equipamento</h3>`;
+
 historico.forEach(ev=>{
 html+=`
 <div class="evento">
 <strong>${ev.tipo_evento||"Evento"}</strong>
 <p>${ev.descricao||"-"}</p>
 <p><strong>Status:</strong> ${textoStatus(ev.status)}</p>
-<p><strong>Data:</strong> ${ev.criado_em?new Date(ev.criado_em).toLocaleString("pt-BR"):"-"}</p>
+<p><strong>Data/hora:</strong> ${formatarDataHoraBR(ev.criado_em)}</p>
+<p><strong>Chamado vinculado:</strong> ${ev.chamado_id?("#"+ev.chamado_id):"-"}</p>
 </div>`;
 });
 }
 
-document.getElementById("conteudoHistorico").innerHTML=html||"<p>Nenhum histórico registrado.</p>";
+document.getElementById("conteudoHistorico").innerHTML=html||"<p>Nenhum histórico registrado para este equipamento.</p>";
 }
 
 async function abrirHistoricoChamado(chamadoId,equipamentoId,nomeEquipamento){
 document.getElementById("tituloHistorico").innerText="Histórico do chamado #"+chamadoId;
 document.getElementById("modalHistorico").style.display="flex";
 
-const {data:chamado}=await supabaseClient
+const {data:chamado,error:erroChamado}=await supabaseClient
 .from("chamados")
 .select("*")
 .eq("id",chamadoId)
 .maybeSingle();
 
-const {data:historico}=await supabaseClient
+const {data:historico,error:erroHistorico}=await supabaseClient
 .from("historico_manutencao")
 .select("*")
 .eq("chamado_id",chamadoId)
@@ -583,32 +646,51 @@ const {data:historico}=await supabaseClient
 
 let html="";
 
+if(erroChamado){
+html+=`<p class="erro">Erro ao carregar dados do chamado.</p>`;
+}
+
+if(erroHistorico){
+html+=`<p class="erro">Erro ao carregar linha do tempo do chamado.</p>`;
+}
+
 if(chamado){
+const dataAbertura=obterDataAberturaChamado(chamado);
+const dataEncerramento=obterDataEncerramentoChamado(chamado);
+const tempoTotal=calcularTempoTotal(dataAbertura,dataEncerramento);
+
 html+=`
-<h3>Dados do chamado</h3>
+<h3>Resumo do chamado</h3>
 <div class="evento">
 <strong>Chamado #${chamado.id}</strong>
 <p><strong>Equipamento:</strong> ${nomeEquipamento||"-"}</p>
 <p><strong>Problema:</strong> ${chamado.tipo_problema||"-"}</p>
 <p><strong>Prioridade:</strong> ${chamado.prioridade||"-"}</p>
 <p><strong>Status:</strong> ${textoStatus(chamado.status)}</p>
+<p><strong>Descrição inicial:</strong> ${chamado.descricao||"-"}</p>
+</div>
+
+<h3>Datas e responsáveis</h3>
+<div class="evento">
+<p><strong>Aberto em:</strong> ${formatarDataHoraBR(dataAbertura)}</p>
 <p><strong>Aberto por:</strong> ${chamado.aberto_por||"Não informado"}</p>
+<p><strong>Encerrado em:</strong> ${formatarDataHoraBR(dataEncerramento)}</p>
 <p><strong>Encerrado por:</strong> ${chamado.encerrado_por||"-"}</p>
-<p><strong>Encerrado em:</strong> ${chamado.encerrado_em?formatarDataHora(chamado.encerrado_em):"-"}</p>
+<p><strong>Tempo total:</strong> ${tempoTotal}</p>
 <p><strong>Observações de encerramento:</strong> ${chamado.observacao_encerramento||"-"}</p>
-<p><strong>Descrição:</strong> ${chamado.descricao||"-"}</p>
 </div>`;
 }
 
 if(historico && historico.length){
-html+=`<h3>Linha do tempo</h3>`;
+html+=`<h3>Linha do tempo do chamado</h3>`;
+
 historico.forEach(ev=>{
 html+=`
 <div class="evento">
 <strong>${ev.tipo_evento||"Evento"}</strong>
 <p>${ev.descricao||"-"}</p>
 <p><strong>Status:</strong> ${textoStatus(ev.status)}</p>
-<p><strong>Data:</strong> ${ev.criado_em?new Date(ev.criado_em).toLocaleString("pt-BR"):"-"}</p>
+<p><strong>Data/hora:</strong> ${formatarDataHoraBR(ev.criado_em)}</p>
 </div>`;
 });
 }else{
@@ -617,7 +699,6 @@ html+=`<p>Nenhum evento adicional encontrado para este chamado.</p>`;
 
 document.getElementById("conteudoHistorico").innerHTML=html;
 }
-
 
 function fecharHistorico(){document.getElementById("modalHistorico").style.display="none"}async function buscarAcademiaDoEquipamento(eq){
 if(!eq || !eq.academia_id){
