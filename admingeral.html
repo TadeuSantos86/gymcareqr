@@ -244,8 +244,11 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 <div id="campoClienteVinculadoAdmin">
 <label>Cliente vinculado</label>
 <select id="adminAcademiaId">
-<option value="">Selecione um cliente</option>
+<option value="">Carregando clientes...</option>
 </select>
+<p style="font-size:12px;color:#6b7280;margin-top:-8px;">
+A lista é sincronizada automaticamente com os clientes atuais e novos clientes cadastrados.
+</p>
 </div>
 
 <div>
@@ -332,22 +335,57 @@ return false;
 }
 
 
+
+async function atualizarListaClientesParaUsuariosAdmin(valorSelecionado=null){
+const {data,error}=await supabaseClient
+.from("academias")
+.select("*")
+.order("nome",{ascending:true});
+
+if(error){
+console.error("Erro ao atualizar lista de clientes para usuários admin:",error);
+return;
+}
+
+academias=data||[];
+
+if(typeof preencherSelectClientesAdmin==="function"){
+preencherSelectClientesAdmin(valorSelecionado);
+}
+}
+
 function nomeAcademiaPorId(id){
 if(!id)return "Todos os clientes";
 const a=(academias||[]).find(x=>Number(x.id)===Number(id));
 return a?a.nome:"Cliente não localizado";
 }
 
-function preencherSelectClientesAdmin(){
+function preencherSelectClientesAdmin(valorSelecionado=null){
 const select=document.getElementById("adminAcademiaId");
 if(!select)return;
+
+const selecionado=valorSelecionado!==null?String(valorSelecionado):String(select.value||"");
+
 select.innerHTML='<option value="">Selecione um cliente</option>';
-(academias||[]).forEach(a=>{
+
+const lista=(academias||[])
+.slice()
+.sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||"")));
+
+lista.forEach(a=>{
 const opt=document.createElement("option");
 opt.value=a.id;
-opt.textContent=a.nome||("Cliente #"+a.id);
+opt.textContent=`${a.nome||("Cliente #"+a.id)} ${a.status?(" - "+a.status):""}`;
 select.appendChild(opt);
 });
+
+if(selecionado){
+select.value=selecionado;
+}
+
+if(!lista.length){
+select.innerHTML='<option value="">Nenhum cliente cadastrado</option>';
+}
 }
 
 function atualizarVisibilidadeClienteVinculado(){
@@ -401,8 +439,14 @@ container.innerHTML=lista.map(u=>`
 </div>`).join("");
 }
 
-function toggleCadastroUsuarioAdmin(){
-document.getElementById("formUsuarioAdmin").classList.toggle("oculto");
+async function toggleCadastroUsuarioAdmin(){
+const form=document.getElementById("formUsuarioAdmin");
+form.classList.toggle("oculto");
+
+if(!form.classList.contains("oculto")){
+await atualizarListaClientesParaUsuariosAdmin();
+atualizarVisibilidadeClienteVinculado();
+}
 }
 
 function limparFormularioUsuarioAdmin(){
@@ -450,20 +494,28 @@ document.getElementById("formUsuarioAdmin").classList.add("oculto");
 carregarUsuariosAdmin();
 }
 
-function editarUsuarioAdmin(id){
+async function editarUsuarioAdmin(id){
 const u=usuariosAdmin.find(x=>Number(x.id)===Number(id));
 if(!u)return;
+
 if(adminLogadoAtual&&adminLogadoAtual.perfil!=="MASTER"&&Number(u.academia_id)!==Number(adminLogadoAtual.academia_id)){
 alert("Você não tem permissão para editar este usuário.");
 return;
 }
+
 document.getElementById("adminEditId").value=u.id;
 document.getElementById("adminNome").value=u.nome||"";
 document.getElementById("adminUsuario").value=u.usuario||"";
 document.getElementById("adminSenha").value=u.senha||"";
 document.getElementById("adminPerfil").value=u.perfil||"ADMIN";
 document.getElementById("adminStatus").value=u.status||"ATIVO";
-if(document.getElementById("adminAcademiaId"))document.getElementById("adminAcademiaId").value=u.academia_id||"";
+
+await atualizarListaClientesParaUsuariosAdmin(u.academia_id||"");
+
+if(document.getElementById("adminAcademiaId")){
+document.getElementById("adminAcademiaId").value=u.academia_id||"";
+}
+
 atualizarVisibilidadeClienteVinculado();
 document.getElementById("formUsuarioAdmin").classList.remove("oculto");
 document.getElementById("formUsuarioAdmin").scrollIntoView({behavior:"smooth",block:"start"});
@@ -518,6 +570,7 @@ document.getElementById("telaAdmin").classList.remove("oculto");
 
 if(typeof carregarDados==="function")carregarDados();
 if(typeof carregarAcademias==="function")carregarAcademias();
+atualizarListaClientesParaUsuariosAdmin();
 if(typeof carregarUsuariosAdmin==="function")carregarUsuariosAdmin();
 return;
 }
