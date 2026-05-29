@@ -60,7 +60,24 @@
   }
 }
 
-</style></head><body><div class="card"><div id="loginArea"><img id="logoClienteMenuQR" style="display:none;" alt="Logo do cliente"><h1 id="tituloLogin">ConetFacility</h1><p class="subtitulo" id="subtituloLogin"></p><label>Usuário</label><input type="text" id="usuario" placeholder="equipamento01"><label>Senha</label><input type="password" id="senha" placeholder="teste01"><button onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="msg erro"></p></div><div id="buscaArea" class="oculto"><h1>Identificar equipamento</h1><p class="subtitulo">Escaneie o QR Code ou digite o ID discreto do equipamento.</p><label>ID do equipamento</label><input type="text" id="codigoEquipamento" placeholder="Exemplo: EQ-001"><button onclick="buscarPorCodigo()">Buscar equipamento</button><p id="erroBusca" class="msg erro"></p></div><div id="painelEquipamento" class="oculto"><h1 id="nomeEquipamento">Equipamento</h1><p class="subtitulo">Solicitação de manutenção</p><div class="info"><p><strong>Categoria / Área:</strong> <span id="categoria"></span></p><p><strong>Marca:</strong> <span id="marca"></span></p><p><strong>Modelo:</strong> <span id="modelo"></span></p><p><strong>Número de série:</strong> <span id="serie"></span></p><p><strong>Localização:</strong> <span id="localizacao"></span></p><p><strong>ID discreto:</strong> <span id="codigoPublico"></span></p><p><strong>Status:</strong> <span id="status" class="status"></span></p></div><div id="avisoChamado" class="alerta oculto">Já existe uma solicitação em andamento para este equipamento.</div><label>Tipo do problema</label><select id="tipoProblema"><option value="Quebrado">Quebrado</option><option value="Barulho estranho">Barulho estranho</option><option value="Falha elétrica">Falha elétrica</option><option value="Revisão preventiva">Revisão preventiva</option><option value="Outro">Outro</option></select><label>Prioridade</label><select id="prioridade"><option value="BAIXA">Baixa</option><option value="MEDIA">Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select><label>Descrição</label><textarea id="descricao"></textarea><button id="btnAbrirChamado" onclick="abrirChamado()">Solicitar manutenção</button>
+
+/* LOGO CLIENTE NO TOPO APÓS LOGIN */
+.topo-cliente-logo{
+  text-align:center;
+  margin-bottom:20px;
+}
+.topo-cliente-logo img{
+  max-width:180px;
+  max-height:110px;
+  object-fit:contain;
+  border-radius:16px;
+}
+
+</style></head><body><div class="card"><div id="loginArea"><img id="logoClienteMenuQR" style="display:none;" alt="Logo do cliente"><h1 id="tituloLogin">ConetFacility</h1><p class="subtitulo" id="subtituloLogin"></p><label>Usuário</label><input type="text" id="usuario" placeholder="equipamento01"><label>Senha</label><input type="password" id="senha" placeholder="teste01"><button onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="msg erro"></p></div><div id="buscaArea" class="oculto"><h1>Identificar equipamento</h1><p class="subtitulo">Escaneie o QR Code ou digite o ID discreto do equipamento.</p><label>ID do equipamento</label><input type="text" id="codigoEquipamento" placeholder="Exemplo: EQ-001"><button onclick="buscarPorCodigo()">Buscar equipamento</button><p id="erroBusca" class="msg erro"></p></div><div id="painelEquipamento" class="oculto">
+<div id="topoLogoCliente" class="topo-cliente-logo oculto">
+  <img id="logoClienteTopo" alt="Logo do cliente">
+</div>
+<h1 id="nomeEquipamento">Equipamento</h1><p class="subtitulo">Solicitação de manutenção</p><div class="info"><p><strong>Categoria / Área:</strong> <span id="categoria"></span></p><p><strong>Marca:</strong> <span id="marca"></span></p><p><strong>Modelo:</strong> <span id="modelo"></span></p><p><strong>Número de série:</strong> <span id="serie"></span></p><p><strong>Localização:</strong> <span id="localizacao"></span></p><p><strong>ID discreto:</strong> <span id="codigoPublico"></span></p><p><strong>Status:</strong> <span id="status" class="status"></span></p></div><div id="avisoChamado" class="alerta oculto">Já existe uma solicitação em andamento para este equipamento.</div><label>Tipo do problema</label><select id="tipoProblema"><option value="Quebrado">Quebrado</option><option value="Barulho estranho">Barulho estranho</option><option value="Falha elétrica">Falha elétrica</option><option value="Revisão preventiva">Revisão preventiva</option><option value="Outro">Outro</option></select><label>Prioridade</label><select id="prioridade"><option value="BAIXA">Baixa</option><option value="MEDIA">Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select><label>Descrição</label><textarea id="descricao"></textarea><button id="btnAbrirChamado" onclick="abrirChamado()">Solicitar manutenção</button>
 <div id="areaChamadosOperador" class="operador-chamados">
 <h3>Chamados em andamento</h3>
 <p style="color:#6b7280;font-size:14px;margin-top:6px;">O operador pode acompanhar e finalizar chamados abertos ou em manutenção deste equipamento.</p>
@@ -148,14 +165,37 @@ document.getElementById("tituloLogin").innerText=academiaAtual.titulo_sistema||a
 document.getElementById("subtituloLogin").innerText=academiaAtual.subtitulo_sistema||"Abertura de chamado de manutenção";
 
 const logo=document.getElementById("logoClienteMenuQR");
+const logoTopo=document.getElementById("logoClienteTopo");
+const topo=document.getElementById("topoLogoCliente");
+
+if(academiaAtual.logo_url){
 
 if(logo){
-if(academiaAtual.logo_url){
 logo.src=academiaAtual.logo_url;
 logo.style.display="block";
+}
+
+if(logoTopo){
+logoTopo.src=academiaAtual.logo_url;
+}
+
+if(topo){
+topo.classList.remove("oculto");
+}
+
 }else{
+
+if(logo){
 logo.removeAttribute("src");
 logo.style.display="none";
+}
+
+if(logoTopo){
+logoTopo.removeAttribute("src");
+}
+
+if(topo){
+topo.classList.add("oculto");
 }
 }
 }carregarAcademia(academiaIdAtual());
