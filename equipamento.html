@@ -1,162 +1,74 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Solicitar Manutenção | ConetFacility</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script><style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}body{background:#f3f4f6;color:#111827;padding:24px}.card{max-width:760px;margin:0 auto;background:white;border-radius:20px;padding:30px;box-shadow:0 5px 20px rgba(0,0,0,.08)}h1{color:var(--cor,#93D500);margin-bottom:10px}.logo{max-height:80px;max-width:220px;object-fit:contain;margin-bottom:18px}.subtitulo{color:#6b7280;margin-bottom:25px}label{display:block;margin-top:18px;margin-bottom:8px;font-weight:bold}input,select,textarea{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;font-size:15px}textarea{resize:none;min-height:120px}button{width:100%;margin-top:20px;padding:16px;border:none;border-radius:14px;background:var(--cor,#93D500);font-size:16px;font-weight:bold;cursor:pointer}.btn-cinza{background:#e5e7eb}.info{background:#f9fafb;padding:18px;border-radius:14px;margin-bottom:20px}.info p{margin:7px 0}.msg{margin-top:20px;text-align:center;font-weight:bold}.sucesso{color:#15803d}.erro{color:#dc2626}.alerta{background:#fef3c7;color:#92400e;padding:14px;border-radius:12px;margin-bottom:20px;font-weight:bold}.oculto{display:none!important}.status{display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:bold}.status-operacional{background:#dcfce7;color:#166534}.status-manutencao{background:#fef3c7;color:#92400e}.status-bloqueado{background:#fef3c7;color:#92400e}.status-desativado{background:#e5e7eb;color:#374151}@media(max-width:700px){body{padding:12px}.card{padding:22px}}
 
-/* TOPO ADMIN GERAL - LOGO CONETFACILITY */
-.admin-logo-topo{
-  max-width:340px;
-  width:100%;
-  height:auto;
-  object-fit:contain;
-  display:block;
-}
-.admin-topo-logo-wrap{
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  padding:18px 42px;
-  background:#323E48;
-}
-@media(max-width:700px){
-  .admin-logo-topo{max-width:240px;}
-  .admin-topo-logo-wrap{padding:16px 24px;}
-}
-
-/* LOGO DISCRETO DO CLIENTE NO LOGIN */
-.logo-cliente-login{
-  max-width:150px;
-  max-height:90px;
-  object-fit:contain;
-  display:block;
-  margin:0 auto 18px;
-  border-radius:12px;
-}
-
-
-/* LOGIN WHITE-LABEL DO CLIENTE */
-.logo-cliente-login{
+/* LOGO ÚNICO CENTRAL DO CLIENTE NO MENU QR */
+#logoClienteMenuQR{
   max-width:170px;
   max-height:120px;
   width:auto;
   height:auto;
   object-fit:contain;
   display:block;
-  margin:0 auto 26px auto;
+  margin:0 auto 22px auto;
   border-radius:16px;
 }
-.login-white-label-center{
+#loginArea{
   text-align:center;
 }
-.login-white-label-center h1,
-#tituloLogin{
-  text-align:center!important;
-  margin-top:0!important;
-}
-.login-white-label-center .subtitulo,
-#subtituloLogin{
-  text-align:center!important;
-}
-@media(max-width:700px){
-  .logo-cliente-login{
-    max-width:135px;
-    max-height:95px;
-    margin-bottom:20px;
-  }
-}
-
-
-/* LOGIN WHITE-LABEL DO CLIENTE - LOGO ÚNICO CENTRAL */
-.logo-cliente-login{
-  max-width:170px;
-  max-height:120px;
-  width:auto;
-  height:auto;
-  object-fit:contain;
-  display:block;
-  margin:0 auto 26px auto;
-  border-radius:16px;
-}
-.login-white-label-center{
-  text-align:center!important;
-}
-.login-white-label-center h1,
-#tituloLogin{
-  text-align:center!important;
-  margin-top:0!important;
-}
-.login-white-label-center .subtitulo,
-#subtituloLogin{
-  text-align:center!important;
-}
-@media(max-width:700px){
-  .logo-cliente-login{
-    max-width:135px;
-    max-height:95px;
-    margin-bottom:20px;
-  }
-}
-
-
-/* LOGO ÚNICO DO CLIENTE NO MENU QR */
-#logoClienteLoginEquipamento.logo-cliente-login-unico{
-  max-width:170px!important;
-  max-height:120px!important;
-  width:auto!important;
-  height:auto!important;
-  object-fit:contain!important;
-  display:block;
-  margin:0 auto 26px auto!important;
-  border-radius:16px!important;
-}
-
-/* remove qualquer imagem duplicada dentro do login, exceto o logo oficial */
-#loginArea img:not(#logoClienteLoginEquipamento){
+#loginArea img:not(#logoClienteMenuQR){
   display:none!important;
 }
 
-.login-white-label-center,
-#loginArea{
-  text-align:center!important;
+/* CHAMADOS DO OPERADOR NO QR */
+.operador-chamados{
+  margin-top:24px;
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:16px;
+  padding:18px;
 }
-
-#tituloLogin,
-#subtituloLogin{
-  text-align:center!important;
+.operador-chamado-card{
+  background:white;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:14px;
+  margin-top:12px;
+  text-align:left;
 }
-
+.operador-chamado-card p{
+  margin:6px 0;
+}
+.finalizacao-box{
+  margin-top:12px;
+  padding:14px;
+  border-radius:12px;
+  background:#f3f4f6;
+}
+.finalizacao-box textarea{
+  width:100%;
+  min-height:100px;
+  margin-top:8px;
+}
+.btn-finalizar-operador{
+  background:#16a34a!important;
+  color:white!important;
+}
 @media(max-width:700px){
-  #logoClienteLoginEquipamento.logo-cliente-login-unico{
-    max-width:135px!important;
-    max-height:95px!important;
-    margin-bottom:20px!important;
+  #logoClienteMenuQR{
+    max-width:135px;
+    max-height:95px;
   }
 }
 
-
-/* CHAMADOS DO OPERADOR NO QR */
-.operador-chamados{margin-top:24px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:16px;padding:18px}
-.operador-chamado-card{background:white;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-top:12px;text-align:left}
-.operador-chamado-card p{margin:6px 0}
-.finalizacao-box{margin-top:12px;padding:14px;border-radius:12px;background:#f3f4f6}
-.finalizacao-box textarea{width:100%;min-height:100px;margin-top:8px}
-.btn-finalizar-operador{background:#16a34a!important;color:white!important}
-
-</style></head><body><div class="card"><img id="logoCliente" class="logo oculto"><div id="loginArea" class="login-white-label-center">
-
-
-
-
-<img id="logoClienteLoginEquipamento" class="logo-cliente-login-unico" style="display:none;" alt="Logo do cliente">
-<h1 id="tituloLogin">ConetFacility</h1><p class="subtitulo" id="subtituloLogin"></p><label>Usuário</label><input type="text" id="usuario" placeholder="usuario_autorizado"><label>Senha</label><input type="password" id="senha" placeholder="sua_senha"><button onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="msg erro"></p></div><div id="buscaArea" class="oculto"><h1>Identificar equipamento</h1><p class="subtitulo">Escaneie o QR Code ou digite o ID discreto do equipamento.</p><label>ID do equipamento</label><input type="text" id="codigoEquipamento" placeholder="Exemplo: EQ-001"><button onclick="buscarPorCodigo()">Buscar equipamento</button><p id="erroBusca" class="msg erro"></p></div><div id="painelEquipamento" class="oculto"><h1 id="nomeEquipamento">Equipamento</h1><p class="subtitulo">Solicitação de manutenção</p><div class="info"><p><strong>Categoria / Área:</strong> <span id="categoria"></span></p><p><strong>Marca:</strong> <span id="marca"></span></p><p><strong>Modelo:</strong> <span id="modelo"></span></p><p><strong>Número de série:</strong> <span id="serie"></span></p><p><strong>Localização:</strong> <span id="localizacao"></span></p><p><strong>ID discreto:</strong> <span id="codigoPublico"></span></p><p><strong>Status:</strong> <span id="status" class="status"></span></p></div><div id="avisoChamado" class="alerta oculto">Já existe uma solicitação em andamento para este equipamento.</div><label>Tipo do problema</label><select id="tipoProblema"><option value="Quebrado">Quebrado</option><option value="Barulho estranho">Barulho estranho</option><option value="Falha elétrica">Falha elétrica</option><option value="Revisão preventiva">Revisão preventiva</option><option value="Outro">Outro</option></select><label>Prioridade</label><select id="prioridade"><option value="BAIXA">Baixa</option><option value="MEDIA">Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select><label>Descrição</label><textarea id="descricao"></textarea><button id="btnAbrirChamado" onclick="abrirChamado()">Solicitar manutenção</button>
+</style></head><body><div class="card"><div id="loginArea"><img id="logoClienteMenuQR" style="display:none;" alt="Logo do cliente"><h1 id="tituloLogin">ConetFacility</h1><p class="subtitulo" id="subtituloLogin"></p><label>Usuário</label><input type="text" id="usuario" placeholder="equipamento01"><label>Senha</label><input type="password" id="senha" placeholder="teste01"><button onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="msg erro"></p></div><div id="buscaArea" class="oculto"><h1>Identificar equipamento</h1><p class="subtitulo">Escaneie o QR Code ou digite o ID discreto do equipamento.</p><label>ID do equipamento</label><input type="text" id="codigoEquipamento" placeholder="Exemplo: EQ-001"><button onclick="buscarPorCodigo()">Buscar equipamento</button><p id="erroBusca" class="msg erro"></p></div><div id="painelEquipamento" class="oculto"><h1 id="nomeEquipamento">Equipamento</h1><p class="subtitulo">Solicitação de manutenção</p><div class="info"><p><strong>Categoria / Área:</strong> <span id="categoria"></span></p><p><strong>Marca:</strong> <span id="marca"></span></p><p><strong>Modelo:</strong> <span id="modelo"></span></p><p><strong>Número de série:</strong> <span id="serie"></span></p><p><strong>Localização:</strong> <span id="localizacao"></span></p><p><strong>ID discreto:</strong> <span id="codigoPublico"></span></p><p><strong>Status:</strong> <span id="status" class="status"></span></p></div><div id="avisoChamado" class="alerta oculto">Já existe uma solicitação em andamento para este equipamento.</div><label>Tipo do problema</label><select id="tipoProblema"><option value="Quebrado">Quebrado</option><option value="Barulho estranho">Barulho estranho</option><option value="Falha elétrica">Falha elétrica</option><option value="Revisão preventiva">Revisão preventiva</option><option value="Outro">Outro</option></select><label>Prioridade</label><select id="prioridade"><option value="BAIXA">Baixa</option><option value="MEDIA">Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select><label>Descrição</label><textarea id="descricao"></textarea><button id="btnAbrirChamado" onclick="abrirChamado()">Solicitar manutenção</button>
 <div id="areaChamadosOperador" class="operador-chamados">
 <h3>Chamados em andamento</h3>
 <p style="color:#6b7280;font-size:14px;margin-top:6px;">O operador pode acompanhar e finalizar chamados abertos ou em manutenção deste equipamento.</p>
 <div id="listaChamadosOperador"></div>
 </div>
-
 <button class="btn-cinza" onclick="voltarBusca()">Escolher outro equipamento</button><p id="mensagem" class="msg"></p></div></div>
 <script>
-const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const EMAILJS_SERVICE_ID="service_i6mlqzr";const EMAILJS_TEMPLATE_ID="template_dec814j";
-const EMAILJS_TEMPLATE_ENCERRAMENTO_ID="template_s6ceobz";const EMAILJS_PUBLIC_KEY="aXBqSvpRwjN9R_QNu";emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});let equipamentoAtual=null,academiaAtual=null,usuarioLogadoChamado='';
+const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);const EMAILJS_SERVICE_ID="service_i6mlqzr";const EMAILJS_TEMPLATE_ID="template_dec814j";const EMAILJS_TEMPLATE_ENCERRAMENTO_ID="template_s6ceobz";const EMAILJS_PUBLIC_KEY="aXBqSvpRwjN9R_QNu";emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});let equipamentoAtual=null,academiaAtual=null,usuarioLogadoChamado='';
 
 function obterListaEmails(valor){
 return String(valor||"")
@@ -207,116 +119,46 @@ return "-";
 }
 }
 
+function obterDataAberturaChamado(chamado){
+return chamado.criado_em||chamado.created_at||chamado.data_abertura||chamado.inserted_at||null;
+}
+
 function agoraBrasilFormatado(){
 return formatarDataHoraBR(new Date().toISOString());
 }
 
 function param(n){return new URLSearchParams(location.search).get(n)}function academiaIdAtual(){return Number(param("academia_id"))||1}
-
-function formatarDataHoraBR(data){
-if(!data)return "-";
-try{
-const d=new Date(data);
-if(isNaN(d.getTime()))return "-";
-const partes=new Intl.DateTimeFormat("pt-BR",{timeZone:"America/Sao_Paulo",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(d);
-const mapa={};partes.forEach(p=>{mapa[p.type]=p.value;});
-return `${mapa.day}/${mapa.month}/${mapa.year} às ${mapa.hour}h${mapa.minute}`;
-}catch(e){return "-";}
-}
-function obterDataAberturaChamado(chamado){return chamado.criado_em||chamado.created_at||chamado.data_abertura||chamado.inserted_at||null;}
-function obterListaEmails(valor){return String(valor||"").split(/[,;\n]+/).map(e=>e.trim()).filter(e=>e&&e.includes("@"));}
-async function enviarEmailParaLista(templateId,parametrosBase,emails){
-const lista=obterListaEmails(emails);
-for(const email of lista){await emailjs.send(EMAILJS_SERVICE_ID,templateId,{...parametrosBase,email_destino:email,from_name:"ConetFacility"});}
-}
-
 function statusChamadoAtivo(status){
 const s=String(status||"").trim().toUpperCase();
 return ["ABERTO","EM MANUTENCAO","MANUTENCAO","REABERTO"].includes(s);
 }
 
-function normalizarStatus(s){if(s==="MANUTENCAO"||s==="EM MANUTENCAO")return"EM_MANUTENCAO";if(s==="OPERACIONAL")return"OPERACIONAL";if(s==="BLOQUEADO")return"BLOQUEADO";if(s==="DESATIVADO")return"DESATIVADO";return s||"OPERACIONAL"}function textoStatus(s){const x=normalizarStatus(s);return x==="EM_MANUTENCAO"?"Em manutenção":x==="OPERACIONAL"?"Operacional":x==="BLOQUEADO"?"Bloqueado":x==="DESATIVADO"?"Desativado":x==="ABERTO"?"Aberto":x==="FINALIZADO"?"Finalizado":s||"Operacional"}function classeStatus(s){const x=normalizarStatus(s);if(x==="OPERACIONAL")return"status status-operacional";if(x==="EM_MANUTENCAO")return"status status-manutencao";if(x==="BLOQUEADO")return"status status-bloqueado";return"status status-desativado"}
-else{
-logoLoginEquipamento.removeAttribute("src");
-logoLoginEquipamento.style.display="none";
-}
-}else{
-logoLoginEquipamento.removeAttribute("src");
-logoLoginEquipamento.style.display="none";
-}
-}
-
-
-async function carregarLogoClienteDoMenuQR(){
-const logo=document.getElementById("logoClienteLoginEquipamento");
-if(!logo)return;
-
-let academiaId=param("academia_id");
-const equipamentoId=param("id");
-
-try{
-if(equipamentoId){
-const {data:eqLogo}=await supabaseClient
-.from("equipamentos")
-.select("academia_id")
-.eq("id",Number(equipamentoId))
-.maybeSingle();
-
-if(eqLogo && eqLogo.academia_id){
-academiaId=eqLogo.academia_id;
-}
-}
-
-if(!academiaId){
-academiaId=1;
-}
-
-const {data:academiaLogo}=await supabaseClient
+function normalizarStatus(s){if(s==="MANUTENCAO"||s==="EM MANUTENCAO")return"EM_MANUTENCAO";if(s==="OPERACIONAL")return"OPERACIONAL";if(s==="BLOQUEADO")return"BLOQUEADO";if(s==="DESATIVADO")return"DESATIVADO";return s||"OPERACIONAL"}function textoStatus(s){const x=normalizarStatus(s);return x==="EM_MANUTENCAO"?"Em manutenção":x==="OPERACIONAL"?"Operacional":x==="BLOQUEADO"?"Bloqueado":x==="DESATIVADO"?"Desativado":x==="ABERTO"?"Aberto":x==="FINALIZADO"?"Finalizado":s||"Operacional"}function classeStatus(s){const x=normalizarStatus(s);if(x==="OPERACIONAL")return"status status-operacional";if(x==="EM_MANUTENCAO")return"status status-manutencao";if(x==="BLOQUEADO")return"status status-bloqueado";return"status status-desativado"}async function carregarAcademia(id){
+const {data}=await supabaseClient
 .from("academias")
 .select("*")
-.eq("id",Number(academiaId))
+.eq("id",id)
 .maybeSingle();
 
-if(academiaLogo){
-academiaAtual=academiaLogo;
+academiaAtual=data||{};
 
-if(academiaLogo.cor_primaria){
-document.documentElement.style.setProperty("--cor",academiaLogo.cor_primaria);
-}
+document.documentElement.style.setProperty("--cor",academiaAtual.cor_primaria||"#93D500");
 
-if(academiaLogo.logo_url){
-logo.src=academiaLogo.logo_url;
+document.getElementById("tituloLogin").innerText=academiaAtual.titulo_sistema||academiaAtual.nome||"Área de solicitação";
+document.getElementById("subtituloLogin").innerText=academiaAtual.subtitulo_sistema||"Abertura de chamado de manutenção";
+
+const logo=document.getElementById("logoClienteMenuQR");
+
+if(logo){
+if(academiaAtual.logo_url){
+logo.src=academiaAtual.logo_url;
 logo.style.display="block";
 }else{
 logo.removeAttribute("src");
 logo.style.display="none";
 }
-
-const titulo=document.getElementById("tituloLogin");
-if(titulo)titulo.innerText=academiaLogo.titulo_sistema||academiaLogo.nome||"Área de solicitação";
-
-const subtitulo=document.getElementById("subtituloLogin");
-if(subtitulo)subtitulo.innerText=academiaLogo.subtitulo_sistema||"Abertura de chamado de manutenção";
 }
-}catch(e){
-console.error("Erro ao carregar logo do cliente do QR:",e);
-}
-}
-
-async function carregarAcademia(id){const {data}=await supabaseClient.from("academias").select("*").eq("id",id).maybeSingle();academiaAtual=data||{};document.documentElement.style.setProperty("--cor",academiaAtual.cor_primaria||"#93D500");
-const logoQR=document.getElementById("logoClienteLoginEquipamento"); if(logoQR&&academiaAtual.logo_url){logoQR.src=academiaAtual.logo_url;logoQR.style.display="block";}
-
-
-const logoLoginEquipamento=document.getElementById("logoClienteLoginEquipamento");
-if(logoLoginEquipamento){
-  if(academiaAtual.logo_url){
-    logoLoginEquipamento.src=academiaAtual.logo_url;
-    logoLoginEquipamento.style.display="block";
-  }else{
-    logoLoginEquipamento.style.display="none";
-  }
-}
-document.getElementById("tituloLogin").innerText=academiaAtual.titulo_sistema||"ConetFacility";document.getElementById("subtituloLogin").innerText=academiaAtual.subtitulo_sistema||"";const logo=document.getElementById("logoCliente");if(academiaAtual.logo_url){logo.src=academiaAtual.logo_url;logo.classList.remove("oculto")}else logo.classList.add("oculto")}carregarAcademia(academiaIdAtual());
+}carregarAcademia(academiaIdAtual());
 async function validarUsuarioChamado(usuario,senha,academiaId){
 const {data,error}=await supabaseClient
 .from("usuarios_chamados")
@@ -400,16 +242,31 @@ history.replaceState(null,"",location.pathname+"?"+params.toString());
 mostrarEquipamento(data);
 }
 async function buscarPorCodigo(){const codigo=document.getElementById("codigoEquipamento").value.trim().toUpperCase();if(!codigo){document.getElementById("erroBusca").innerText="Digite o ID do equipamento.";return}const {data}=await supabaseClient.from("equipamentos").select("*").eq("codigo_publico",codigo).eq("academia_id",academiaIdAtual()).maybeSingle();if(!data){document.getElementById("erroBusca").innerText="Equipamento não encontrado.";return}mostrarEquipamento(data)}
-function mostrarEquipamento(d){equipamentoAtual=d;document.getElementById("buscaArea").classList.add("oculto");document.getElementById("painelEquipamento").classList.remove("oculto");document.getElementById("nomeEquipamento").innerText=d.nome||"Equipamento";["categoria","marca","modelo","localizacao"].forEach(k=>document.getElementById(k).innerText=d[k]||"-");document.getElementById("serie").innerText=d.numero_serie||"-";document.getElementById("codigoPublico").innerText=d.codigo_publico||"-";const se=document.getElementById("status");se.innerText=textoStatus(d.status);se.className=classeStatus(d.status);document.getElementById("descricao").value="";document.getElementById("mensagem").innerText="";document.getElementById("avisoChamado").classList.add("oculto");document.getElementById("btnAbrirChamado").disabled=false;document.getElementById("btnAbrirChamado").style.opacity="1";verificarChamadoAberto();
-carregarChamadosOperador()}
+function mostrarEquipamento(d){equipamentoAtual=d;document.getElementById("buscaArea").classList.add("oculto");document.getElementById("painelEquipamento").classList.remove("oculto");document.getElementById("nomeEquipamento").innerText=d.nome||"Equipamento";["categoria","marca","modelo","localizacao"].forEach(k=>document.getElementById(k).innerText=d[k]||"-");document.getElementById("serie").innerText=d.numero_serie||"-";document.getElementById("codigoPublico").innerText=d.codigo_publico||"-";const se=document.getElementById("status");se.innerText=textoStatus(d.status);se.className=classeStatus(d.status);document.getElementById("descricao").value="";document.getElementById("mensagem").innerText="";document.getElementById("avisoChamado").classList.add("oculto");document.getElementById("btnAbrirChamado").disabled=false;document.getElementById("btnAbrirChamado").style.opacity="1";verificarChamadoAberto();carregarChamadosOperador()}
 function voltarBusca(){document.getElementById("painelEquipamento").classList.add("oculto");document.getElementById("buscaArea").classList.remove("oculto");document.getElementById("codigoEquipamento").value="";equipamentoAtual=null}
 
 async function carregarChamadosOperador(){
 const lista=document.getElementById("listaChamadosOperador");
 if(!lista||!equipamentoAtual)return;
-const {data,error}=await supabaseClient.from("chamados").select("*").eq("equipamento_id",equipamentoAtual.id).in("status",["ABERTO","EM MANUTENCAO","MANUTENCAO","REABERTO"]).order("id",{ascending:false});
-if(error){lista.innerHTML='<p class="erro">Erro ao carregar chamados em andamento.</p>';return;}
-if(!data||!data.length){lista.innerHTML='<p style="color:#6b7280;margin-top:12px;">Nenhum chamado em andamento para este equipamento.</p>';return;}
+
+const {data,error}=await supabaseClient
+.from("chamados")
+.select("*")
+.eq("equipamento_id",equipamentoAtual.id)
+.in("status",["ABERTO","EM MANUTENCAO","MANUTENCAO","REABERTO"])
+.order("id",{ascending:false});
+
+if(error){
+lista.innerHTML='<p class="erro">Erro ao carregar chamados em andamento.</p>';
+console.error(error);
+return;
+}
+
+if(!data||!data.length){
+lista.innerHTML='<p style="color:#6b7280;margin-top:12px;">Nenhum chamado em andamento para este equipamento.</p>';
+return;
+}
+
 lista.innerHTML=data.map(ch=>`
 <div class="operador-chamado-card">
 <strong>Chamado #${ch.id}</strong>
@@ -419,19 +276,24 @@ lista.innerHTML=data.map(ch=>`
 <p><strong>Aberto em:</strong> ${formatarDataHoraBR(obterDataAberturaChamado(ch))}</p>
 <p><strong>Aberto por:</strong> ${ch.aberto_por||"Não informado"}</p>
 <p><strong>Descrição:</strong> ${ch.descricao||"-"}</p>
+
 <div class="finalizacao-box">
 <label>Descreva o que foi feito e como o chamado foi resolvido</label>
 <textarea id="obsFinalizacaoOperador_${ch.id}" placeholder="Ex: Ajuste realizado, equipamento testado e liberado para uso."></textarea>
 <button class="btn-finalizar-operador" onclick="finalizarChamadoOperador(${ch.id})">Finalizar chamado</button>
 </div>
-</div>`).join("");
+</div>
+`).join("");
 }
 
 async function enviarEmailEncerramentoOperador(chamado,observacao,encerradoEm){
 try{
 const emailDestino=academiaAtual?.email_notificacao;
 if(!emailDestino)return;
-await enviarEmailParaLista(EMAILJS_TEMPLATE_ENCERRAMENTO_ID,{
+
+await enviarEmailParaLista(
+EMAILJS_TEMPLATE_ENCERRAMENTO_ID,
+{
 academia_nome:academiaAtual?.nome||"Academia",
 equipamento_nome:equipamentoAtual?.nome||"-",
 equipamento_codigo:equipamentoAtual?.codigo_publico||"-",
@@ -446,22 +308,78 @@ usuario_abertura:chamado.aberto_por||"Não informado",
 usuario_encerramento:usuarioLogadoChamado||"Operador",
 observacao_encerramento:observacao||"-",
 relatorio_chamado:`Chamado #${chamado.id} finalizado pelo operador via QR Code. Resolução: ${observacao||"-"}`
-},emailDestino);
-await registrarHistorico(equipamentoAtual.id,chamado.id,"E-mail de encerramento enviado","Relatório de encerramento enviado para "+emailDestino,"FINALIZADO");
-}catch(e){console.error(e);}
+},
+emailDestino
+);
+
+await registrarHistorico(
+equipamentoAtual.id,
+chamado.id,
+"E-mail de encerramento enviado",
+"Relatório de encerramento enviado para "+emailDestino,
+"FINALIZADO"
+);
+
+}catch(e){
+console.error("Erro ao enviar e-mail de encerramento:",e);
+}
 }
 
 async function finalizarChamadoOperador(chamadoId){
 const obs=document.getElementById("obsFinalizacaoOperador_"+chamadoId)?.value.trim();
-if(!obs){alert("Descreva o que foi feito e como o chamado foi resolvido.");return;}
-const {data:chamado,error:erroChamado}=await supabaseClient.from("chamados").select("*").eq("id",chamadoId).maybeSingle();
-if(erroChamado||!chamado){alert("Não foi possível localizar o chamado.");return;}
+
+if(!obs){
+alert("Descreva o que foi feito e como o chamado foi resolvido.");
+return;
+}
+
+const {data:chamado,error:erroChamado}=await supabaseClient
+.from("chamados")
+.select("*")
+.eq("id",chamadoId)
+.maybeSingle();
+
+if(erroChamado||!chamado){
+alert("Não foi possível localizar o chamado.");
+return;
+}
+
 const encerradoEm=new Date().toISOString();
-const {error}=await supabaseClient.from("chamados").update({status:"FINALIZADO",encerrado_por:usuarioLogadoChamado||"Operador",encerrado_em:encerradoEm,observacao_encerramento:obs}).eq("id",chamadoId);
-if(error){alert("Erro ao finalizar chamado: "+error.message);return;}
-await supabaseClient.from("equipamentos").update({status:"OPERACIONAL"}).eq("id",equipamentoAtual.id);
-await registrarHistorico(equipamentoAtual.id,chamadoId,"Chamado finalizado pelo operador","Encerrado por "+(usuarioLogadoChamado||"Operador")+". Resolução: "+obs,"FINALIZADO");
-await enviarEmailEncerramentoOperador({...chamado,status:"FINALIZADO",encerrado_em:encerradoEm,observacao_encerramento:obs},obs,encerradoEm);
+
+const {error}=await supabaseClient
+.from("chamados")
+.update({
+status:"FINALIZADO",
+encerrado_por:usuarioLogadoChamado||"Operador",
+encerrado_em:encerradoEm,
+observacao_encerramento:obs
+})
+.eq("id",chamadoId);
+
+if(error){
+alert("Erro ao finalizar chamado: "+error.message);
+return;
+}
+
+await supabaseClient
+.from("equipamentos")
+.update({status:"OPERACIONAL"})
+.eq("id",equipamentoAtual.id);
+
+await registrarHistorico(
+equipamentoAtual.id,
+chamadoId,
+"Chamado finalizado pelo operador",
+"Encerrado por "+(usuarioLogadoChamado||"Operador")+". Resolução: "+obs,
+"FINALIZADO"
+);
+
+await enviarEmailEncerramentoOperador(
+{...chamado,status:"FINALIZADO",encerrado_em:encerradoEm,observacao_encerramento:obs},
+obs,
+encerradoEm
+);
+
 alert("Chamado finalizado com sucesso.");
 await carregarEquipamentoPorId(equipamentoAtual.id);
 }
@@ -512,7 +430,7 @@ prioridade:prioridade,
 descricao:descricao,
 status:"Aberto",
 usuario_abertura:usuarioLogadoChamado||"Não informado",
-data_hora:typeof agoraBrasilFormatado==="function"?agoraBrasilFormatado():formatarDataHoraBR(new Date().toISOString())
+data_hora:typeof agoraBrasilFormatado==="function"?agoraBrasilFormatado():new Date().toLocaleString("pt-BR")
 };
 
 await enviarEmailParaLista(
@@ -524,19 +442,19 @@ emailDestino
 await registrarHistorico(
 equipamentoAtual.id,
 chamado.id,
-"E-mail de abertura enviado",
-"Notificação de abertura enviada para "+emailDestino,
+"E-mail enviado",
+"Notificação enviada para "+emailDestino,
 "ABERTO"
 );
 
 }catch(error){
-console.error("Erro ao enviar e-mail de abertura:",error);
+console.error("Erro ao enviar e-mail:",error);
 
 await registrarHistorico(
 equipamentoAtual.id,
 chamado.id,
-"Falha no envio de e-mail de abertura",
-"Erro ao tentar enviar notificação de abertura por e-mail.",
+"Falha no envio de e-mail",
+"Erro ao tentar enviar notificação por e-mail.",
 "ABERTO"
 );
 }
@@ -561,5 +479,5 @@ document.getElementById("btnAbrirChamado").style.opacity=".5";
 return;
 }
 
-const {data,error}=await supabaseClient.from("chamados").insert([{equipamento_id:equipamentoAtual.id,tipo_problema:tipo,prioridade:prior,descricao:desc,status:"ABERTO",aberto_por:usuarioLogadoChamado||"Não informado"}]).select().single();if(error){document.getElementById("mensagem").innerText=error.message;document.getElementById("mensagem").className="msg erro";return}await supabaseClient.from("equipamentos").update({status:"MANUTENCAO"}).eq("id",equipamentoAtual.id);await registrarHistorico(equipamentoAtual.id,data.id,"Chamado aberto","Tipo: "+tipo+". Prioridade: "+prior+". Descrição: "+desc,"ABERTO");await enviarEmailNotificacao(data,tipo,prior,desc);document.getElementById("mensagem").innerText="Chamado aberto com sucesso. A academia foi notificada por e-mail.";document.getElementById("mensagem").className="msg sucesso";document.getElementById("btnAbrirChamado").disabled=true;document.getElementById("btnAbrirChamado").style.opacity=".5";document.getElementById("avisoChamado").classList.remove("oculto")}
+const {data,error}=await supabaseClient.from("chamados").insert([{equipamento_id:equipamentoAtual.id,tipo_problema:tipo,prioridade:prior,descricao:desc,status:"ABERTO",aberto_por:usuarioLogadoChamado||"Não informado"}]).select().single();if(error){document.getElementById("mensagem").innerText=error.message;document.getElementById("mensagem").className="msg erro";return}await supabaseClient.from("equipamentos").update({status:"MANUTENCAO"}).eq("id",equipamentoAtual.id);await registrarHistorico(equipamentoAtual.id,data.id,"Chamado aberto","Tipo: "+tipo+". Prioridade: "+prior+". Descrição: "+desc,"ABERTO");await enviarEmailNotificacao(data,tipo,prior,desc);document.getElementById("mensagem").innerText="Chamado aberto com sucesso. A academia foi notificada por e-mail.";document.getElementById("mensagem").className="msg sucesso";document.getElementById("btnAbrirChamado").disabled=true;document.getElementById("btnAbrirChamado").style.opacity=".5";document.getElementById("avisoChamado").classList.remove("oculto");carregarChamadosOperador()}
 </script></body></html>
