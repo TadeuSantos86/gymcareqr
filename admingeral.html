@@ -114,6 +114,42 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
   border-radius:12px;
 }
 
+
+/* USUÁRIOS ADMINISTRATIVOS */
+.admin-users-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:14px;
+  margin-top:18px;
+}
+.admin-user-card{
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:14px;
+}
+.admin-user-card p{
+  margin:6px 0;
+}
+.admin-status-ativo{
+  display:inline-block;
+  padding:5px 10px;
+  border-radius:999px;
+  background:#dcfce7;
+  color:#166534;
+  font-size:12px;
+  font-weight:bold;
+}
+.admin-status-inativo{
+  display:inline-block;
+  padding:5px 10px;
+  border-radius:999px;
+  background:#fee2e2;
+  color:#991b1b;
+  font-size:12px;
+  font-weight:bold;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -125,8 +161,8 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 
 <div id="telaLogin" class="login">
 <h1>ConetFacility</h1><p>Admin Geral</p>
-<label>Usuário</label><input type="text" id="usuario" placeholder="master">
-<label>Senha</label><input type="password" id="senha" placeholder="gymcare01">
+<label>Usuário</label><input type="text" id="usuario" placeholder="seu_usuario">
+<label>Senha</label><input type="password" id="senha" placeholder="sua_senha">
 <button class="btn-verde" onclick="entrarMaster()">Entrar</button>
 <p id="erroLogin" class="erro"></p>
 </div>
@@ -172,6 +208,67 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 </div>
 
 <br>
+
+<div class="bloco">
+<h2>Usuários com acesso ao Painel Admin Geral</h2>
+<p style="margin:8px 0 18px;color:#6b7280;">Cadastre, edite, ative ou desative usuários autorizados a acessar o painel administrativo geral.</p>
+
+<button class="btn-verde" onclick="toggleCadastroUsuarioAdmin()">+ Novo Usuário Admin</button>
+
+<div id="formUsuarioAdmin" class="oculto" style="margin-top:20px;">
+<div class="form-grid">
+<div>
+<label>Nome</label>
+<input type="text" id="adminNome" placeholder="Ex: João Silva">
+</div>
+
+<div>
+<label>Usuário</label>
+<input type="text" id="adminUsuario" placeholder="Ex: joao.admin">
+</div>
+
+<div>
+<label>Senha</label>
+<input type="text" id="adminSenha" placeholder="Digite a senha">
+</div>
+
+<div>
+<label>Perfil</label>
+<select id="adminPerfil" onchange="atualizarVisibilidadeClienteVinculado()">
+<option value="MASTER">Master</option>
+<option value="ADMIN">Admin</option>
+<option value="SUPORTE">Suporte</option>
+</select>
+</div>
+
+<div id="campoClienteVinculadoAdmin">
+<label>Cliente vinculado</label>
+<select id="adminAcademiaId">
+<option value="">Selecione um cliente</option>
+</select>
+</div>
+
+<div>
+<label>Status</label>
+<select id="adminStatus">
+<option value="ATIVO">Ativo</option>
+<option value="INATIVO">Inativo</option>
+</select>
+</div>
+</div>
+
+<input type="hidden" id="adminEditId">
+
+<button class="btn-verde" onclick="salvarUsuarioAdmin()">Salvar usuário</button>
+<button class="btn-cinza" onclick="cancelarUsuarioAdmin()">Cancelar</button>
+<p id="msgUsuarioAdmin" class="sucesso"></p>
+<p id="erroUsuarioAdmin" class="erro"></p>
+</div>
+
+<div id="listaUsuariosAdmin" class="admin-users-grid"></div>
+</div>
+
+<br>
 <div class="grid">
 <div class="bloco">
 <h2>Clientes / academias</h2>
@@ -213,16 +310,228 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let usuariosAdmin=[];
+try{
+const salvo=localStorage.getItem("conetfacility_admin_usuario");
+if(salvo){adminLogadoAtual=JSON.parse(salvo);}
+}catch(e){}let adminLogadoAtual={perfil:'MASTER',academia_id:null,usuario:'master'};
 let academias=[],equipamentos=[],chamados=[],graficoStatusClientes=null,graficoChamadosCliente=null;
 
-function entrarMaster(){const u=document.getElementById("usuario").value.trim();const s=document.getElementById("senha").value.trim();if(u==="master"&&s==="gymcare01"){localStorage.setItem("gymcare_master_logado","sim");mostrarAdmin()}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."}
+
+async function validarLoginAdminGeral(usuario,senha){
+try{
+const {data,error}=await supabaseClient.from("usuarios_admin").select("*").eq("usuario",usuario).eq("senha",senha).eq("status","ATIVO").maybeSingle();
+if(error){console.error("Erro ao validar usuário admin:",error);return false;}
+if(data){
+adminLogadoAtual={id:data.id,usuario:data.usuario,nome:data.nome,perfil:data.perfil||"ADMIN",academia_id:data.academia_id||null};
+localStorage.setItem("conetfacility_admin_usuario",JSON.stringify(adminLogadoAtual));
+return true;
+}
+return false;
+}catch(e){console.error("Falha na validação usuarios_admin:",e);return false;}
+}
+
+
+function nomeAcademiaPorId(id){
+if(!id)return "Todos os clientes";
+const a=(academias||[]).find(x=>Number(x.id)===Number(id));
+return a?a.nome:"Cliente não localizado";
+}
+
+function preencherSelectClientesAdmin(){
+const select=document.getElementById("adminAcademiaId");
+if(!select)return;
+select.innerHTML='<option value="">Selecione um cliente</option>';
+(academias||[]).forEach(a=>{
+const opt=document.createElement("option");
+opt.value=a.id;
+opt.textContent=a.nome||("Cliente #"+a.id);
+select.appendChild(opt);
+});
+}
+
+function atualizarVisibilidadeClienteVinculado(){
+const perfil=document.getElementById("adminPerfil")?.value;
+const campo=document.getElementById("campoClienteVinculadoAdmin");
+if(!campo)return;
+campo.style.display=perfil==="MASTER"?"none":"block";
+if(perfil==="MASTER" && document.getElementById("adminAcademiaId")){
+document.getElementById("adminAcademiaId").value="";
+}
+}
+
+async function carregarUsuariosAdmin(){
+const {data,error}=await supabaseClient
+.from("usuarios_admin")
+.select("*")
+.order("id",{ascending:true});
+
+if(error){
+console.error("Erro ao carregar usuários admin:",error);
+return;
+}
+
+usuariosAdmin=data||[];
+renderizarUsuariosAdmin();
+}
+
+function renderizarUsuariosAdmin(){
+const container=document.getElementById("listaUsuariosAdmin");
+if(!container)return;
+let lista=usuariosAdmin||[];
+if(adminLogadoAtual&&adminLogadoAtual.perfil!=="MASTER"){
+lista=lista.filter(u=>Number(u.academia_id)===Number(adminLogadoAtual.academia_id));
+}
+if(!lista.length){
+container.innerHTML='<p style="color:#6b7280;margin-top:14px;">Nenhum usuário administrativo cadastrado.</p>';
+return;
+}
+container.innerHTML=lista.map(u=>`
+<div class="admin-user-card">
+<h3>${u.nome||u.usuario}</h3>
+<p><strong>Usuário:</strong> ${u.usuario}</p>
+<p><strong>Perfil:</strong> ${u.perfil||"ADMIN"}</p>
+<p><strong>Cliente vinculado:</strong> ${u.perfil==="MASTER"?"Todos os clientes":nomeAcademiaPorId(u.academia_id)}</p>
+<p><strong>Status:</strong> <span class="${u.status==="ATIVO"?"admin-status-ativo":"admin-status-inativo"}">${u.status||"ATIVO"}</span></p>
+<div class="botoes">
+<button class="btn-azul" onclick="editarUsuarioAdmin(${u.id})">Editar</button>
+<button class="btn-cinza" onclick="alterarStatusUsuarioAdmin(${u.id},'${u.status==="ATIVO"?"INATIVO":"ATIVO"}')">${u.status==="ATIVO"?"Desativar":"Ativar"}</button>
+<button class="btn-vermelho" onclick="excluirUsuarioAdmin(${u.id})">Excluir</button>
+</div>
+</div>`).join("");
+}
+
+function toggleCadastroUsuarioAdmin(){
+document.getElementById("formUsuarioAdmin").classList.toggle("oculto");
+}
+
+function limparFormularioUsuarioAdmin(){
+document.getElementById("adminEditId").value="";
+document.getElementById("adminNome").value="";
+document.getElementById("adminUsuario").value="";
+document.getElementById("adminSenha").value="";
+document.getElementById("adminPerfil").value="ADMIN";
+document.getElementById("adminStatus").value="ATIVO";
+document.getElementById("msgUsuarioAdmin").innerText="";
+document.getElementById("erroUsuarioAdmin").innerText="";
+}
+
+function cancelarUsuarioAdmin(){
+limparFormularioUsuarioAdmin();
+document.getElementById("formUsuarioAdmin").classList.add("oculto");
+}
+
+async function salvarUsuarioAdmin(){
+document.getElementById("msgUsuarioAdmin").innerText="";
+document.getElementById("erroUsuarioAdmin").innerText="";
+const id=document.getElementById("adminEditId").value;
+const nome=document.getElementById("adminNome").value.trim();
+const usuario=document.getElementById("adminUsuario").value.trim();
+const senha=document.getElementById("adminSenha").value.trim();
+const perfil=document.getElementById("adminPerfil").value;
+const status=document.getElementById("adminStatus").value;
+const academia_id_valor=document.getElementById("adminAcademiaId")?.value||"";
+const academia_id=perfil==="MASTER"?null:(academia_id_valor?Number(academia_id_valor):null);
+
+if(!usuario||!senha){document.getElementById("erroUsuarioAdmin").innerText="Usuário e senha são obrigatórios.";return;}
+if(perfil!=="MASTER"&&!academia_id){document.getElementById("erroUsuarioAdmin").innerText="Selecione o cliente vinculado para este usuário.";return;}
+if(adminLogadoAtual&&adminLogadoAtual.perfil!=="MASTER"){
+if(perfil==="MASTER"){document.getElementById("erroUsuarioAdmin").innerText="Apenas MASTER pode criar outro usuário MASTER.";return;}
+if(Number(adminLogadoAtual.academia_id)!==Number(academia_id)){document.getElementById("erroUsuarioAdmin").innerText="Você só pode criar usuários para o cliente vinculado ao seu acesso.";return;}
+}
+const payload={nome,usuario,senha,perfil,status,academia_id};
+let response;
+if(id){response=await supabaseClient.from("usuarios_admin").update(payload).eq("id",Number(id));}
+else{response=await supabaseClient.from("usuarios_admin").insert([payload]);}
+if(response.error){document.getElementById("erroUsuarioAdmin").innerText=response.error.message;return;}
+document.getElementById("msgUsuarioAdmin").innerText=id?"Usuário atualizado com sucesso.":"Usuário criado com sucesso.";
+limparFormularioUsuarioAdmin();
+document.getElementById("formUsuarioAdmin").classList.add("oculto");
+carregarUsuariosAdmin();
+}
+
+function editarUsuarioAdmin(id){
+const u=usuariosAdmin.find(x=>Number(x.id)===Number(id));
+if(!u)return;
+if(adminLogadoAtual&&adminLogadoAtual.perfil!=="MASTER"&&Number(u.academia_id)!==Number(adminLogadoAtual.academia_id)){
+alert("Você não tem permissão para editar este usuário.");
+return;
+}
+document.getElementById("adminEditId").value=u.id;
+document.getElementById("adminNome").value=u.nome||"";
+document.getElementById("adminUsuario").value=u.usuario||"";
+document.getElementById("adminSenha").value=u.senha||"";
+document.getElementById("adminPerfil").value=u.perfil||"ADMIN";
+document.getElementById("adminStatus").value=u.status||"ATIVO";
+if(document.getElementById("adminAcademiaId"))document.getElementById("adminAcademiaId").value=u.academia_id||"";
+atualizarVisibilidadeClienteVinculado();
+document.getElementById("formUsuarioAdmin").classList.remove("oculto");
+document.getElementById("formUsuarioAdmin").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function alterarStatusUsuarioAdmin(id,status){
+const {error}=await supabaseClient
+.from("usuarios_admin")
+.update({status})
+.eq("id",id);
+
+if(error){
+alert("Erro ao alterar status: "+error.message);
+return;
+}
+
+usuariosAdmin=usuariosAdmin.map(u=>Number(u.id)===Number(id)?{...u,status}:u);
+renderizarUsuariosAdmin();
+}
+
+async function excluirUsuarioAdmin(id){
+const confirmar=confirm("Deseja realmente excluir este usuário administrativo?");
+if(!confirmar)return;
+
+const {error}=await supabaseClient
+.from("usuarios_admin")
+.delete()
+.eq("id",id);
+
+if(error){
+alert("Erro ao excluir usuário: "+error.message);
+return;
+}
+
+usuariosAdmin=usuariosAdmin.filter(u=>Number(u.id)!==Number(id));
+renderizarUsuariosAdmin();
+}
+
+async function entrarMaster(){
+const u=document.getElementById("usuario").value.trim();
+const s=document.getElementById("senha").value.trim();
+
+const acessoLegado=(u==="master"&&s==="conet2506");
+if(acessoLegado){adminLogadoAtual={perfil:"MASTER",academia_id:null,usuario:"master",nome:"Master"};localStorage.setItem("conetfacility_admin_usuario",JSON.stringify(adminLogadoAtual));}
+const acessoTabela=await validarLoginAdminGeral(u,s);
+
+if(acessoLegado||acessoTabela){
+localStorage.setItem("conetfacility_admin_geral_logado","sim");
+localStorage.setItem("gymcare_admin_geral_logado","sim");
+document.getElementById("telaLogin").classList.add("oculto");
+document.getElementById("telaAdmin").classList.remove("oculto");
+
+if(typeof carregarDados==="function")carregarDados();
+if(typeof carregarAcademias==="function")carregarAcademias();
+if(typeof carregarUsuariosAdmin==="function")carregarUsuariosAdmin();
+return;
+}
+
+document.getElementById("erroLogin").innerText="Usuário ou senha inválidos.";
+}
 function verificarLogin(){if(localStorage.getItem("gymcare_master_logado")==="sim")mostrarAdmin()}
 function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()}
 function sair(){localStorage.removeItem("gymcare_master_logado");location.reload()}
 function toggleCadastro(){document.getElementById("formCadastro").classList.toggle("oculto")}
 function textoStatusCliente(s){if(s==="ATIVO")return"Ativo";if(s==="PILOTO")return"Piloto";if(s==="INATIVO")return"Inativo";return s||"-"}
 function classeStatusCliente(s){if(s==="ATIVO")return"badge badge-ativo";if(s==="PILOTO")return"badge badge-piloto";return"badge badge-inativo"}
-async function carregarDados(){const {data:acs,error:e1}=await supabaseClient.from("academias").select("*").order("id",{ascending:true});const {data:eqs,error:e2}=await supabaseClient.from("equipamentos").select("*").order("id",{ascending:true});const {data:chs,error:e3}=await supabaseClient.from("chamados").select("*").order("id",{ascending:false});if(e1||e2||e3){console.error(e1||e2||e3);return}academias=acs||[];equipamentos=eqs||[];chamados=chs||[];atualizarCards();renderizarGraficos();renderizarAcademias();renderizarMetricasClientes()}
+async function carregarDados(){const {data:acs,error:e1}=await supabaseClient.from("academias").select("*").order("id",{ascending:true});const {data:eqs,error:e2}=await supabaseClient.from("equipamentos").select("*").order("id",{ascending:true});const {data:chs,error:e3}=await supabaseClient.from("chamados").select("*").order("id",{ascending:false});if(e1||e2||e3){console.error(e1||e2||e3);return}academias=acs||[];equipamentos=eqs||[];chamados=chs||[];atualizarCards();renderizarGraficos();if(adminLogadoAtual&&adminLogadoAtual.perfil!=='MASTER'){academias=academias.filter(a=>Number(a.id)===Number(adminLogadoAtual.academia_id));}
+renderizarAcademias();renderizarMetricasClientes()}
 function atualizarCards(){document.getElementById("totalClientes").innerText=academias.length;document.getElementById("clientesAtivos").innerText=academias.filter(a=>a.status_cliente==="ATIVO"||!a.status_cliente).length;document.getElementById("totalEquipamentos").innerText=equipamentos.length;document.getElementById("chamadosAbertos").innerText=chamados.filter(c=>c.status==="ABERTO").length}
 function equipamentosDaAcademia(id){return equipamentos.filter(e=>Number(e.academia_id)===Number(id))}
 function contarChamadosPorAcademia(id){const ids=equipamentosDaAcademia(id).map(e=>e.id);return chamados.filter(c=>ids.includes(c.equipamento_id)).length}
