@@ -321,32 +321,61 @@ if(salvo){adminLogadoAtual=JSON.parse(salvo);}
 let academias=[],equipamentos=[],chamados=[],graficoStatusClientes=null,graficoChamadosCliente=null;
 
 
+
+async function diagnosticarUsuariosAdmin(){
+const {data,error}=await supabaseClient.from("usuarios_admin").select("*").order("id",{ascending:true});
+if(error){console.error("Erro diagnóstico usuarios_admin:",error);return;}
+console.table((data||[]).map(u=>({
+id:u.id,
+usuario:u.usuario,
+perfil:u.perfil,
+status:u.status,
+academia_id:u.academia_id,
+senha_preenchida:!!u.senha
+})));
+}
+
 async function validarLoginAdminGeral(usuario,senha){
 try{
+const usuarioDigitado=String(usuario||"").trim();
+const senhaDigitada=String(senha||"").trim();
+
 const {data,error}=await supabaseClient
 .from("usuarios_admin")
 .select("*")
-.eq("usuario",usuario)
-.eq("senha",senha)
-.eq("status","ATIVO")
-.maybeSingle();
+.eq("usuario",usuarioDigitado);
 
 if(error){
-console.error("Erro ao validar usuário admin:",error);
+console.error("Erro ao buscar usuário admin:",error);
 return null;
 }
 
-if(data){
+const lista=data||[];
+
+const usuarioEncontrado=lista.find(u=>
+String(u.usuario||"").trim()===usuarioDigitado &&
+String(u.senha||"").trim()===senhaDigitada
+);
+
+if(!usuarioEncontrado){
+return null;
+}
+
+const status=String(usuarioEncontrado.status||"ATIVO").trim().toUpperCase();
+
+if(status!=="ATIVO"){
+console.warn("Usuário administrativo inativo:",usuarioEncontrado.usuario);
+return null;
+}
+
 return {
-id:data.id,
-usuario:data.usuario,
-nome:data.nome,
-perfil:data.perfil||"ADMIN",
-academia_id:data.academia_id||null
+id:usuarioEncontrado.id,
+usuario:usuarioEncontrado.usuario,
+nome:usuarioEncontrado.nome,
+perfil:String(usuarioEncontrado.perfil||"ADMIN").trim().toUpperCase(),
+academia_id:usuarioEncontrado.academia_id?Number(usuarioEncontrado.academia_id):null
 };
-}
 
-return null;
 }catch(e){
 console.error("Falha na validação usuarios_admin:",e);
 return null;
@@ -449,10 +478,10 @@ container.innerHTML=lista.map(u=>`
 <p><strong>Usuário:</strong> ${u.usuario}</p>
 <p><strong>Perfil:</strong> ${u.perfil||"ADMIN"}</p>
 <p><strong>Cliente vinculado:</strong> ${u.perfil==="MASTER"?"Todos os clientes":nomeAcademiaPorId(u.academia_id)}</p>
-<p><strong>Status:</strong> <span class="${u.status==="ATIVO"?"admin-status-ativo":"admin-status-inativo"}">${u.status||"ATIVO"}</span></p>
+<p><strong>Status:</strong> <span class="${String(u.status||"ATIVO").trim().toUpperCase()==="ATIVO"?"admin-status-ativo":"admin-status-inativo"}">${u.status||"ATIVO"}</span></p>
 <div class="botoes">
 <button class="btn-azul" onclick="editarUsuarioAdmin(${u.id})">Editar</button>
-<button class="btn-cinza" onclick="alterarStatusUsuarioAdmin(${u.id},'${u.status==="ATIVO"?"INATIVO":"ATIVO"}')">${u.status==="ATIVO"?"Desativar":"Ativar"}</button>
+<button class="btn-cinza" onclick="alterarStatusUsuarioAdmin(${u.id},'${String(u.status||"ATIVO").trim().toUpperCase()==="ATIVO"?"INATIVO":"ATIVO"}')">${String(u.status||"ATIVO").trim().toUpperCase()==="ATIVO"?"Desativar":"Ativar"}</button>
 <button class="btn-vermelho" onclick="excluirUsuarioAdmin(${u.id})">Excluir</button>
 </div>
 </div>`).join("");
@@ -491,8 +520,8 @@ const id=document.getElementById("adminEditId").value;
 const nome=document.getElementById("adminNome").value.trim();
 const usuario=document.getElementById("adminUsuario").value.trim();
 const senha=document.getElementById("adminSenha").value.trim();
-const perfil=document.getElementById("adminPerfil").value;
-const status=document.getElementById("adminStatus").value;
+const perfil=document.getElementById("adminPerfil").value.trim().toUpperCase();
+const status=document.getElementById("adminStatus").value.trim().toUpperCase();
 const academia_id_valor=document.getElementById("adminAcademiaId")?.value||"";
 const academia_id=perfil==="MASTER"?null:(academia_id_valor?Number(academia_id_valor):null);
 
