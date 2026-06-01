@@ -180,8 +180,29 @@
   }
 }
 
+
+/* LOGO DO CLIENTE NO LOGIN */
+.logo-cliente-login{
+  max-width:150px;
+  max-height:95px;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  display:block;
+  margin:0 auto 18px auto;
+  border-radius:14px;
+}
+.login-logo-wrap{
+  text-align:center;
+  margin-bottom:10px;
+}
+
 </style></head><body>
-<div id="telaLogin" class="login"><h1>ConetFacility</h1><p>Login administrativo</p><label>Usuário</label><input type="text" id="usuario" placeholder="seu_usuario"><label>Senha</label><input type="password" id="senha" placeholder="sua_senha"><button class="btn-verde" onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="erro"></p></div>
+<div id="telaLogin" class="login">
+<div id="loginLogoClienteWrap" class="login-logo-wrap" style="display:none;">
+  <img id="loginLogoCliente" class="logo-cliente-login" alt="Logo do cliente">
+</div>
+<h1>ConetFacility</h1><p>Login administrativo</p><label>Usuário</label><input type="text" id="usuario" placeholder="seu_usuario"><label>Senha</label><input type="password" id="senha" placeholder="sua_senha"><button class="btn-verde" onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="erro"></p></div>
 <div id="telaAdmin" class="oculto"><header id="cabecalho"><div class="brand"><img id="logoCliente" class="oculto"><div><h1 id="tituloSistema">ConetFacility</h1><p id="subtituloSistema"></p></div></div><button class="btn-cinza" onclick="sair()">Sair</button></header>
 <div class="container">
 <div class="cards"><div class="card"><h3>Equipamentos ativos</h3><div class="numero" id="totalEquipamentos">0</div></div><div class="card"><h3>Chamados abertos</h3><div class="numero" id="chamadosAbertos">0</div></div><div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div><div class="card"><h3>Disponibilidade</h3><div class="numero" id="disponibilidade">0%</div></div></div>
@@ -1708,5 +1729,52 @@ async function fazerLogin(){
   if(typeof carregarChamados === "function") carregarChamados();
   if(typeof carregarHistorico === "function") carregarHistorico();
 }
+
+
+
+async function carregarLogoClienteLogin(){
+  try{
+    const academiaId = obterAcademiaIdAtualLogin ? obterAcademiaIdAtualLogin() : null;
+    const wrap = document.getElementById("loginLogoClienteWrap");
+    const img = document.getElementById("loginLogoCliente");
+
+    if(!wrap || !img || !academiaId) return;
+
+    const {data, error} = await supabaseClient
+      .from("academias")
+      .select("*")
+      .eq("id", academiaId)
+      .maybeSingle();
+
+    if(error){
+      console.error("Erro ao carregar logo do cliente:", error);
+      return;
+    }
+
+    if(data && data.logo_url){
+      img.src = data.logo_url;
+      wrap.style.display = "block";
+    }else{
+      img.removeAttribute("src");
+      wrap.style.display = "none";
+    }
+
+    const titulo = document.querySelector("#telaLogin h1") || document.querySelector("#loginArea h1");
+    if(titulo && data && data.nome){
+      titulo.innerText = data.nome;
+    }
+
+  }catch(e){
+    console.error("Falha ao carregar logo do cliente:", e);
+  }
+}
+
+
+
+document.addEventListener("DOMContentLoaded", function(){
+  if(typeof carregarLogoClienteLogin === "function"){
+    carregarLogoClienteLogin();
+  }
+});
 
 </script></body></html>
