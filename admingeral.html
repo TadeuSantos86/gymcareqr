@@ -115,23 +115,16 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 }
 
 
-/* USUÁRIOS ADMINISTRATIVOS */
-.admin-users-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-  gap:14px;
-  margin-top:18px;
-}
-.admin-user-card{
+/* USUÁRIOS DO PAINEL ADMIN / CLIENTE */
+.usuario-cliente-card{
   background:#f9fafb;
   border:1px solid #e5e7eb;
   border-radius:14px;
   padding:14px;
+  margin-top:12px;
 }
-.admin-user-card p{
-  margin:6px 0;
-}
-.admin-status-ativo{
+.usuario-cliente-card p{margin:6px 0}
+.usuario-status-ativo{
   display:inline-block;
   padding:5px 10px;
   border-radius:999px;
@@ -140,7 +133,7 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
   font-size:12px;
   font-weight:bold;
 }
-.admin-status-inativo{
+.usuario-status-inativo{
   display:inline-block;
   padding:5px 10px;
   border-radius:999px;
@@ -208,70 +201,6 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 </div>
 
 <br>
-
-<div class="bloco">
-<h2>Usuários com acesso ao Painel Admin Geral</h2>
-<p style="margin:8px 0 18px;color:#6b7280;">Cadastre, edite, ative ou desative usuários autorizados a acessar o painel administrativo geral.</p>
-
-<button class="btn-verde" onclick="toggleCadastroUsuarioAdmin()">+ Novo Usuário Admin</button>
-
-<div id="formUsuarioAdmin" class="oculto" style="margin-top:20px;">
-<div class="form-grid">
-<div>
-<label>Nome</label>
-<input type="text" id="adminNome" placeholder="Ex: João Silva">
-</div>
-
-<div>
-<label>Usuário</label>
-<input type="text" id="adminUsuario" placeholder="Ex: joao.admin">
-</div>
-
-<div>
-<label>Senha</label>
-<input type="text" id="adminSenha" placeholder="Digite a senha">
-</div>
-
-<div>
-<label>Perfil</label>
-<select id="adminPerfil" onchange="atualizarVisibilidadeClienteVinculado()">
-<option value="MASTER">Master</option>
-<option value="ADMIN">Admin</option>
-<option value="SUPORTE">Suporte</option>
-</select>
-</div>
-
-<div id="campoClienteVinculadoAdmin">
-<label>Cliente vinculado</label>
-<select id="adminAcademiaId">
-<option value="">Carregando clientes...</option>
-</select>
-<p style="font-size:12px;color:#6b7280;margin-top:-8px;">
-A lista é sincronizada automaticamente com os clientes atuais e novos clientes cadastrados.
-</p>
-</div>
-
-<div>
-<label>Status</label>
-<select id="adminStatus">
-<option value="ATIVO">Ativo</option>
-<option value="INATIVO">Inativo</option>
-</select>
-</div>
-</div>
-
-<input type="hidden" id="adminEditId">
-
-<button class="btn-verde" onclick="salvarUsuarioAdmin()">Salvar usuário</button>
-<button class="btn-cinza" onclick="cancelarUsuarioAdmin()">Cancelar</button>
-<p id="msgUsuarioAdmin" class="sucesso"></p>
-<p id="erroUsuarioAdmin" class="erro"></p>
-</div>
-
-<div id="listaUsuariosAdmin" class="admin-users-grid"></div>
-</div>
-
-<br>
 <div class="grid">
 <div class="bloco">
 <h2>Clientes / academias</h2>
@@ -313,366 +242,14 @@ A lista é sincronizada automaticamente com os clientes atuais e novos clientes 
 const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let usuariosAdmin=[];
-try{
-const salvo=localStorage.getItem("conetfacility_admin_usuario");
-if(salvo){adminLogadoAtual=JSON.parse(salvo);}
-}catch(e){}let adminLogadoAtual={perfil:'MASTER',academia_id:null,usuario:'master'};
+let clienteUsuariosAtualId=null;
+let usuariosClienteAtual=[];
 let academias=[],equipamentos=[],chamados=[],graficoStatusClientes=null,graficoChamadosCliente=null;
 
-
-
-async function diagnosticarUsuariosAdmin(){
-const {data,error}=await supabaseClient.from("usuarios_admin").select("*").order("id",{ascending:true});
-if(error){console.error("Erro diagnóstico usuarios_admin:",error);return;}
-console.table((data||[]).map(u=>({
-id:u.id,
-usuario:u.usuario,
-perfil:u.perfil,
-status:u.status,
-academia_id:u.academia_id,
-senha_preenchida:!!u.senha
-})));
-}
-
-async function validarLoginAdminGeral(usuario,senha){
-try{
-const usuarioDigitado=String(usuario||"").trim();
-const senhaDigitada=String(senha||"").trim();
-
-const {data,error}=await supabaseClient
-.from("usuarios_admin")
-.select("*")
-.eq("usuario",usuarioDigitado);
-
-if(error){
-console.error("Erro ao buscar usuário admin:",error);
-return null;
-}
-
-const lista=data||[];
-
-const usuarioEncontrado=lista.find(u=>
-String(u.usuario||"").trim()===usuarioDigitado &&
-String(u.senha||"").trim()===senhaDigitada
-);
-
-if(!usuarioEncontrado){
-return null;
-}
-
-const status=String(usuarioEncontrado.status||"ATIVO").trim().toUpperCase();
-
-if(status!=="ATIVO"){
-console.warn("Usuário administrativo inativo:",usuarioEncontrado.usuario);
-return null;
-}
-
-return {
-id:usuarioEncontrado.id,
-usuario:usuarioEncontrado.usuario,
-nome:usuarioEncontrado.nome,
-perfil:String(usuarioEncontrado.perfil||"ADMIN").trim().toUpperCase(),
-academia_id:usuarioEncontrado.academia_id?Number(usuarioEncontrado.academia_id):null
-};
-
-}catch(e){
-console.error("Falha na validação usuarios_admin:",e);
-return null;
-}
-}
-
-
-
-async function atualizarListaClientesParaUsuariosAdmin(valorSelecionado=null){
-const {data,error}=await supabaseClient
-.from("academias")
-.select("*")
-.order("nome",{ascending:true});
-
-if(error){
-console.error("Erro ao atualizar lista de clientes para usuários admin:",error);
-return;
-}
-
-academias=data||[];
-
-if(typeof preencherSelectClientesAdmin==="function"){
-preencherSelectClientesAdmin(valorSelecionado);
-}
-}
-
-function nomeAcademiaPorId(id){
-if(!id)return "Todos os clientes";
-const a=(academias||[]).find(x=>Number(x.id)===Number(id));
-return a?a.nome:"Cliente não localizado";
-}
-
-function preencherSelectClientesAdmin(valorSelecionado=null){
-const select=document.getElementById("adminAcademiaId");
-if(!select)return;
-
-const selecionado=valorSelecionado!==null?String(valorSelecionado):String(select.value||"");
-
-select.innerHTML='<option value="">Selecione um cliente</option>';
-
-const lista=(academias||[])
-.slice()
-.sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||"")));
-
-lista.forEach(a=>{
-const opt=document.createElement("option");
-opt.value=a.id;
-opt.textContent=`${a.nome||("Cliente #"+a.id)} ${a.status?(" - "+a.status):""}`;
-select.appendChild(opt);
-});
-
-if(selecionado){
-select.value=selecionado;
-}
-
-if(!lista.length){
-select.innerHTML='<option value="">Nenhum cliente cadastrado</option>';
-}
-}
-
-function atualizarVisibilidadeClienteVinculado(){
-const perfil=document.getElementById("adminPerfil")?.value;
-const campo=document.getElementById("campoClienteVinculadoAdmin");
-if(!campo)return;
-campo.style.display=perfil==="MASTER"?"none":"block";
-if(perfil==="MASTER" && document.getElementById("adminAcademiaId")){
-document.getElementById("adminAcademiaId").value="";
-}
-}
-
-async function carregarUsuariosAdmin(){
-const {data,error}=await supabaseClient
-.from("usuarios_admin")
-.select("*")
-.order("id",{ascending:true});
-
-if(error){
-console.error("Erro ao carregar usuários admin:",error);
-return;
-}
-
-usuariosAdmin=data||[];
-renderizarUsuariosAdmin();
-}
-
-function renderizarUsuariosAdmin(){
-const container=document.getElementById("listaUsuariosAdmin");
-if(!container)return;
-let lista=usuariosAdmin||[];
-if(adminLogadoAtual&&adminLogadoAtual.perfil!=="MASTER"){
-lista=lista.filter(u=>Number(u.academia_id)===Number(adminLogadoAtual.academia_id));
-}
-if(!lista.length){
-container.innerHTML='<p style="color:#6b7280;margin-top:14px;">Nenhum usuário administrativo cadastrado.</p>';
-return;
-}
-container.innerHTML=lista.map(u=>`
-<div class="admin-user-card">
-<h3>${u.nome||u.usuario}</h3>
-<p><strong>Usuário:</strong> ${u.usuario}</p>
-<p><strong>Perfil:</strong> ${u.perfil||"ADMIN"}</p>
-<p><strong>Cliente vinculado:</strong> ${u.perfil==="MASTER"?"Todos os clientes":nomeAcademiaPorId(u.academia_id)}</p>
-<p><strong>Status:</strong> <span class="${String(u.status||"ATIVO").trim().toUpperCase()==="ATIVO"?"admin-status-ativo":"admin-status-inativo"}">${u.status||"ATIVO"}</span></p>
-<div class="botoes">
-<button class="btn-azul" onclick="editarUsuarioAdmin(${u.id})">Editar</button>
-<button class="btn-cinza" onclick="alterarStatusUsuarioAdmin(${u.id},'${String(u.status||"ATIVO").trim().toUpperCase()==="ATIVO"?"INATIVO":"ATIVO"}')">${String(u.status||"ATIVO").trim().toUpperCase()==="ATIVO"?"Desativar":"Ativar"}</button>
-<button class="btn-vermelho" onclick="excluirUsuarioAdmin(${u.id})">Excluir</button>
-</div>
-</div>`).join("");
-}
-
-async function toggleCadastroUsuarioAdmin(){
-const form=document.getElementById("formUsuarioAdmin");
-form.classList.toggle("oculto");
-
-if(!form.classList.contains("oculto")){
-await atualizarListaClientesParaUsuariosAdmin();
-atualizarVisibilidadeClienteVinculado();
-}
-}
-
-function limparFormularioUsuarioAdmin(){
-document.getElementById("adminEditId").value="";
-document.getElementById("adminNome").value="";
-document.getElementById("adminUsuario").value="";
-document.getElementById("adminSenha").value="";
-document.getElementById("adminPerfil").value="ADMIN";
-document.getElementById("adminStatus").value="ATIVO";
-document.getElementById("msgUsuarioAdmin").innerText="";
-document.getElementById("erroUsuarioAdmin").innerText="";
-}
-
-function cancelarUsuarioAdmin(){
-limparFormularioUsuarioAdmin();
-document.getElementById("formUsuarioAdmin").classList.add("oculto");
-}
-
-async function salvarUsuarioAdmin(){
-document.getElementById("msgUsuarioAdmin").innerText="";
-document.getElementById("erroUsuarioAdmin").innerText="";
-const id=document.getElementById("adminEditId").value;
-const nome=document.getElementById("adminNome").value.trim();
-const usuario=document.getElementById("adminUsuario").value.trim();
-const senha=document.getElementById("adminSenha").value.trim();
-const perfil=document.getElementById("adminPerfil").value.trim().toUpperCase();
-const status=document.getElementById("adminStatus").value.trim().toUpperCase();
-const academia_id_valor=document.getElementById("adminAcademiaId")?.value||"";
-const academia_id=perfil==="MASTER"?null:(academia_id_valor?Number(academia_id_valor):null);
-
-if(!usuario||!senha){document.getElementById("erroUsuarioAdmin").innerText="Usuário e senha são obrigatórios.";return;}
-if(perfil!=="MASTER"&&!academia_id){document.getElementById("erroUsuarioAdmin").innerText="Selecione o cliente vinculado para este usuário.";return;}
-if(adminLogadoAtual&&adminLogadoAtual.perfil!=="MASTER"){
-if(perfil==="MASTER"){document.getElementById("erroUsuarioAdmin").innerText="Apenas MASTER pode criar outro usuário MASTER.";return;}
-if(Number(adminLogadoAtual.academia_id)!==Number(academia_id)){document.getElementById("erroUsuarioAdmin").innerText="Você só pode criar usuários para o cliente vinculado ao seu acesso.";return;}
-}
-const payload={nome,usuario,senha,perfil,status,academia_id};
-let response;
-if(id){response=await supabaseClient.from("usuarios_admin").update(payload).eq("id",Number(id));}
-else{response=await supabaseClient.from("usuarios_admin").insert([payload]);}
-if(response.error){document.getElementById("erroUsuarioAdmin").innerText=response.error.message;return;}
-document.getElementById("msgUsuarioAdmin").innerText=id?"Usuário atualizado com sucesso.":"Usuário criado com sucesso.";
-limparFormularioUsuarioAdmin();
-document.getElementById("formUsuarioAdmin").classList.add("oculto");
-carregarUsuariosAdmin();
-}
-
-async function editarUsuarioAdmin(id){
-const u=usuariosAdmin.find(x=>Number(x.id)===Number(id));
-if(!u)return;
-
-if(adminLogadoAtual&&adminLogadoAtual.perfil!=="MASTER"&&Number(u.academia_id)!==Number(adminLogadoAtual.academia_id)){
-alert("Você não tem permissão para editar este usuário.");
-return;
-}
-
-document.getElementById("adminEditId").value=u.id;
-document.getElementById("adminNome").value=u.nome||"";
-document.getElementById("adminUsuario").value=u.usuario||"";
-document.getElementById("adminSenha").value=u.senha||"";
-document.getElementById("adminPerfil").value=u.perfil||"ADMIN";
-document.getElementById("adminStatus").value=u.status||"ATIVO";
-
-await atualizarListaClientesParaUsuariosAdmin(u.academia_id||"");
-
-if(document.getElementById("adminAcademiaId")){
-document.getElementById("adminAcademiaId").value=u.academia_id||"";
-}
-
-atualizarVisibilidadeClienteVinculado();
-document.getElementById("formUsuarioAdmin").classList.remove("oculto");
-document.getElementById("formUsuarioAdmin").scrollIntoView({behavior:"smooth",block:"start"});
-}
-
-async function alterarStatusUsuarioAdmin(id,status){
-const {error}=await supabaseClient
-.from("usuarios_admin")
-.update({status})
-.eq("id",id);
-
-if(error){
-alert("Erro ao alterar status: "+error.message);
-return;
-}
-
-usuariosAdmin=usuariosAdmin.map(u=>Number(u.id)===Number(id)?{...u,status}:u);
-renderizarUsuariosAdmin();
-}
-
-async function excluirUsuarioAdmin(id){
-const confirmar=confirm("Deseja realmente excluir este usuário administrativo?");
-if(!confirmar)return;
-
-const {error}=await supabaseClient
-.from("usuarios_admin")
-.delete()
-.eq("id",id);
-
-if(error){
-alert("Erro ao excluir usuário: "+error.message);
-return;
-}
-
-usuariosAdmin=usuariosAdmin.filter(u=>Number(u.id)!==Number(id));
-renderizarUsuariosAdmin();
-}
-
-
-function aplicarLoginAdmin(usuarioAdmin){
-adminLogadoAtual=usuarioAdmin||{perfil:"MASTER",academia_id:null,usuario:"master",nome:"Master"};
-
-try{
-localStorage.setItem("conetfacility_admin_usuario",JSON.stringify(adminLogadoAtual));
-}catch(e){}
-
-localStorage.setItem("conetfacility_admin_geral_logado","sim");
-localStorage.setItem("gymcare_admin_geral_logado","sim");
-
-document.getElementById("telaLogin").classList.add("oculto");
-document.getElementById("telaAdmin").classList.remove("oculto");
-
-if(typeof carregarDados==="function")carregarDados();
-if(typeof carregarAcademias==="function")carregarAcademias();
-if(typeof carregarUsuariosAdmin==="function")carregarUsuariosAdmin();
-if(typeof atualizarListaClientesParaUsuariosAdmin==="function")atualizarListaClientesParaUsuariosAdmin();
-}
-async function entrarMaster(){
-const u=document.getElementById("usuario").value.trim();
-const s=document.getElementById("senha").value.trim();
-const erro=document.getElementById("erroLogin");
-
-if(erro)erro.innerText="";
-
-if(u==="master"&&s==="conet2506"){
-aplicarLoginAdmin({perfil:"MASTER",academia_id:null,usuario:"master",nome:"Master"});
-return;
-}
-
-const usuarioTabela=await validarLoginAdminGeral(u,s);
-
-if(usuarioTabela){
-aplicarLoginAdmin(usuarioTabela);
-return;
-}
-
-if(erro)erro.innerText="Usuário ou senha inválidos.";
-}
-function verificarLogin(){
-const logado=localStorage.getItem("conetfacility_admin_geral_logado")==="sim"||localStorage.getItem("gymcare_admin_geral_logado")==="sim";
-
-if(!logado)return;
-
-try{
-const salvo=localStorage.getItem("conetfacility_admin_usuario");
-if(salvo){
-adminLogadoAtual=JSON.parse(salvo);
-}else{
-adminLogadoAtual={perfil:"MASTER",academia_id:null,usuario:"master",nome:"Master"};
-}
-}catch(e){
-adminLogadoAtual={perfil:"MASTER",academia_id:null,usuario:"master",nome:"Master"};
-}
-
-document.getElementById("telaLogin").classList.add("oculto");
-document.getElementById("telaAdmin").classList.remove("oculto");
-
-if(typeof carregarDados==="function")carregarDados();
-if(typeof carregarAcademias==="function")carregarAcademias();
-if(typeof carregarUsuariosAdmin==="function")carregarUsuariosAdmin();
-if(typeof atualizarListaClientesParaUsuariosAdmin==="function")atualizarListaClientesParaUsuariosAdmin();
-}
+function entrarMaster(){const u=document.getElementById("usuario").value.trim();const s=document.getElementById("senha").value.trim();if(u==="master"&&s==="conet2506"){localStorage.setItem("gymcare_master_logado","sim");mostrarAdmin()}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."}
+function verificarLogin(){if(localStorage.getItem("gymcare_master_logado")==="sim")mostrarAdmin()}
 function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()}
-function sair(){
-localStorage.removeItem("conetfacility_admin_geral_logado");
-localStorage.removeItem("gymcare_admin_geral_logado");
-localStorage.removeItem("conetfacility_admin_usuario");
-location.reload();
-}
+function sair(){localStorage.removeItem("gymcare_master_logado");location.reload()}
 function toggleCadastro(){document.getElementById("formCadastro").classList.toggle("oculto")}
 function textoStatusCliente(s){if(s==="ATIVO")return"Ativo";if(s==="PILOTO")return"Piloto";if(s==="INATIVO")return"Inativo";return s||"-"}
 function classeStatusCliente(s){if(s==="ATIVO")return"badge badge-ativo";if(s==="PILOTO")return"badge badge-piloto";return"badge badge-inativo"}
@@ -684,11 +261,7 @@ function contarAbertosPorAcademia(id){const ids=equipamentosDaAcademia(id).map(e
 async function uploadLogo(file,academiaId){if(!file)return "";const ext=(file.name.split(".").pop()||"png").toLowerCase();const nomeArquivo=`academia-${academiaId||"novo"}-${Date.now()}.${ext}`;const {error}=await supabaseClient.storage.from("logos").upload(nomeArquivo,file,{cacheControl:"3600",upsert:true});if(error)throw error;const {data}=supabaseClient.storage.from("logos").getPublicUrl(nomeArquivo);return data.publicUrl}
 function renderizarGraficos(){const sc={ATIVO:0,PILOTO:0,INATIVO:0};academias.forEach(a=>{if(a.status_cliente==="PILOTO")sc.PILOTO++;else if(a.status_cliente==="INATIVO")sc.INATIVO++;else sc.ATIVO++});const top=[...academias].map(a=>({nome:a.nome||("Cliente "+a.id),total:contarChamadosPorAcademia(a.id)})).sort((a,b)=>b.total-a.total).slice(0,6);if(graficoStatusClientes)graficoStatusClientes.destroy();if(graficoChamadosCliente)graficoChamadosCliente.destroy();graficoStatusClientes=new Chart(document.getElementById("graficoStatusClientes"),{type:"doughnut",data:{labels:["Ativo","Piloto","Inativo"],datasets:[{data:[sc.ATIVO,sc.PILOTO,sc.INATIVO],backgroundColor:["#93D500","#FACC15","#E5E7EB"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}}}});graficoChamadosCliente=new Chart(document.getElementById("graficoChamadosCliente"),{type:"bar",data:{labels:top.map(c=>c.nome),datasets:[{label:"Chamados",data:top.map(c=>c.total),backgroundColor:"#3B82F6",borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}})}
 async function cadastrarAcademia(){document.getElementById("erroCadastro").innerText="";document.getElementById("sucessoCadastro").innerText="";const nome=document.getElementById("novoNome").value.trim();if(!nome){document.getElementById("erroCadastro").innerText="Informe o nome da academia.";return}const titulo=document.getElementById("novoTituloSistema").value.trim()||"ConetFacility";const item={nome:nome,email_notificacao:document.getElementById("novoEmail").value.trim(),logo_url:"",cor_primaria:document.getElementById("novaCor").value,cor_header:document.getElementById("novaCorHeader").value,titulo_sistema:titulo,subtitulo_sistema:document.getElementById("novoSubtituloSistema").value.trim()||"",status_cliente:document.getElementById("novoStatusCliente").value,plano:document.getElementById("novoPlano").value,endereco:document.getElementById("novoEndereco").value.trim(),horario_funcionamento:document.getElementById("novoHorario").value.trim(),observacoes:document.getElementById("novaObservacao").value.trim()};const {data,error}=await supabaseClient.from("academias").insert([item]).select().single();if(error){document.getElementById("erroCadastro").innerText=error.message;return}try{const file=document.getElementById("novoLogoArquivo").files[0];if(file){const url=await uploadLogo(file,data.id);await supabaseClient.from("academias").update({logo_url:url}).eq("id",data.id)}}catch(e){document.getElementById("erroCadastro").innerText="Cliente criado, mas falhou o upload da logo: "+e.message}document.getElementById("sucessoCadastro").innerText="Cliente cadastrado com sucesso.";["novoNome","novoEmail","novoTituloSistema","novoSubtituloSistema","novoEndereco","novoHorario","novaObservacao"].forEach(id=>document.getElementById(id).value="");document.getElementById("novoLogoArquivo").value="";document.getElementById("novaCor").value="#93D500";document.getElementById("novaCorHeader").value="#323E48";carregarDados()}
-function renderizarAcademias(){
-const listaAcademiasRender=(adminLogadoAtual&&adminLogadoAtual.perfil!=="MASTER")
-? academias.filter(a=>Number(a.id)===Number(adminLogadoAtual.academia_id))
-: academias;
-const busca=document.getElementById("buscaCliente").value.toLowerCase();const filtro=document.getElementById("filtroStatusCliente").value;let html="";academias.filter(a=>{const st=a.status_cliente||"ATIVO";const mb=(a.nome||"").toLowerCase().includes(busca)||(a.titulo_sistema||"").toLowerCase().includes(busca)||(a.email_notificacao||"").toLowerCase().includes(busca)||(a.plano||"").toLowerCase().includes(busca)||st.toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||st===filtro)}).forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);html+=`<div class="item"><h3>${a.nome||"Cliente sem nome"}</h3>${a.logo_url?`<img class="logo-preview" src="${a.logo_url}" onerror="this.style.display='none'">`:""}<p><strong>Nome do Sistema:</strong> ${a.titulo_sistema||a.nome||"-"}</p><p><strong>Descrição complementar:</strong> ${a.subtitulo_sistema||"-"}</p><p><span class="cor-preview" style="background:${a.cor_primaria||"#93D500"}"></span><strong>Cor principal:</strong> ${a.cor_primaria||"#93D500"}</p><p><span class="cor-preview" style="background:${a.cor_header||"#323E48"}"></span><strong>Cor topo:</strong> ${a.cor_header||"#323E48"}</p><p><strong>E-mail chamados:</strong> ${a.email_notificacao||"-"}</p><p><strong>Plano:</strong> ${a.plano||"-"}</p><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><div class="${classeStatusCliente(a.status_cliente||"ATIVO")}">${textoStatusCliente(a.status_cliente||"ATIVO")}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${a.id})">Editar cliente</button><button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir painel cliente</button><button class="btn-verde" onclick="abrirSolicitacaoCliente(${a.id})">Solicitação por ID</button><button class="btn-cinza" onclick="baixarQRCodesCliente(${a.id})">Baixar QR Codes</button></div></div>`});document.getElementById("listaAcademias").innerHTML=html||"<p>Nenhum cliente encontrado.</p>"}
+function renderizarAcademias(){const busca=document.getElementById("buscaCliente").value.toLowerCase();const filtro=document.getElementById("filtroStatusCliente").value;let html="";academias.filter(a=>{const st=a.status_cliente||"ATIVO";const mb=(a.nome||"").toLowerCase().includes(busca)||(a.titulo_sistema||"").toLowerCase().includes(busca)||(a.email_notificacao||"").toLowerCase().includes(busca)||(a.plano||"").toLowerCase().includes(busca)||st.toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||st===filtro)}).forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);html+=`<div class="item"><h3>${a.nome||"Cliente sem nome"}</h3>${a.logo_url?`<img class="logo-preview" src="${a.logo_url}" onerror="this.style.display='none'">`:""}<p><strong>Nome do Sistema:</strong> ${a.titulo_sistema||a.nome||"-"}</p><p><strong>Descrição complementar:</strong> ${a.subtitulo_sistema||"-"}</p><p><span class="cor-preview" style="background:${a.cor_primaria||"#93D500"}"></span><strong>Cor principal:</strong> ${a.cor_primaria||"#93D500"}</p><p><span class="cor-preview" style="background:${a.cor_header||"#323E48"}"></span><strong>Cor topo:</strong> ${a.cor_header||"#323E48"}</p><p><strong>E-mail chamados:</strong> ${a.email_notificacao||"-"}</p><p><strong>Plano:</strong> ${a.plano||"-"}</p><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><div class="${classeStatusCliente(a.status_cliente||"ATIVO")}">${textoStatusCliente(a.status_cliente||"ATIVO")}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${a.id})">Editar cliente</button><button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir painel cliente</button><button class="btn-azul" onclick="abrirUsuariosCliente(${a.id})">Usuários Painel Admin</button><button class="btn-verde" onclick="abrirSolicitacaoCliente(${a.id})">Solicitação por ID</button><button class="btn-cinza" onclick="baixarQRCodesCliente(${a.id})">Baixar QR Codes</button></div></div>`});document.getElementById("listaAcademias").innerHTML=html||"<p>Nenhum cliente encontrado.</p>"}
 function renderizarMetricasClientes(){let html="";academias.forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);const em=equipamentosDaAcademia(a.id).filter(e=>e.status==="MANUTENCAO"||e.status==="EM MANUTENCAO").length;const disp=qe>0?Math.round(((qe-em)/qe)*100):0;html+=`<div class="item"><h3>${a.nome||"Cliente"}</h3><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><p><strong>Em manutenção:</strong> ${em}</p><p><strong>Disponibilidade estimada:</strong> ${disp}%</p></div>`});document.getElementById("metricasClientes").innerHTML=html||"<p>Sem métricas disponíveis.</p>"}
 function abrirEditar(id){const a=academias.find(x=>x.id===id);if(!a)return;document.getElementById("editId").value=a.id;document.getElementById("editNome").value=a.nome||"";document.getElementById("editEmail").value=a.email_notificacao||"";document.getElementById("editLogoAtual").value=a.logo_url||"";const img=document.getElementById("editLogoPreview");if(a.logo_url){img.src=a.logo_url;img.style.display="block"}else{img.style.display="none"}document.getElementById("editCor").value=a.cor_primaria||"#93D500";document.getElementById("editCorHeader").value=a.cor_header||"#323E48";document.getElementById("editTituloSistema").value=a.titulo_sistema||"ConetFacility";document.getElementById("editSubtituloSistema").value=a.subtitulo_sistema||"";document.getElementById("editStatusCliente").value=a.status_cliente||"ATIVO";document.getElementById("editPlano").value=a.plano||"MVP";document.getElementById("editEndereco").value=a.endereco||"";document.getElementById("editHorario").value=a.horario_funcionamento||"";document.getElementById("editObservacao").value=a.observacoes||"";document.getElementById("modalEditar").style.display="flex"}
 function fecharEditar(){document.getElementById("modalEditar").style.display="none"}
@@ -822,10 +395,236 @@ alert("Erro ao gerar QR Codes. Verifique o console ou tente novamente.");
 }
 
 
+
+function normalizarStatusUsuarioCliente(status){
+return String(status||"ATIVO").trim().toUpperCase();
+}
+
+function limparFormularioUsuarioCliente(){
+document.getElementById("usuarioClienteEditId").value="";
+document.getElementById("usuarioClienteNome").value="";
+document.getElementById("usuarioClienteUsuario").value="";
+document.getElementById("usuarioClienteSenha").value="";
+document.getElementById("usuarioClienteStatus").value="ATIVO";
+document.getElementById("msgUsuarioCliente").innerText="";
+document.getElementById("erroUsuarioCliente").innerText="";
+}
+
+async function abrirUsuariosCliente(academiaId){
+clienteUsuariosAtualId=Number(academiaId);
+const academia=(academias||[]).find(a=>Number(a.id)===clienteUsuariosAtualId);
+
+document.getElementById("tituloClienteUsuarios").innerText=`Cliente: ${academia?.nome||"Cliente"} | ID ${clienteUsuariosAtualId}`;
+document.getElementById("modalUsuariosCliente").style.display="flex";
+
+limparFormularioUsuarioCliente();
+await carregarUsuariosCliente();
+}
+
+function fecharModalUsuariosCliente(){
+document.getElementById("modalUsuariosCliente").style.display="none";
+clienteUsuariosAtualId=null;
+usuariosClienteAtual=[];
+}
+
+async function carregarUsuariosCliente(){
+const lista=document.getElementById("listaUsuariosCliente");
+if(!lista||!clienteUsuariosAtualId)return;
+
+lista.innerHTML='<p style="color:#6b7280;margin-top:12px;">Carregando usuários...</p>';
+
+const {data,error}=await supabaseClient
+.from("usuarios_chamados")
+.select("*")
+.eq("academia_id",clienteUsuariosAtualId)
+.order("id",{ascending:true});
+
+if(error){
+lista.innerHTML='<p class="erro">Erro ao carregar usuários: '+error.message+'</p>';
+console.error(error);
+return;
+}
+
+usuariosClienteAtual=data||[];
+renderizarUsuariosCliente();
+}
+
+function renderizarUsuariosCliente(){
+const lista=document.getElementById("listaUsuariosCliente");
+if(!lista)return;
+
+if(!usuariosClienteAtual.length){
+lista.innerHTML='<p style="color:#6b7280;margin-top:12px;">Nenhum usuário cadastrado para este cliente.</p>';
+return;
+}
+
+lista.innerHTML=usuariosClienteAtual.map(u=>{
+const status=normalizarStatusUsuarioCliente(u.status);
+return `
+<div class="usuario-cliente-card">
+<h4>${u.nome||u.usuario}</h4>
+<p><strong>Usuário:</strong> ${u.usuario}</p>
+<p><strong>Cliente ID:</strong> ${u.academia_id}</p>
+<p><strong>Status:</strong> <span class="${status==="ATIVO"?"usuario-status-ativo":"usuario-status-inativo"}">${status}</span></p>
+<div class="botoes">
+<button class="btn-azul" onclick="editarUsuarioCliente(${u.id})">Editar</button>
+<button class="btn-cinza" onclick="alterarStatusUsuarioCliente(${u.id},'${status==="ATIVO"?"INATIVO":"ATIVO"}')">${status==="ATIVO"?"Desativar":"Ativar"}</button>
+<button class="btn-vermelho" onclick="excluirUsuarioCliente(${u.id})">Excluir</button>
+</div>
+</div>`;
+}).join("");
+}
+
+function editarUsuarioCliente(id){
+const u=usuariosClienteAtual.find(x=>Number(x.id)===Number(id));
+if(!u)return;
+
+document.getElementById("usuarioClienteEditId").value=u.id;
+document.getElementById("usuarioClienteNome").value=u.nome||"";
+document.getElementById("usuarioClienteUsuario").value=u.usuario||"";
+document.getElementById("usuarioClienteSenha").value=u.senha||"";
+document.getElementById("usuarioClienteStatus").value=normalizarStatusUsuarioCliente(u.status);
+document.getElementById("msgUsuarioCliente").innerText="";
+document.getElementById("erroUsuarioCliente").innerText="";
+}
+
+async function salvarUsuarioCliente(){
+document.getElementById("msgUsuarioCliente").innerText="";
+document.getElementById("erroUsuarioCliente").innerText="";
+
+if(!clienteUsuariosAtualId){
+document.getElementById("erroUsuarioCliente").innerText="Cliente não identificado.";
+return;
+}
+
+const id=document.getElementById("usuarioClienteEditId").value;
+const nome=document.getElementById("usuarioClienteNome").value.trim();
+const usuario=document.getElementById("usuarioClienteUsuario").value.trim();
+const senha=document.getElementById("usuarioClienteSenha").value.trim();
+const status=normalizarStatusUsuarioCliente(document.getElementById("usuarioClienteStatus").value);
+
+if(!usuario||!senha){
+document.getElementById("erroUsuarioCliente").innerText="Usuário e senha são obrigatórios.";
+return;
+}
+
+let payload={academia_id:clienteUsuariosAtualId,nome,usuario,senha,status};
+let response;
+
+if(id){
+response=await supabaseClient.from("usuarios_chamados").update(payload).eq("id",Number(id)).eq("academia_id",clienteUsuariosAtualId);
+}else{
+response=await supabaseClient.from("usuarios_chamados").insert([payload]);
+}
+
+if(response.error && String(response.error.message||"").includes("nome")){
+payload={academia_id:clienteUsuariosAtualId,usuario,senha,status};
+if(id){
+response=await supabaseClient.from("usuarios_chamados").update(payload).eq("id",Number(id)).eq("academia_id",clienteUsuariosAtualId);
+}else{
+response=await supabaseClient.from("usuarios_chamados").insert([payload]);
+}
+}
+
+if(response.error){
+document.getElementById("erroUsuarioCliente").innerText=response.error.message;
+return;
+}
+
+document.getElementById("msgUsuarioCliente").innerText=id?"Usuário atualizado com sucesso.":"Usuário criado com sucesso.";
+limparFormularioUsuarioCliente();
+await carregarUsuariosCliente();
+}
+
+async function alterarStatusUsuarioCliente(id,status){
+const {error}=await supabaseClient
+.from("usuarios_chamados")
+.update({status})
+.eq("id",Number(id))
+.eq("academia_id",clienteUsuariosAtualId);
+
+if(error){
+alert("Erro ao alterar status: "+error.message);
+return;
+}
+
+usuariosClienteAtual=usuariosClienteAtual.map(u=>Number(u.id)===Number(id)?{...u,status}:u);
+renderizarUsuariosCliente();
+}
+
+async function excluirUsuarioCliente(id){
+const confirmar=confirm("Deseja realmente excluir este usuário do Painel Admin/Cliente?");
+if(!confirmar)return;
+
+const {error}=await supabaseClient
+.from("usuarios_chamados")
+.delete()
+.eq("id",Number(id))
+.eq("academia_id",clienteUsuariosAtualId);
+
+if(error){
+alert("Erro ao excluir usuário: "+error.message);
+return;
+}
+
+usuariosClienteAtual=usuariosClienteAtual.filter(u=>Number(u.id)!==Number(id));
+renderizarUsuariosCliente();
+}
+
 function abrirPainelCliente(id){window.open("https://conetfacility.vercel.app/?academia_id="+id,"_blank")}
 function abrirSolicitacaoCliente(id){window.open("https://conetfacility.vercel.app/equipamento.html?academia_id="+id,"_blank")}
 verificarLogin();
 </script>
+
+<div id="modalUsuariosCliente" class="modal">
+<div class="modal-box">
+<h2>Usuários do Painel Admin / Cliente</h2>
+<p id="tituloClienteUsuarios" style="color:#6b7280;margin:8px 0 18px;"></p>
+
+<div class="form-grid">
+<div>
+<label>Nome</label>
+<input type="text" id="usuarioClienteNome" placeholder="Ex: Gerente da academia">
+</div>
+
+<div>
+<label>Usuário</label>
+<input type="text" id="usuarioClienteUsuario" placeholder="Ex: gerente01">
+</div>
+
+<div>
+<label>Senha</label>
+<input type="text" id="usuarioClienteSenha" placeholder="Digite a senha">
+</div>
+
+<div>
+<label>Status</label>
+<select id="usuarioClienteStatus">
+<option value="ATIVO">Ativo</option>
+<option value="INATIVO">Inativo</option>
+</select>
+</div>
+</div>
+
+<input type="hidden" id="usuarioClienteEditId">
+
+<button class="btn-verde" onclick="salvarUsuarioCliente()">Salvar usuário</button>
+<button class="btn-cinza" onclick="limparFormularioUsuarioCliente()">Limpar</button>
+
+<p id="msgUsuarioCliente" class="sucesso"></p>
+<p id="erroUsuarioCliente" class="erro"></p>
+
+<hr style="margin:22px 0;border:none;border-top:1px solid #e5e7eb;">
+
+<h3>Usuários cadastrados neste cliente</h3>
+<div id="listaUsuariosCliente"></div>
+
+<div style="margin-top:20px;">
+<button class="btn-cinza" onclick="fecharModalUsuariosCliente()">Fechar</button>
+</div>
+</div>
+</div>
+
 </body>
 </html>
 
