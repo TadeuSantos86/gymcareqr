@@ -434,7 +434,7 @@ if(!lista||!clienteUsuariosAtualId)return;
 lista.innerHTML='<p style="color:#6b7280;margin-top:12px;">Carregando usuários...</p>';
 
 const {data,error}=await supabaseClient
-.from("usuarios_chamados")
+.from("usuarios_painel_cliente")
 .select("*")
 .eq("academia_id",clienteUsuariosAtualId)
 .order("id",{ascending:true});
@@ -512,17 +512,17 @@ let payload={academia_id:clienteUsuariosAtualId,nome,usuario,senha,status};
 let response;
 
 if(id){
-response=await supabaseClient.from("usuarios_chamados").update(payload).eq("id",Number(id)).eq("academia_id",clienteUsuariosAtualId);
+response=await supabaseClient.from("usuarios_painel_cliente").update(payload).eq("id",Number(id)).eq("academia_id",clienteUsuariosAtualId);
 }else{
-response=await supabaseClient.from("usuarios_chamados").insert([payload]);
+response=await supabaseClient.from("usuarios_painel_cliente").insert([payload]);
 }
 
 if(response.error && String(response.error.message||"").includes("nome")){
 payload={academia_id:clienteUsuariosAtualId,usuario,senha,status};
 if(id){
-response=await supabaseClient.from("usuarios_chamados").update(payload).eq("id",Number(id)).eq("academia_id",clienteUsuariosAtualId);
+response=await supabaseClient.from("usuarios_painel_cliente").update(payload).eq("id",Number(id)).eq("academia_id",clienteUsuariosAtualId);
 }else{
-response=await supabaseClient.from("usuarios_chamados").insert([payload]);
+response=await supabaseClient.from("usuarios_painel_cliente").insert([payload]);
 }
 }
 
@@ -538,7 +538,7 @@ await carregarUsuariosCliente();
 
 async function alterarStatusUsuarioCliente(id,status){
 const {error}=await supabaseClient
-.from("usuarios_chamados")
+.from("usuarios_painel_cliente")
 .update({status})
 .eq("id",Number(id))
 .eq("academia_id",clienteUsuariosAtualId);
@@ -553,11 +553,11 @@ renderizarUsuariosCliente();
 }
 
 async function excluirUsuarioCliente(id){
-const confirmar=confirm("Deseja realmente excluir este usuário do Painel Admin/Cliente?");
+const confirmar=confirm("Deseja realmente excluir este usuário do Painel Admin do Cliente?");
 if(!confirmar)return;
 
 const {error}=await supabaseClient
-.from("usuarios_chamados")
+.from("usuarios_painel_cliente")
 .delete()
 .eq("id",Number(id))
 .eq("academia_id",clienteUsuariosAtualId);
@@ -578,8 +578,9 @@ verificarLogin();
 
 <div id="modalUsuariosCliente" class="modal">
 <div class="modal-box">
-<h2>Usuários do Painel Admin / Cliente</h2>
-<p id="tituloClienteUsuarios" style="color:#6b7280;margin:8px 0 18px;"></p>
+<h2>Usuários do Painel Admin do Cliente</h2>
+<p id="tituloClienteUsuarios" style="color:#6b7280;margin:8px 0 8px;"></p>
+<p style="font-size:13px;color:#6b7280;margin-bottom:18px;">Esses usuários acessam apenas o Painel Admin do Cliente. Usuários para abrir chamados continuam separados no Painel Admin do cliente.</p>
 
 <div class="form-grid">
 <div>
@@ -616,7 +617,7 @@ verificarLogin();
 
 <hr style="margin:22px 0;border:none;border-top:1px solid #e5e7eb;">
 
-<h3>Usuários cadastrados neste cliente</h3>
+<h3>Usuários com acesso ao Painel Admin deste cliente</h3>
 <div id="listaUsuariosCliente"></div>
 
 <div style="margin-top:20px;">
