@@ -1651,7 +1651,7 @@ async function validarUsuarioPainelCliente(usuario, senha){
     const senhaDigitada = normalizarTextoLoginCliente(senha);
 
     const {data, error} = await supabaseClient
-      .from("usuarios_chamados")
+      .from("usuarios_painel_cliente")
       .select("*")
       .eq("academia_id", academiaId);
 
