@@ -181,7 +181,7 @@
 }
 
 </style></head><body>
-<div id="telaLogin" class="login"><h1>ConetFacility</h1><p>Login administrativo</p><label>Usuário</label><input type="text" id="usuario" placeholder="seu_usuario"><label>Senha</label><input type="password" id="senha" placeholder="sua_senha"><button class="btn-verde" onclick="entrarAdmin()">Entrar</button><p id="erroLogin" class="erro"></p></div>
+<div id="telaLogin" class="login"><h1>ConetFacility</h1><p>Login administrativo</p><label>Usuário</label><input type="text" id="usuario" placeholder="seu_usuario"><label>Senha</label><input type="password" id="senha" placeholder="sua_senha"><button class="btn-verde" onclick="fazerLogin()">Entrar</button><p id="erroLogin" class="erro"></p></div>
 <div id="telaAdmin" class="oculto"><header id="cabecalho"><div class="brand"><img id="logoCliente" class="oculto"><div><h1 id="tituloSistema">ConetFacility</h1><p id="subtituloSistema"></p></div></div><button class="btn-cinza" onclick="sair()">Sair</button></header>
 <div class="container">
 <div class="cards"><div class="card"><h3>Equipamentos ativos</h3><div class="numero" id="totalEquipamentos">0</div></div><div class="card"><h3>Chamados abertos</h3><div class="numero" id="chamadosAbertos">0</div></div><div class="card"><h3>Em manutenção</h3><div class="numero" id="emManutencao">0</div></div><div class="card"><h3>Disponibilidade</h3><div class="numero" id="disponibilidade">0%</div></div></div>
@@ -1577,6 +1577,18 @@ adicionarEmailNotificacao();
 
 verificarLogin();
 
+
+
+
+
+
+
+
+
+
+
+
+
 function normalizarTextoLoginCliente(valor){
   return String(valor || "").trim();
 }
@@ -1610,7 +1622,7 @@ async function validarUsuarioPainelCliente(usuario, senha){
     const academiaId = obterAcademiaIdAtualLogin();
 
     if(!academiaId){
-      console.error("academia_id não identificado na URL ou no sistema.");
+      console.error("LOGIN CLIENTE: academia_id não identificado. Use ?academia_id=2");
       return null;
     }
 
@@ -1620,23 +1632,24 @@ async function validarUsuarioPainelCliente(usuario, senha){
     const {data, error} = await supabaseClient
       .from("usuarios_chamados")
       .select("*")
-      .eq("academia_id", academiaId)
-      .eq("usuario", usuarioDigitado);
+      .eq("academia_id", academiaId);
 
     if(error){
-      console.error("Erro ao validar usuário do cliente:", error);
+      console.error("LOGIN CLIENTE: erro Supabase:", error);
       return null;
     }
 
+    console.log("LOGIN CLIENTE: academia_id", academiaId, "usuários encontrados:", data);
+
     const encontrado = (data || []).find(u =>
-      normalizarTextoLoginCliente(u.usuario) === usuarioDigitado &&
+      normalizarTextoLoginCliente(u.usuario).toLowerCase() === usuarioDigitado.toLowerCase() &&
       normalizarTextoLoginCliente(u.senha) === senhaDigitada &&
       Number(u.academia_id) === Number(academiaId) &&
       statusAtivoCliente(u.status)
     );
 
     if(!encontrado){
-      console.warn("Usuário não encontrado para academia_id:", academiaId);
+      console.warn("LOGIN CLIENTE: usuário/senha não conferem para academia_id:", academiaId);
       return null;
     }
 
@@ -1652,11 +1665,10 @@ async function validarUsuarioPainelCliente(usuario, senha){
     return encontrado;
 
   }catch(e){
-    console.error("Falha no login do cliente:", e);
+    console.error("LOGIN CLIENTE: falha:", e);
     return null;
   }
 }
-
 
 async function fazerLogin(){
   const usuario = document.getElementById("usuario")?.value?.trim() || "";
@@ -1696,4 +1708,5 @@ async function fazerLogin(){
   if(typeof carregarChamados === "function") carregarChamados();
   if(typeof carregarHistorico === "function") carregarHistorico();
 }
+
 </script></body></html>
