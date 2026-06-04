@@ -149,18 +149,33 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 .cancelamento-alerta{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:12px;border-radius:12px;margin:12px 0}
 
 
-/* SEÇÃO CLIENTES INATIVOS / EXCLUÍDOS */
-.secao-inativos-toggle{margin:26px 0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.inativos-contador{display:inline-block;padding:4px 10px;border-radius:999px;background:#fee2e2;color:#991b1b;font-size:12px;font-weight:bold}
-.clientes-inativos-container{margin-top:14px}
-.cliente-inativo-card{opacity:.85;border:1px dashed #ef4444}
-
-
-/* CORREÇÃO: INATIVOS APENAS APÓS LOGIN */
-#telaLogin #areaClientesInativos,
-#telaLogin .secao-inativos-toggle,
-body > .bloco:has(#areaClientesInativos){
-  display:none!important;
+/* CLIENTES INATIVOS OCULTOS EM BOTÃO */
+#blocoClientesInativos{
+  margin-top:24px;
+}
+.secao-inativos-toggle{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.inativos-contador{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:999px;
+  background:#fee2e2;
+  color:#991b1b;
+  font-size:12px;
+  font-weight:bold;
+}
+.cliente-inativo-card{
+  opacity:.88;
+  border:1px dashed #ef4444;
+}
+.badge-cancelado{
+  background:#fee2e2;
+  color:#991b1b;
 }
 
 </style>
@@ -233,16 +248,18 @@ body > .bloco:has(#areaClientesInativos){
 </div>
 </div>
 
-<div class="bloco" style="margin-top:24px;">
+
+<div class="bloco" id="blocoClientesInativos">
   <div class="secao-inativos-toggle">
     <div>
       <h2>Clientes Inativos / Excluídos <span id="contadorClientesInativos" class="inativos-contador">0</span></h2>
-      <p style="color:#6b7280;margin-top:6px;">Clientes inativados ficam ocultos da lista principal, mas preservados para auditoria e reativação.</p>
+      <p style="color:#6b7280;margin-top:6px;">Clientes inativados ficam ocultos da lista principal e preservados para auditoria.</p>
     </div>
     <button class="btn-cinza" onclick="toggleClientesInativos()" id="btnToggleInativos">Mostrar Inativos</button>
   </div>
   <div id="areaClientesInativos" class="clientes-inativos-container oculto"></div>
 </div>
+
 <div id="modalEditar" class="modal">
 <div class="modal-box">
 <h2>Editar cliente</h2>
@@ -409,33 +426,23 @@ if(typeof carregarAcademias==="function")carregarAcademias();
 if(typeof carregarDados==="function")carregarDados();
 }
 
-
-function toggleClientesInativos(){
-const area=document.getElementById("areaClientesInativos");
-const btn=document.getElementById("btnToggleInativos");
-if(!area||!btn)return;
-if(area.classList.contains("oculto")){
-renderizarClientesInativos();
-area.classList.remove("oculto");
-btn.innerText="Ocultar Inativos";
-}else{
-area.classList.add("oculto");
-btn.innerText="Mostrar Inativos";
-}
-}
-
 function renderizarClientesInativos(){
 const area=document.getElementById("areaClientesInativos");
 const contador=document.getElementById("contadorClientesInativos");
 if(!area)return;
+
 const inativos=(academias||[]).filter(a=>!clienteEstaAtivo(a));
+
 if(contador)contador.innerText=String(inativos.length);
+
 if(!inativos.length){
-area.innerHTML='<p style="color:#6b7280;">Nenhum cliente inativo ou excluído.</p>';
-return;
+  area.innerHTML='<p style="color:#6b7280;margin-top:14px;">Nenhum cliente inativo ou excluído.</p>';
+  return;
 }
+
 area.innerHTML=inativos.map(a=>`
 <div class="item cliente-inativo-card">
+${a.logo_url?`<img class="logo-preview" src="${a.logo_url}">`:""}
 <h3>${a.nome||"Cliente sem nome"}</h3>
 <p><strong>ID:</strong> ${a.id}</p>
 <p><strong>Status:</strong> <span class="badge badge-cancelado">${statusClienteNormalizado(a)}</span></p>
@@ -449,13 +456,52 @@ area.innerHTML=inativos.map(a=>`
 `).join("");
 }
 
+function toggleClientesInativos(){
+const area=document.getElementById("areaClientesInativos");
+const btn=document.getElementById("btnToggleInativos");
+if(!area||!btn)return;
+
+if(area.classList.contains("oculto")){
+  renderizarClientesInativos();
+  area.classList.remove("oculto");
+  btn.innerText="Ocultar Inativos";
+}else{
+  area.classList.add("oculto");
+  btn.innerText="Mostrar Inativos";
+}
+}
+
 function renderizarAcademias(){
-const clientesAtivosRender=(academias||[]).filter(a=>clienteEstaAtivo(a));
-const busca=document.getElementById("buscaCliente").value.toLowerCase();const filtro=document.getElementById("filtroStatusCliente").value;let html="";academias.filter(a=>{const st=a.status_cliente||"ATIVO";const mb=(a.nome||"").toLowerCase().includes(busca)||(a.titulo_sistema||"").toLowerCase().includes(busca)||(a.email_notificacao||"").toLowerCase().includes(busca)||(a.plano||"").toLowerCase().includes(busca)||st.toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||st===filtro)}).forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);html+=`<div class="item"><h3>${a.nome||"Cliente sem nome"}</h3>${a.logo_url?`<img class="logo-preview" src="${a.logo_url}" onerror="this.style.display='none'">`:""}<p><strong>Nome do Sistema:</strong> ${a.titulo_sistema||a.nome||"-"}</p><p><strong>Descrição complementar:</strong> ${a.subtitulo_sistema||"-"}</p><p><span class="cor-preview" style="background:${a.cor_primaria||"#93D500"}"></span><strong>Cor principal:</strong> ${a.cor_primaria||"#93D500"}</p><p><span class="cor-preview" style="background:${a.cor_header||"#323E48"}"></span><strong>Cor topo:</strong> ${a.cor_header||"#323E48"}</p><p><strong>E-mail chamados:</strong> ${a.email_notificacao||"-"}</p><p><strong>Plano:</strong> ${a.plano||"-"}</p><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><div class="${classeStatusCliente(a.status_cliente||"ATIVO")}">${textoStatusCliente(a.status_cliente||"ATIVO")}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${a.id})">Editar cliente</button><button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir painel cliente</button><button class="btn-azul" onclick="abrirUsuariosCliente(${a.id})">Usuários Painel Admin</button><button class="btn-vermelho" onclick="abrirModalExcluirCliente(${a.id})">Excluir Cliente</button><button class="btn-verde" onclick="abrirSolicitacaoCliente(${a.id})">Solicitação por ID</button><button class="btn-cinza" onclick="baixarQRCodesCliente(${a.id})">Baixar QR Codes</button></div></div>`});document.getElementById("listaAcademias").innerHTML=html||"<p>Nenhum cliente encontrado.</p>"
-const contadorInativos=document.getElementById("contadorClientesInativos");
-if(contadorInativos)contadorInativos.innerText=String((academias||[]).filter(a=>!clienteEstaAtivo(a)).length);
+const container=document.getElementById("listaAcademias");
+if(!container)return;
 
+const clientesAtivos=(academias||[]).filter(a=>clienteEstaAtivo(a));
+const clientesInativos=(academias||[]).filter(a=>!clienteEstaAtivo(a));
 
+const contador=document.getElementById("contadorClientesInativos");
+if(contador)contador.innerText=String(clientesInativos.length);
+
+if(!clientesAtivos.length){
+  container.innerHTML='<p style="color:#6b7280;">Nenhum cliente ativo cadastrado.</p>';
+  return;
+}
+
+container.innerHTML=clientesAtivos.map(a=>`
+<div class="item">
+${a.logo_url?`<img class="logo-preview" src="${a.logo_url}">`:""}
+<h3>${a.nome||"Cliente sem nome"}</h3>
+<p><strong>ID:</strong> ${a.id}</p>
+<p><strong>Status:</strong> <span class="badge badge-ativo">${statusClienteNormalizado(a)}</span></p>
+<p><strong>E-mail(s):</strong> ${a.email_notificacao||a.email||"-"}</p>
+<p><strong>Cor principal:</strong> <span class="cor-preview" style="background:${a.cor_primaria||"#93D500"}"></span>${a.cor_primaria||"#93D500"}</p>
+<div class="botoes">
+<button class="btn-azul" onclick="abrirEditar(${a.id})">Editar Cliente</button>
+<button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir Painel</button>
+<button class="btn-azul" onclick="abrirUsuariosCliente(${a.id})">Usuários Painel Admin</button>
+<button class="btn-vermelho" onclick="abrirModalExcluirCliente(${a.id})">Excluir Cliente</button>
+</div>
+</div>
+`).join("");
 }
 function renderizarMetricasClientes(){let html="";academias.forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);const em=equipamentosDaAcademia(a.id).filter(e=>e.status==="MANUTENCAO"||e.status==="EM MANUTENCAO").length;const disp=qe>0?Math.round(((qe-em)/qe)*100):0;html+=`<div class="item"><h3>${a.nome||"Cliente"}</h3><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><p><strong>Em manutenção:</strong> ${em}</p><p><strong>Disponibilidade estimada:</strong> ${disp}%</p></div>`});document.getElementById("metricasClientes").innerHTML=html||"<p>Sem métricas disponíveis.</p>"}
 function abrirEditar(id){const a=academias.find(x=>x.id===id);if(!a)return;document.getElementById("editId").value=a.id;document.getElementById("editNome").value=a.nome||"";document.getElementById("editEmail").value=a.email_notificacao||"";document.getElementById("editLogoAtual").value=a.logo_url||"";const img=document.getElementById("editLogoPreview");if(a.logo_url){img.src=a.logo_url;img.style.display="block"}else{img.style.display="none"}document.getElementById("editCor").value=a.cor_primaria||"#93D500";document.getElementById("editCorHeader").value=a.cor_header||"#323E48";document.getElementById("editTituloSistema").value=a.titulo_sistema||"ConetFacility";document.getElementById("editSubtituloSistema").value=a.subtitulo_sistema||"";document.getElementById("editStatusCliente").value=a.status_cliente||"ATIVO";document.getElementById("editPlano").value=a.plano||"MVP";document.getElementById("editEndereco").value=a.endereco||"";document.getElementById("editHorario").value=a.horario_funcionamento||"";document.getElementById("editObservacao").value=a.observacoes||"";document.getElementById("modalEditar").style.display="flex"}
@@ -820,9 +866,6 @@ verificarLogin();
 </div>
 </div>
 </div>
-
-
-
 
 
 <div id="modalExcluirCliente" class="modal">
