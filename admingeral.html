@@ -143,6 +143,26 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
   font-weight:bold;
 }
 
+
+/* CANCELAMENTO / REATIVAÇÃO DE CLIENTES */
+.badge-cancelado{background:#fee2e2;color:#991b1b}
+.cancelamento-alerta{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:12px;border-radius:12px;margin:12px 0}
+
+
+/* SEÇÃO CLIENTES INATIVOS / EXCLUÍDOS */
+.secao-inativos-toggle{margin:26px 0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.inativos-contador{display:inline-block;padding:4px 10px;border-radius:999px;background:#fee2e2;color:#991b1b;font-size:12px;font-weight:bold}
+.clientes-inativos-container{margin-top:14px}
+.cliente-inativo-card{opacity:.85;border:1px dashed #ef4444}
+
+
+/* CORREÇÃO: INATIVOS APENAS APÓS LOGIN */
+#telaLogin #areaClientesInativos,
+#telaLogin .secao-inativos-toggle,
+body > .bloco:has(#areaClientesInativos){
+  display:none!important;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -213,6 +233,16 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 </div>
 </div>
 
+<div class="bloco" style="margin-top:24px;">
+  <div class="secao-inativos-toggle">
+    <div>
+      <h2>Clientes Inativos / Excluídos <span id="contadorClientesInativos" class="inativos-contador">0</span></h2>
+      <p style="color:#6b7280;margin-top:6px;">Clientes inativados ficam ocultos da lista principal, mas preservados para auditoria e reativação.</p>
+    </div>
+    <button class="btn-cinza" onclick="toggleClientesInativos()" id="btnToggleInativos">Mostrar Inativos</button>
+  </div>
+  <div id="areaClientesInativos" class="clientes-inativos-container oculto"></div>
+</div>
 <div id="modalEditar" class="modal">
 <div class="modal-box">
 <h2>Editar cliente</h2>
@@ -242,6 +272,7 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 const SUPABASE_URL="https://juwbkfhfmygduktuzqmu.supabase.co";
 const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let clienteCancelamentoAtualId=null;
 let clienteUsuariosAtualId=null;
 let usuariosClienteAtual=[];
 let academias=[],equipamentos=[],chamados=[],graficoStatusClientes=null,graficoChamadosCliente=null;
@@ -261,7 +292,171 @@ function contarAbertosPorAcademia(id){const ids=equipamentosDaAcademia(id).map(e
 async function uploadLogo(file,academiaId){if(!file)return "";const ext=(file.name.split(".").pop()||"png").toLowerCase();const nomeArquivo=`academia-${academiaId||"novo"}-${Date.now()}.${ext}`;const {error}=await supabaseClient.storage.from("logos").upload(nomeArquivo,file,{cacheControl:"3600",upsert:true});if(error)throw error;const {data}=supabaseClient.storage.from("logos").getPublicUrl(nomeArquivo);return data.publicUrl}
 function renderizarGraficos(){const sc={ATIVO:0,PILOTO:0,INATIVO:0};academias.forEach(a=>{if(a.status_cliente==="PILOTO")sc.PILOTO++;else if(a.status_cliente==="INATIVO")sc.INATIVO++;else sc.ATIVO++});const top=[...academias].map(a=>({nome:a.nome||("Cliente "+a.id),total:contarChamadosPorAcademia(a.id)})).sort((a,b)=>b.total-a.total).slice(0,6);if(graficoStatusClientes)graficoStatusClientes.destroy();if(graficoChamadosCliente)graficoChamadosCliente.destroy();graficoStatusClientes=new Chart(document.getElementById("graficoStatusClientes"),{type:"doughnut",data:{labels:["Ativo","Piloto","Inativo"],datasets:[{data:[sc.ATIVO,sc.PILOTO,sc.INATIVO],backgroundColor:["#93D500","#FACC15","#E5E7EB"],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"top"}}}});graficoChamadosCliente=new Chart(document.getElementById("graficoChamadosCliente"),{type:"bar",data:{labels:top.map(c=>c.nome),datasets:[{label:"Chamados",data:top.map(c=>c.total),backgroundColor:"#3B82F6",borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}}}}})}
 async function cadastrarAcademia(){document.getElementById("erroCadastro").innerText="";document.getElementById("sucessoCadastro").innerText="";const nome=document.getElementById("novoNome").value.trim();if(!nome){document.getElementById("erroCadastro").innerText="Informe o nome da academia.";return}const titulo=document.getElementById("novoTituloSistema").value.trim()||"ConetFacility";const item={nome:nome,email_notificacao:document.getElementById("novoEmail").value.trim(),logo_url:"",cor_primaria:document.getElementById("novaCor").value,cor_header:document.getElementById("novaCorHeader").value,titulo_sistema:titulo,subtitulo_sistema:document.getElementById("novoSubtituloSistema").value.trim()||"",status_cliente:document.getElementById("novoStatusCliente").value,plano:document.getElementById("novoPlano").value,endereco:document.getElementById("novoEndereco").value.trim(),horario_funcionamento:document.getElementById("novoHorario").value.trim(),observacoes:document.getElementById("novaObservacao").value.trim()};const {data,error}=await supabaseClient.from("academias").insert([item]).select().single();if(error){document.getElementById("erroCadastro").innerText=error.message;return}try{const file=document.getElementById("novoLogoArquivo").files[0];if(file){const url=await uploadLogo(file,data.id);await supabaseClient.from("academias").update({logo_url:url}).eq("id",data.id)}}catch(e){document.getElementById("erroCadastro").innerText="Cliente criado, mas falhou o upload da logo: "+e.message}document.getElementById("sucessoCadastro").innerText="Cliente cadastrado com sucesso.";["novoNome","novoEmail","novoTituloSistema","novoSubtituloSistema","novoEndereco","novoHorario","novaObservacao"].forEach(id=>document.getElementById(id).value="");document.getElementById("novoLogoArquivo").value="";document.getElementById("novaCor").value="#93D500";document.getElementById("novaCorHeader").value="#323E48";carregarDados()}
-function renderizarAcademias(){const busca=document.getElementById("buscaCliente").value.toLowerCase();const filtro=document.getElementById("filtroStatusCliente").value;let html="";academias.filter(a=>{const st=a.status_cliente||"ATIVO";const mb=(a.nome||"").toLowerCase().includes(busca)||(a.titulo_sistema||"").toLowerCase().includes(busca)||(a.email_notificacao||"").toLowerCase().includes(busca)||(a.plano||"").toLowerCase().includes(busca)||st.toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||st===filtro)}).forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);html+=`<div class="item"><h3>${a.nome||"Cliente sem nome"}</h3>${a.logo_url?`<img class="logo-preview" src="${a.logo_url}" onerror="this.style.display='none'">`:""}<p><strong>Nome do Sistema:</strong> ${a.titulo_sistema||a.nome||"-"}</p><p><strong>Descrição complementar:</strong> ${a.subtitulo_sistema||"-"}</p><p><span class="cor-preview" style="background:${a.cor_primaria||"#93D500"}"></span><strong>Cor principal:</strong> ${a.cor_primaria||"#93D500"}</p><p><span class="cor-preview" style="background:${a.cor_header||"#323E48"}"></span><strong>Cor topo:</strong> ${a.cor_header||"#323E48"}</p><p><strong>E-mail chamados:</strong> ${a.email_notificacao||"-"}</p><p><strong>Plano:</strong> ${a.plano||"-"}</p><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><div class="${classeStatusCliente(a.status_cliente||"ATIVO")}">${textoStatusCliente(a.status_cliente||"ATIVO")}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${a.id})">Editar cliente</button><button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir painel cliente</button><button class="btn-azul" onclick="abrirUsuariosCliente(${a.id})">Usuários Painel Admin</button><button class="btn-verde" onclick="abrirSolicitacaoCliente(${a.id})">Solicitação por ID</button><button class="btn-cinza" onclick="baixarQRCodesCliente(${a.id})">Baixar QR Codes</button></div></div>`});document.getElementById("listaAcademias").innerHTML=html||"<p>Nenhum cliente encontrado.</p>"}
+
+function statusClienteNormalizado(cliente){
+return String(cliente?.status_cliente || cliente?.status || "ATIVO").trim().toUpperCase();
+}
+function clienteEstaAtivo(cliente){
+const s=statusClienteNormalizado(cliente);
+return s!=="INATIVO" && s!=="CANCELADO" && s!=="CANCELADA";
+}
+function emailsCliente(cliente){
+return String(cliente?.email_notificacao || cliente?.email || "").split(/[,;\n]+/).map(e=>e.trim()).filter(e=>e&&e.includes("@"));
+}
+function abrirModalExcluirCliente(id){
+clienteCancelamentoAtualId=Number(id);
+const cliente=(academias||[]).find(a=>Number(a.id)===clienteCancelamentoAtualId);
+document.getElementById("textoExcluirCliente").innerText=`Cliente: ${cliente?.nome||"Cliente"} | ID ${clienteCancelamentoAtualId}`;
+document.getElementById("enviarHistoricoAntesExcluir").value="SIM";
+document.getElementById("motivoCancelamentoCliente").value="";
+document.getElementById("msgExcluirCliente").innerText="";
+document.getElementById("erroExcluirCliente").innerText="";
+document.getElementById("modalExcluirCliente").style.display="flex";
+}
+function fecharModalExcluirCliente(){
+document.getElementById("modalExcluirCliente").style.display="none";
+clienteCancelamentoAtualId=null;
+}
+async function buscarTabelaSeguro(tabela,clienteId){
+const {data,error}=await supabaseClient.from(tabela).select("*").eq("academia_id",clienteId);
+if(error){console.warn("Falha ao buscar",tabela,error.message);return [];}
+return data||[];
+}
+function montarRelatorioHistoricoCliente(cliente,dados){
+const agora=new Date().toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"});
+return `
+<h2>Relatório completo de histórico do cliente</h2>
+<p><strong>Cliente:</strong> ${cliente.nome||"-"}</p>
+<p><strong>ID:</strong> ${cliente.id}</p>
+<p><strong>Data do relatório:</strong> ${agora}</p>
+<p><strong>Status anterior:</strong> ${statusClienteNormalizado(cliente)}</p>
+<hr>
+<h3>Resumo</h3>
+<ul>
+<li>Equipamentos: ${dados.equipamentos.length}</li>
+<li>Chamados: ${dados.chamados.length}</li>
+<li>Históricos: ${dados.historicos.length}</li>
+<li>Usuários de chamados: ${dados.usuariosChamados.length}</li>
+<li>Usuários Painel Admin Cliente: ${dados.usuariosPainel.length}</li>
+</ul>
+<h3>Chamados</h3>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">
+<thead><tr><th>ID</th><th>Equipamento</th><th>Status</th><th>Prioridade</th><th>Aberto por</th><th>Encerrado por</th><th>Abertura</th><th>Encerramento</th><th>Descrição</th></tr></thead>
+<tbody>${dados.chamados.map(c=>`<tr><td>${c.id||""}</td><td>${c.equipamento_id||""}</td><td>${c.status||""}</td><td>${c.prioridade||""}</td><td>${c.aberto_por||""}</td><td>${c.encerrado_por||""}</td><td>${c.criado_em||c.created_at||c.data_abertura||""}</td><td>${c.encerrado_em||""}</td><td>${c.descricao||""}</td></tr>`).join("")}</tbody>
+</table>
+<h3>Histórico</h3>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;">
+<thead><tr><th>ID</th><th>Equipamento</th><th>Chamado</th><th>Evento</th><th>Status</th><th>Data</th><th>Descrição</th></tr></thead>
+<tbody>${dados.historicos.map(h=>`<tr><td>${h.id||""}</td><td>${h.equipamento_id||""}</td><td>${h.chamado_id||""}</td><td>${h.tipo_evento||h.evento||""}</td><td>${h.status||""}</td><td>${h.criado_em||h.created_at||""}</td><td>${h.descricao||""}</td></tr>`).join("")}</tbody>
+</table>`;
+}
+function baixarRelatorioClienteHtml(cliente,conteudo){
+const blob=new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório ${cliente.nome}</title></head><body>${conteudo}</body></html>`],{type:"text/html;charset=utf-8"});
+const url=URL.createObjectURL(blob);
+const a=document.createElement("a");
+a.href=url;
+a.download=`relatorio_cliente_${cliente.id}_${(cliente.nome||"cliente").replace(/\W+/g,"_")}.html`;
+document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+async function enviarRelatorioHistoricoCliente(cliente,conteudoHtml){
+const emails=emailsCliente(cliente);
+if(!emails.length){baixarRelatorioClienteHtml(cliente,conteudoHtml);return "Cliente sem e-mail cadastrado. Relatório baixado em HTML.";}
+if(typeof emailjs==="undefined"){baixarRelatorioClienteHtml(cliente,conteudoHtml);return "EmailJS não encontrado. Relatório baixado em HTML.";}
+const serviceId=typeof EMAILJS_SERVICE_ID!=="undefined"?EMAILJS_SERVICE_ID:"service_i6mlqzr";
+const templateId=typeof EMAILJS_TEMPLATE_RELATORIO_ID!=="undefined"?EMAILJS_TEMPLATE_RELATORIO_ID:(typeof EMAILJS_TEMPLATE_ID!=="undefined"?EMAILJS_TEMPLATE_ID:"template_dec814j");
+for(const email of emails){
+await emailjs.send(serviceId,templateId,{email_destino:email,cliente_nome:cliente.nome||"Cliente",assunto:`Relatório completo de histórico - ${cliente.nome||"Cliente"}`,mensagem:conteudoHtml,relatorio_html:conteudoHtml,from_name:"ConetFacility"});
+}
+return "Relatório enviado para "+emails.join(", ");
+}
+async function confirmarInativarCliente(){
+const erro=document.getElementById("erroExcluirCliente");
+const msg=document.getElementById("msgExcluirCliente");
+erro.innerText="";msg.innerText="";
+if(!clienteCancelamentoAtualId){erro.innerText="Cliente não identificado.";return;}
+const cliente=(academias||[]).find(a=>Number(a.id)===clienteCancelamentoAtualId);
+if(!cliente){erro.innerText="Cliente não localizado.";return;}
+const enviar=document.getElementById("enviarHistoricoAntesExcluir").value==="SIM";
+const motivo=document.getElementById("motivoCancelamentoCliente").value.trim();
+try{
+msg.innerText="Processando...";
+if(enviar){
+msg.innerText="Gerando relatório completo...";
+const dados={
+equipamentos:await buscarTabelaSeguro("equipamentos",clienteCancelamentoAtualId),
+chamados:await buscarTabelaSeguro("chamados",clienteCancelamentoAtualId),
+historicos:await buscarTabelaSeguro("historico_manutencao",clienteCancelamentoAtualId),
+usuariosChamados:await buscarTabelaSeguro("usuarios_chamados",clienteCancelamentoAtualId),
+usuariosPainel:await buscarTabelaSeguro("usuarios_painel_cliente",clienteCancelamentoAtualId)
+};
+const relatorio=montarRelatorioHistoricoCliente(cliente,dados);
+msg.innerText=await enviarRelatorioHistoricoCliente(cliente,relatorio);
+}
+const {error}=await supabaseClient.from("academias").update({status_cliente:"INATIVO",data_cancelamento:new Date().toISOString(),motivo_cancelamento:motivo||"Cancelamento/inativação pelo Painel Admin Geral"}).eq("id",clienteCancelamentoAtualId);
+if(error){erro.innerText="Erro ao inativar cliente: "+error.message;return;}
+msg.innerText="Cliente inativado com sucesso.";
+fecharModalExcluirCliente();
+if(typeof carregarAcademias==="function")carregarAcademias();
+if(typeof carregarDados==="function")carregarDados();
+}catch(e){console.error(e);erro.innerText="Erro no processo: "+e.message;}
+}
+async function reativarCliente(id){
+if(!confirm("Deseja reativar este cliente?"))return;
+const {error}=await supabaseClient.from("academias").update({status_cliente:"ATIVO",data_cancelamento:null,motivo_cancelamento:null}).eq("id",Number(id));
+if(error){alert("Erro ao reativar cliente: "+error.message);return;}
+alert("Cliente reativado com sucesso.");
+if(typeof carregarAcademias==="function")carregarAcademias();
+if(typeof carregarDados==="function")carregarDados();
+}
+
+
+function toggleClientesInativos(){
+const area=document.getElementById("areaClientesInativos");
+const btn=document.getElementById("btnToggleInativos");
+if(!area||!btn)return;
+if(area.classList.contains("oculto")){
+renderizarClientesInativos();
+area.classList.remove("oculto");
+btn.innerText="Ocultar Inativos";
+}else{
+area.classList.add("oculto");
+btn.innerText="Mostrar Inativos";
+}
+}
+
+function renderizarClientesInativos(){
+const area=document.getElementById("areaClientesInativos");
+const contador=document.getElementById("contadorClientesInativos");
+if(!area)return;
+const inativos=(academias||[]).filter(a=>!clienteEstaAtivo(a));
+if(contador)contador.innerText=String(inativos.length);
+if(!inativos.length){
+area.innerHTML='<p style="color:#6b7280;">Nenhum cliente inativo ou excluído.</p>';
+return;
+}
+area.innerHTML=inativos.map(a=>`
+<div class="item cliente-inativo-card">
+<h3>${a.nome||"Cliente sem nome"}</h3>
+<p><strong>ID:</strong> ${a.id}</p>
+<p><strong>Status:</strong> <span class="badge badge-cancelado">${statusClienteNormalizado(a)}</span></p>
+<p><strong>Data cancelamento:</strong> ${a.data_cancelamento?new Date(a.data_cancelamento).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"}):"-"}</p>
+<p><strong>Motivo:</strong> ${a.motivo_cancelamento||"-"}</p>
+<div class="botoes">
+<button class="btn-verde" onclick="reativarCliente(${a.id})">Reativar Cliente</button>
+<button class="btn-cinza" onclick="abrirModalExcluirCliente(${a.id})">Gerar / Reenviar Histórico</button>
+</div>
+</div>
+`).join("");
+}
+
+function renderizarAcademias(){
+const clientesAtivosRender=(academias||[]).filter(a=>clienteEstaAtivo(a));
+const busca=document.getElementById("buscaCliente").value.toLowerCase();const filtro=document.getElementById("filtroStatusCliente").value;let html="";academias.filter(a=>{const st=a.status_cliente||"ATIVO";const mb=(a.nome||"").toLowerCase().includes(busca)||(a.titulo_sistema||"").toLowerCase().includes(busca)||(a.email_notificacao||"").toLowerCase().includes(busca)||(a.plano||"").toLowerCase().includes(busca)||st.toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||st===filtro)}).forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);html+=`<div class="item"><h3>${a.nome||"Cliente sem nome"}</h3>${a.logo_url?`<img class="logo-preview" src="${a.logo_url}" onerror="this.style.display='none'">`:""}<p><strong>Nome do Sistema:</strong> ${a.titulo_sistema||a.nome||"-"}</p><p><strong>Descrição complementar:</strong> ${a.subtitulo_sistema||"-"}</p><p><span class="cor-preview" style="background:${a.cor_primaria||"#93D500"}"></span><strong>Cor principal:</strong> ${a.cor_primaria||"#93D500"}</p><p><span class="cor-preview" style="background:${a.cor_header||"#323E48"}"></span><strong>Cor topo:</strong> ${a.cor_header||"#323E48"}</p><p><strong>E-mail chamados:</strong> ${a.email_notificacao||"-"}</p><p><strong>Plano:</strong> ${a.plano||"-"}</p><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><div class="${classeStatusCliente(a.status_cliente||"ATIVO")}">${textoStatusCliente(a.status_cliente||"ATIVO")}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${a.id})">Editar cliente</button><button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir painel cliente</button><button class="btn-azul" onclick="abrirUsuariosCliente(${a.id})">Usuários Painel Admin</button><button class="btn-vermelho" onclick="abrirModalExcluirCliente(${a.id})">Excluir Cliente</button><button class="btn-verde" onclick="abrirSolicitacaoCliente(${a.id})">Solicitação por ID</button><button class="btn-cinza" onclick="baixarQRCodesCliente(${a.id})">Baixar QR Codes</button></div></div>`});document.getElementById("listaAcademias").innerHTML=html||"<p>Nenhum cliente encontrado.</p>"
+const contadorInativos=document.getElementById("contadorClientesInativos");
+if(contadorInativos)contadorInativos.innerText=String((academias||[]).filter(a=>!clienteEstaAtivo(a)).length);
+
+
+}
 function renderizarMetricasClientes(){let html="";academias.forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);const em=equipamentosDaAcademia(a.id).filter(e=>e.status==="MANUTENCAO"||e.status==="EM MANUTENCAO").length;const disp=qe>0?Math.round(((qe-em)/qe)*100):0;html+=`<div class="item"><h3>${a.nome||"Cliente"}</h3><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><p><strong>Em manutenção:</strong> ${em}</p><p><strong>Disponibilidade estimada:</strong> ${disp}%</p></div>`});document.getElementById("metricasClientes").innerHTML=html||"<p>Sem métricas disponíveis.</p>"}
 function abrirEditar(id){const a=academias.find(x=>x.id===id);if(!a)return;document.getElementById("editId").value=a.id;document.getElementById("editNome").value=a.nome||"";document.getElementById("editEmail").value=a.email_notificacao||"";document.getElementById("editLogoAtual").value=a.logo_url||"";const img=document.getElementById("editLogoPreview");if(a.logo_url){img.src=a.logo_url;img.style.display="block"}else{img.style.display="none"}document.getElementById("editCor").value=a.cor_primaria||"#93D500";document.getElementById("editCorHeader").value=a.cor_header||"#323E48";document.getElementById("editTituloSistema").value=a.titulo_sistema||"ConetFacility";document.getElementById("editSubtituloSistema").value=a.subtitulo_sistema||"";document.getElementById("editStatusCliente").value=a.status_cliente||"ATIVO";document.getElementById("editPlano").value=a.plano||"MVP";document.getElementById("editEndereco").value=a.endereco||"";document.getElementById("editHorario").value=a.horario_funcionamento||"";document.getElementById("editObservacao").value=a.observacoes||"";document.getElementById("modalEditar").style.display="flex"}
 function fecharEditar(){document.getElementById("modalEditar").style.display="none"}
@@ -622,6 +817,31 @@ verificarLogin();
 
 <div style="margin-top:20px;">
 <button class="btn-cinza" onclick="fecharModalUsuariosCliente()">Fechar</button>
+</div>
+</div>
+</div>
+
+
+
+
+
+<div id="modalExcluirCliente" class="modal">
+<div class="modal-box">
+<h2>Excluir / Inativar Cliente</h2>
+<p id="textoExcluirCliente" style="color:#6b7280;margin:8px 0 12px;"></p>
+<div class="cancelamento-alerta"><strong>Atenção:</strong> o cliente será marcado como <strong>INATIVO</strong>. Nada será apagado do banco; o histórico ficará preservado.</div>
+<label>Deseja enviar o histórico completo por e-mail antes de inativar?</label>
+<select id="enviarHistoricoAntesExcluir">
+<option value="SIM">Sim, enviar relatório por e-mail</option>
+<option value="NAO">Não, apenas inativar cliente</option>
+</select>
+<label>Motivo do cancelamento / inativação</label>
+<textarea id="motivoCancelamentoCliente" placeholder="Ex: Cliente cancelou contrato, pausa temporária, inadimplência etc."></textarea>
+<p id="msgExcluirCliente" class="sucesso"></p>
+<p id="erroExcluirCliente" class="erro"></p>
+<div class="botoes">
+<button class="btn-vermelho" onclick="confirmarInativarCliente()">Confirmar inativação</button>
+<button class="btn-cinza" onclick="fecharModalExcluirCliente()">Cancelar</button>
 </div>
 </div>
 </div>
