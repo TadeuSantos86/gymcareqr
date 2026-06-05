@@ -1,4 +1,18 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Solicitar Manutenção | ConetFacility</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script><style>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Solicitar Manutenção | ConetFacility</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+function sincronizarChamadosGeraisQRComAtraso(){
+setTimeout(()=>{
+if(typeof carregarTodosChamadosAbertosAcademiaQR==="function"){
+carregarTodosChamadosAbertosAcademiaQR();
+}
+},500);
+setTimeout(()=>{
+if(typeof carregarTodosChamadosAbertosAcademiaQR==="function"){
+carregarTodosChamadosAbertosAcademiaQR();
+}
+},1500);
+}
+
+</script><script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script><style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}body{background:#f3f4f6;color:#111827;padding:24px}.card{max-width:760px;margin:0 auto;background:white;border-radius:20px;padding:30px;box-shadow:0 5px 20px rgba(0,0,0,.08)}h1{color:var(--cor,#93D500);margin-bottom:10px}.logo{max-height:80px;max-width:220px;object-fit:contain;margin-bottom:18px}.subtitulo{color:#6b7280;margin-bottom:25px}label{display:block;margin-top:18px;margin-bottom:8px;font-weight:bold}input,select,textarea{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;font-size:15px}textarea{resize:none;min-height:120px}button{width:100%;margin-top:20px;padding:16px;border:none;border-radius:14px;background:var(--cor,#93D500);font-size:16px;font-weight:bold;cursor:pointer}.btn-cinza{background:#e5e7eb}.info{background:#f9fafb;padding:18px;border-radius:14px;margin-bottom:20px}.info p{margin:7px 0}.msg{margin-top:20px;text-align:center;font-weight:bold}.sucesso{color:#15803d}.erro{color:#dc2626}.alerta{background:#fef3c7;color:#92400e;padding:14px;border-radius:12px;margin-bottom:20px;font-weight:bold}.oculto{display:none!important}.status{display:inline-block;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:bold}.status-operacional{background:#dcfce7;color:#166534}.status-manutencao{background:#fef3c7;color:#92400e}.status-bloqueado{background:#fef3c7;color:#92400e}.status-desativado{background:#e5e7eb;color:#374151}@media(max-width:700px){body{padding:12px}.card{padding:22px}}
 
 /* LOGO ÚNICO CENTRAL DO CLIENTE NO MENU QR */
@@ -487,38 +501,78 @@ await carregarEquipamentoPorId(equipamentoAtual.id);
 
 
 
-async function carregarTodosChamadosAbertosAcademiaQR(){
-const lista=document.getElementById("listaTodosChamadosAbertosQR");
-if(!lista||!equipamentoAtual)return;
 
-lista.innerHTML='<p style="color:#6b7280;margin-top:12px;">Carregando todos os chamados em aberto...</p>';
+function statusAbertoQR(status){
+const s=String(status||"").trim().toUpperCase()
+.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+.replace(/[_-]+/g," ");
 
+return (
+s==="ABERTO" ||
+s==="EM MANUTENCAO" ||
+s==="MANUTENCAO" ||
+s==="REABERTO" ||
+s==="EM ANDAMENTO"
+);
+}
+
+function obterIdEquipamentoDaUrlQR(){
+const params=new URLSearchParams(window.location.search);
+return params.get("id")||params.get("equipamento_id")||params.get("equipamento")||null;
+}
+
+async function obterAcademiaIdSincronizadoQR(){
 let academiaId=Number(equipamentoAtual?.academia_id||0)||Number(academiaAtual?.id||0);
 
-if(!academiaId){
-const params=new URLSearchParams(window.location.search);
-const idEquip=params.get("id");
-if(idEquip){
-const {data:eqBusca}=await supabaseClient.from("equipamentos").select("id,academia_id").eq("id",Number(idEquip)).maybeSingle();
-if(eqBusca?.academia_id)academiaId=Number(eqBusca.academia_id);
+if(academiaId)return academiaId;
+
+const idUrl=obterIdEquipamentoDaUrlQR();
+
+if(idUrl){
+const {data:eqPorId}=await supabaseClient
+.from("equipamentos")
+.select("id,academia_id")
+.eq("id",Number(idUrl))
+.maybeSingle();
+
+if(eqPorId?.academia_id)return Number(eqPorId.academia_id);
+
+const {data:eqPorCodigo}=await supabaseClient
+.from("equipamentos")
+.select("id,academia_id")
+.eq("codigo_publico",String(idUrl))
+.maybeSingle();
+
+if(eqPorCodigo?.academia_id)return Number(eqPorCodigo.academia_id);
 }
+
+return null;
 }
+
+async function carregarTodosChamadosAbertosAcademiaQR(){
+const lista=document.getElementById("listaTodosChamadosAbertosQR");
+if(!lista)return;
+
+lista.innerHTML='<p style="color:#6b7280;margin-top:12px;">Sincronizando chamados da unidade...</p>';
+
+const academiaId=await obterAcademiaIdSincronizadoQR();
 
 if(!academiaId){
 lista.innerHTML='<p class="erro">Não foi possível identificar o cliente/academia deste QR Code.</p>';
+console.error("QR Sync: academiaId não identificado", {equipamentoAtual, academiaAtual, url:window.location.href});
 return;
 }
 
-/* Busca TODOS os equipamentos do mesmo cliente */
+/* 1. Busca todos os equipamentos do cliente */
 const {data:equipamentos,error:erroEquipamentos}=await supabaseClient
 .from("equipamentos")
-.select("id,nome,codigo_publico,localizacao,academia_id")
+.select("*")
 .eq("academia_id",academiaId)
 .order("id",{ascending:true});
 
 if(erroEquipamentos){
 lista.innerHTML='<p class="erro">Erro ao carregar equipamentos da unidade.</p>';
-console.error("Erro equipamentos:",erroEquipamentos);
+console.error("QR Sync erro equipamentos:",erroEquipamentos);
 return;
 }
 
@@ -527,36 +581,52 @@ lista.innerHTML='<p style="color:#6b7280;margin-top:12px;">Nenhum equipamento ca
 return;
 }
 
-const idsEquipamentos=equipamentos.map(e=>Number(e.id));
+const idsEquipamentos=equipamentos.map(e=>Number(e.id)).filter(Boolean);
 const mapaEquipamentos={};
 equipamentos.forEach(e=>{mapaEquipamentos[Number(e.id)]=e;});
 
-/* Busca TODOS os chamados abertos dos equipamentos desse cliente */
-const {data:chamados,error:erroChamados}=await supabaseClient
-.from("chamados")
-.select("*")
-.in("equipamento_id",idsEquipamentos)
-.in("status",["ABERTO","EM MANUTENCAO","MANUTENCAO","EM_MANUTENCAO","REABERTO","Aberto","Em Manutenção","Reaberto"])
-.order("id",{ascending:false});
-
-if(erroChamados){
-lista.innerHTML='<p class="erro">Erro ao carregar chamados em aberto da unidade.</p>';
-console.error("Erro chamados:",erroChamados);
+if(!idsEquipamentos.length){
+lista.innerHTML='<p style="color:#6b7280;margin-top:12px;">Nenhum equipamento válido encontrado nesta unidade.</p>';
 return;
 }
 
-if(!chamados||!chamados.length){
+/* 2. Busca chamados por equipamento_id e filtra status aberto no JavaScript */
+const {data:todosChamados,error:erroChamados}=await supabaseClient
+.from("chamados")
+.select("*")
+.in("equipamento_id",idsEquipamentos)
+.order("id",{ascending:false});
+
+if(erroChamados){
+lista.innerHTML='<p class="erro">Erro ao carregar chamados da unidade.</p>';
+console.error("QR Sync erro chamados:",erroChamados);
+return;
+}
+
+const chamados=(todosChamados||[]).filter(ch=>statusAbertoQR(ch.status));
+
+console.log("QR Sync chamados unidade", {
+academiaId,
+equipamentos:idsEquipamentos,
+todosChamados,
+chamadosFiltrados:chamados
+});
+
+if(!chamados.length){
 lista.innerHTML='<p style="color:#6b7280;margin-top:12px;">Nenhum chamado aberto na unidade.</p>';
 return;
 }
 
+/* 3. Renderiza chamados abertos de TODOS os equipamentos */
 lista.innerHTML=chamados.map(ch=>{
 const eq=mapaEquipamentos[Number(ch.equipamento_id)]||{};
 const atual=Number(ch.equipamento_id)===Number(equipamentoAtual?.id);
+
 return `
 <div class="chamado-todos-qr-card ${atual?"destaque-equipamento-atual":""}">
 <strong>Chamado #${ch.id}</strong>
 ${atual?'<span class="badge-equipamento-atual">Equipamento do QR atual</span>':""}
+
 <p><strong>Equipamento:</strong> ${eq.nome||("ID "+(ch.equipamento_id||"-"))}</p>
 <p><strong>Código:</strong> ${eq.codigo_publico||"-"}</p>
 <p><strong>Localização:</strong> ${eq.localizacao||"-"}</p>
@@ -566,6 +636,7 @@ ${atual?'<span class="badge-equipamento-atual">Equipamento do QR atual</span>':"
 <p><strong>Aberto em:</strong> ${formatarDataHoraBR(obterDataAberturaChamado(ch))}</p>
 <p><strong>Aberto por:</strong> ${ch.aberto_por||"Não informado"}</p>
 <p><strong>Descrição:</strong> ${ch.descricao||"-"}</p>
+
 <div class="chamado-finalizar-box">
 <label>Descreva o que foi feito e como o chamado foi resolvido</label>
 <textarea id="descricaoFechamentoQR_${ch.id}" placeholder="Ex: Ajuste realizado, equipamento testado e liberado para uso."></textarea>
@@ -717,6 +788,7 @@ encerradoEm
 
 alert("Chamado encerrado com sucesso.");
 await carregarChamadosEmAndamentoQR();
+sincronizarChamadosGeraisQRComAtraso();
 await carregarTodosChamadosAbertosAcademiaQR();
 if(typeof verificarChamadoAberto==="function")verificarChamadoAberto();
 }
