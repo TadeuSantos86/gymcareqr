@@ -4,7 +4,57 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Geral | ConetFacility</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+
+
+
+
+
+function atualizarVisibilidadeBlocoInativosLogin(){
+  const bloco=document.getElementById("blocoClientesInativos");
+  if(!bloco)return;
+
+  const telaLogin=document.getElementById("telaLogin")||document.getElementById("loginArea")||document.getElementById("login");
+  const telaAdmin=document.getElementById("telaAdmin")||document.getElementById("painelAdmin")||document.getElementById("appArea")||document.querySelector("main");
+
+  const loginVisivel=telaLogin && !telaLogin.classList.contains("oculto") && getComputedStyle(telaLogin).display!=="none";
+  const adminVisivel=telaAdmin && !telaAdmin.classList.contains("oculto") && getComputedStyle(telaAdmin).display!=="none";
+
+  const logado=
+    localStorage.getItem("conetfacility_admin_geral_logado")==="sim" ||
+    localStorage.getItem("gymcare_admin_geral_logado")==="sim";
+
+  if((adminVisivel || logado) && !loginVisivel){
+    bloco.style.display="block";
+
+    const contador=document.getElementById("contadorClientesInativos");
+    if(contador && typeof clienteEstaAtivo==="function"){
+      contador.innerText=String((academias||[]).filter(a=>!clienteEstaAtivo(a)).length);
+    }
+  }else{
+    bloco.style.display="none";
+  }
+}
+
+function iniciarControleBlocoInativos(){
+  atualizarVisibilidadeBlocoInativosLogin();
+
+  const telaLogin=document.getElementById("telaLogin")||document.getElementById("loginArea")||document.getElementById("login");
+  const telaAdmin=document.getElementById("telaAdmin")||document.getElementById("painelAdmin")||document.getElementById("appArea")||document.querySelector("main");
+
+  const observer=new MutationObserver(()=>atualizarVisibilidadeBlocoInativosLogin());
+
+  if(telaLogin)observer.observe(telaLogin,{attributes:true,attributeFilter:["class","style"]});
+  if(telaAdmin)observer.observe(telaAdmin,{attributes:true,attributeFilter:["class","style"]});
+
+  setInterval(atualizarVisibilidadeBlocoInativosLogin,1000);
+}
+
+document.addEventListener("DOMContentLoaded",function(){
+  setTimeout(iniciarControleBlocoInativos,100);
+});
+
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
@@ -178,6 +228,40 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
   color:#991b1b;
 }
 
+
+
+
+
+/* INATIVOS APÓS LOGIN - CORRIGIDO */
+#blocoClientesInativos{
+  margin-top:24px;
+  display:none;
+}
+.secao-inativos-toggle{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.inativos-contador{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:999px;
+  background:#fee2e2;
+  color:#991b1b;
+  font-size:12px;
+  font-weight:bold;
+}
+.cliente-inativo-card{
+  opacity:.88;
+  border:1px dashed #ef4444;
+}
+.badge-cancelado{
+  background:#fee2e2;
+  color:#991b1b;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -249,6 +333,10 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 </div>
 
 
+
+
+
+
 <div class="bloco" id="blocoClientesInativos">
   <div class="secao-inativos-toggle">
     <div>
@@ -294,14 +382,24 @@ let clienteUsuariosAtualId=null;
 let usuariosClienteAtual=[];
 let academias=[],equipamentos=[],chamados=[],graficoStatusClientes=null,graficoChamadosCliente=null;
 
-function entrarMaster(){const u=document.getElementById("usuario").value.trim();const s=document.getElementById("senha").value.trim();if(u==="master"&&s==="conet2506"){localStorage.setItem("gymcare_master_logado","sim");mostrarAdmin()}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."}
-function verificarLogin(){if(localStorage.getItem("gymcare_master_logado")==="sim")mostrarAdmin()}
+function entrarMaster(){const u=document.getElementById("usuario").value.trim();const s=document.getElementById("senha").value.trim();if(u==="master"&&s==="conet2506"){localStorage.setItem("gymcare_master_logado","sim");mostrarAdmin()}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."
+setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
+
+setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
+}
+function verificarLogin(){if(localStorage.getItem("gymcare_master_logado")==="sim")mostrarAdmin()
+setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
+
+setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
+}
 function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()}
 function sair(){localStorage.removeItem("gymcare_master_logado");location.reload()}
 function toggleCadastro(){document.getElementById("formCadastro").classList.toggle("oculto")}
 function textoStatusCliente(s){if(s==="ATIVO")return"Ativo";if(s==="PILOTO")return"Piloto";if(s==="INATIVO")return"Inativo";return s||"-"}
 function classeStatusCliente(s){if(s==="ATIVO")return"badge badge-ativo";if(s==="PILOTO")return"badge badge-piloto";return"badge badge-inativo"}
-async function carregarDados(){const {data:acs,error:e1}=await supabaseClient.from("academias").select("*").order("id",{ascending:true});const {data:eqs,error:e2}=await supabaseClient.from("equipamentos").select("*").order("id",{ascending:true});const {data:chs,error:e3}=await supabaseClient.from("chamados").select("*").order("id",{ascending:false});if(e1||e2||e3){console.error(e1||e2||e3);return}academias=acs||[];equipamentos=eqs||[];chamados=chs||[];atualizarCards();renderizarGraficos();renderizarAcademias();renderizarMetricasClientes()}
+async function carregarDados(){const {data:acs,error:e1}=await supabaseClient.from("academias").select("*").order("id",{ascending:true});const {data:eqs,error:e2}=await supabaseClient.from("equipamentos").select("*").order("id",{ascending:true});const {data:chs,error:e3}=await supabaseClient.from("chamados").select("*").order("id",{ascending:false});if(e1||e2||e3){console.error(e1||e2||e3);return}academias=acs||[];equipamentos=eqs||[];chamados=chs||[];atualizarCards();renderizarGraficos();renderizarAcademias();renderizarMetricasClientes()
+setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
+}
 function atualizarCards(){document.getElementById("totalClientes").innerText=academias.length;document.getElementById("clientesAtivos").innerText=academias.filter(a=>a.status_cliente==="ATIVO"||!a.status_cliente).length;document.getElementById("totalEquipamentos").innerText=equipamentos.length;document.getElementById("chamadosAbertos").innerText=chamados.filter(c=>c.status==="ABERTO").length}
 function equipamentosDaAcademia(id){return equipamentos.filter(e=>Number(e.academia_id)===Number(id))}
 function contarChamadosPorAcademia(id){const ids=equipamentosDaAcademia(id).map(e=>e.id);return chamados.filter(c=>ids.includes(c.equipamento_id)).length}
@@ -502,6 +600,11 @@ ${a.logo_url?`<img class="logo-preview" src="${a.logo_url}">`:""}
 </div>
 </div>
 `).join("");
+
+const contadorInativos=document.getElementById("contadorClientesInativos");
+if(contadorInativos)contadorInativos.innerText=String((academias||[]).filter(a=>!clienteEstaAtivo(a)).length);
+
+setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
 }
 function renderizarMetricasClientes(){let html="";academias.forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);const em=equipamentosDaAcademia(a.id).filter(e=>e.status==="MANUTENCAO"||e.status==="EM MANUTENCAO").length;const disp=qe>0?Math.round(((qe-em)/qe)*100):0;html+=`<div class="item"><h3>${a.nome||"Cliente"}</h3><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><p><strong>Em manutenção:</strong> ${em}</p><p><strong>Disponibilidade estimada:</strong> ${disp}%</p></div>`});document.getElementById("metricasClientes").innerHTML=html||"<p>Sem métricas disponíveis.</p>"}
 function abrirEditar(id){const a=academias.find(x=>x.id===id);if(!a)return;document.getElementById("editId").value=a.id;document.getElementById("editNome").value=a.nome||"";document.getElementById("editEmail").value=a.email_notificacao||"";document.getElementById("editLogoAtual").value=a.logo_url||"";const img=document.getElementById("editLogoPreview");if(a.logo_url){img.src=a.logo_url;img.style.display="block"}else{img.style.display="none"}document.getElementById("editCor").value=a.cor_primaria||"#93D500";document.getElementById("editCorHeader").value=a.cor_header||"#323E48";document.getElementById("editTituloSistema").value=a.titulo_sistema||"ConetFacility";document.getElementById("editSubtituloSistema").value=a.subtitulo_sistema||"";document.getElementById("editStatusCliente").value=a.status_cliente||"ATIVO";document.getElementById("editPlano").value=a.plano||"MVP";document.getElementById("editEndereco").value=a.endereco||"";document.getElementById("editHorario").value=a.horario_funcionamento||"";document.getElementById("editObservacao").value=a.observacoes||"";document.getElementById("modalEditar").style.display="flex"}
@@ -547,7 +650,7 @@ area.innerHTML="";
 const cor=academia?.cor_primaria||"#93D500";
 const logoBase64=await carregarImagemBase64(academia?.logo_url);
 
-const linkQR=`https://conetfacility.vercel.app/equipamento.html?id=${equipamento.id}&academia_id=${equipamento.academia_id}`;
+const linkQR=`https://sistema.conetfacility.com.br/equipamento.html?id=${equipamento.id}&academia_id=${equipamento.academia_id}`;
 
 const div=document.createElement("div");
 div.className="qr-etiqueta-lote";
@@ -812,8 +915,15 @@ usuariosClienteAtual=usuariosClienteAtual.filter(u=>Number(u.id)!==Number(id));
 renderizarUsuariosCliente();
 }
 
-function abrirPainelCliente(id){window.open("https://conetfacility.vercel.app/?academia_id="+id,"_blank")}
-function abrirSolicitacaoCliente(id){window.open("https://conetfacility.vercel.app/equipamento.html?academia_id="+id,"_blank")}
+function abrirPainelCliente(id){
+const clienteId=Number(id);
+if(!clienteId){
+alert("ID do cliente não identificado.");
+return;
+}
+window.open(`https://sistema.conetfacility.com.br/?academia_id=${clienteId}`,"_blank");
+}
+function abrirSolicitacaoCliente(id){window.open("https://sistema.conetfacility.com.br/equipamento.html?academia_id="+id,"_blank")}
 verificarLogin();
 </script>
 
