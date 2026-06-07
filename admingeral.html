@@ -299,6 +299,12 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
   margin:12px 0;
 }
 
+
+/* MÉTRICAS POR CLIENTE SINCRONIZADAS */
+.card-metrica-cliente{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;margin-top:12px}
+.mini-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px;text-align:center}
+.mini-card strong{font-size:22px}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -483,11 +489,15 @@ function entrarMaster(){const u=document.getElementById("usuario").value.trim();
 setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
 
 setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
+
+setTimeout(carregarMetricasClientes,300);
 }
 function verificarLogin(){if(localStorage.getItem("gymcare_master_logado")==="sim")mostrarAdmin()
 setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
 
 setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
+
+setTimeout(carregarMetricasClientes,300);
 }
 function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()}
 function sair(){localStorage.removeItem("gymcare_master_logado");location.reload()}
@@ -704,6 +714,8 @@ if(contadorInativos)contadorInativos.innerText=String((academias||[]).filter(a=>
 setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
 
 atualizarSelectTemplatesEmailCliente();
+
+setTimeout(carregarMetricasClientes,300);
 }
 function renderizarMetricasClientes(){let html="";academias.forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);const em=equipamentosDaAcademia(a.id).filter(e=>e.status==="MANUTENCAO"||e.status==="EM MANUTENCAO").length;const disp=qe>0?Math.round(((qe-em)/qe)*100):0;html+=`<div class="item"><h3>${a.nome||"Cliente"}</h3><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><p><strong>Em manutenção:</strong> ${em}</p><p><strong>Disponibilidade estimada:</strong> ${disp}%</p></div>`});document.getElementById("metricasClientes").innerHTML=html||"<p>Sem métricas disponíveis.</p>"}
 function abrirEditar(id){const a=academias.find(x=>x.id===id);if(!a)return;document.getElementById("editId").value=a.id;document.getElementById("editNome").value=a.nome||"";document.getElementById("editEmail").value=a.email_notificacao||"";document.getElementById("editLogoAtual").value=a.logo_url||"";const img=document.getElementById("editLogoPreview");if(a.logo_url){img.src=a.logo_url;img.style.display="block"}else{img.style.display="none"}document.getElementById("editCor").value=a.cor_primaria||"#93D500";document.getElementById("editCorHeader").value=a.cor_header||"#323E48";document.getElementById("editTituloSistema").value=a.titulo_sistema||"ConetFacility";document.getElementById("editSubtituloSistema").value=a.subtitulo_sistema||"";document.getElementById("editStatusCliente").value=a.status_cliente||"ATIVO";document.getElementById("editPlano").value=a.plano||"MVP";document.getElementById("editEndereco").value=a.endereco||"";document.getElementById("editHorario").value=a.horario_funcionamento||"";document.getElementById("editObservacao").value=a.observacoes||"";document.getElementById("modalEditar").style.display="flex"}
@@ -1316,6 +1328,126 @@ fecharModalTemplatesEmailCliente();
 document.addEventListener("DOMContentLoaded",function(){
 setTimeout(atualizarSelectTemplatesEmailCliente,1000);
 setTimeout(atualizarSelectTemplatesEmailCliente,2000);
+});
+
+
+async function carregarMetricasClientes(){
+const container=document.getElementById("metricasClientes") 
+|| document.getElementById("metricasPorCliente") 
+|| document.getElementById("listaMetricasClientes");
+
+if(!container)return;
+
+container.innerHTML='<p style="color:#6b7280;">Carregando métricas por cliente...</p>';
+
+try{
+const {data:clientes,error:erroClientes}=await supabaseClient
+.from("academias")
+.select("*")
+.order("id",{ascending:true});
+
+if(erroClientes){
+container.innerHTML='<p class="erro">Erro ao carregar clientes para métricas.</p>';
+console.error("Erro clientes métricas:",erroClientes);
+return;
+}
+
+const listaClientes=clientes||[];
+
+if(!listaClientes.length){
+container.innerHTML='<p style="color:#6b7280;">Nenhum cliente cadastrado.</p>';
+return;
+}
+
+const cards=await Promise.all(listaClientes.map(async cliente=>{
+const academiaId=Number(cliente.id);
+
+const [
+equipamentosRes,
+chamadosRes,
+usuariosChamadosRes,
+usuariosPainelRes
+]=await Promise.all([
+supabaseClient.from("equipamentos").select("*").eq("academia_id",academiaId),
+supabaseClient.from("chamados").select("*").eq("academia_id",academiaId),
+supabaseClient.from("usuarios_chamados").select("*").eq("academia_id",academiaId),
+supabaseClient.from("usuarios_painel_cliente").select("*").eq("academia_id",academiaId)
+]);
+
+let equipamentos=equipamentosRes.data||[];
+let chamados=chamadosRes.data||[];
+
+/* fallback: se chamados não tiver academia_id, buscar por equipamentos do cliente */
+if((chamadosRes.error || !chamados.length) && equipamentos.length){
+const ids=equipamentos.map(e=>e.id).filter(Boolean);
+if(ids.length){
+const chamadosPorEquip=await supabaseClient
+.from("chamados")
+.select("*")
+.in("equipamento_id",ids);
+chamados=chamadosPorEquip.data||[];
+}
+}
+
+const abertos=chamados.filter(c=>{
+const s=String(c.status||"").toUpperCase();
+return s==="ABERTO"||s==="REABERTO";
+}).length;
+
+const manutencao=chamados.filter(c=>{
+const s=String(c.status||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+return s.includes("MANUTENCAO")||s==="EM_MANUTENCAO";
+}).length;
+
+const finalizados=chamados.filter(c=>{
+const s=String(c.status||"").toUpperCase();
+return s==="FINALIZADO"||s==="ENCERRADO";
+}).length;
+
+const totalEquip=equipamentos.length;
+const disponiveis=Math.max(totalEquip-abertos-manutencao,0);
+const disponibilidade=totalEquip?Math.round((disponiveis/totalEquip)*100):100;
+
+const statusCliente=String(cliente.status_cliente||cliente.status||"ATIVO").toUpperCase();
+
+return `
+<div class="card-metrica-cliente item">
+<h3>${cliente.nome||"Cliente sem nome"}</h3>
+<p><strong>ID:</strong> ${cliente.id}</p>
+<p><strong>Status cliente:</strong> ${statusCliente}</p>
+<div class="grid-metricas-cliente" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px;">
+<div class="mini-card"><strong>${totalEquip}</strong><br>Equipamentos</div>
+<div class="mini-card"><strong>${abertos}</strong><br>Abertos</div>
+<div class="mini-card"><strong>${manutencao}</strong><br>Em manutenção</div>
+<div class="mini-card"><strong>${finalizados}</strong><br>Finalizados</div>
+<div class="mini-card"><strong>${disponibilidade}%</strong><br>Disponibilidade</div>
+<div class="mini-card"><strong>${(usuariosChamadosRes.data||[]).length}</strong><br>Usuários Chamados</div>
+<div class="mini-card"><strong>${(usuariosPainelRes.data||[]).length}</strong><br>Usuários Painel</div>
+</div>
+</div>`;
+}));
+
+container.innerHTML=cards.join("");
+
+}catch(e){
+container.innerHTML='<p class="erro">Erro ao sincronizar métricas por cliente.</p>';
+console.error("Erro geral métricas:",e);
+}
+}
+
+
+async function carregarMetricasPorCliente(){
+return carregarMetricasClientes();
+}
+async function sincronizarMetricasClientes(){
+return carregarMetricasClientes();
+}
+
+
+
+document.addEventListener("DOMContentLoaded",function(){
+setTimeout(carregarMetricasClientes,1500);
+setTimeout(carregarMetricasClientes,3000);
 });
 
 </script>
