@@ -693,30 +693,31 @@ async function enviarEmailEncerramentoQR(chamado,observacao,encerradoEm){
 try{
 const emailDestino=academiaAtual?.email_notificacao||academiaAtual?.email;
 if(!emailDestino)return;
-
-await enviarEmailListaQR(
-typeof EMAILJS_TEMPLATE_ENCERRAMENTO_ID!=="undefined"?EMAILJS_TEMPLATE_ENCERRAMENTO_ID:"template_s6ceobz",
-{
-academia_nome:academiaAtual?.nome||"Academia",
-equipamento_nome:equipamentoAtual?.nome||"-",
-equipamento_codigo:equipamentoAtual?.codigo_publico||equipamentoAtual?.id||"-",
-equipamento_localizacao:equipamentoAtual?.localizacao||"-",
+const abertura=obterDataAberturaChamado(chamado);
+const encerramento=encerradoEm||obterDataEncerramentoChamado(chamado)||agoraISOConetBrasil();
+let dadosEmail=dadosEmailBaseCliente({
 tipo_problema:chamado.tipo_problema||"-",
 prioridade:chamado.prioridade||"-",
 descricao:chamado.descricao||"-",
-data_abertura:formatarDataHoraBR(obterDataAberturaChamado(chamado)),
-data_encerramento:formatarDataHoraBR(encerradoEm),
-tempo_total:"-",
+status:"FINALIZADO",
+data_abertura:formatarDataHoraBrasil(abertura),
+data_encerramento:formatarDataHoraBrasil(encerramento),
+tempo_total:calcularTempoTotalBrasil(abertura,encerramento),
 usuario_abertura:chamado.aberto_por||"Não informado",
 usuario_encerramento:typeof usuarioLogadoChamado!=="undefined"?(usuarioLogadoChamado||"Operador"):"Operador",
 observacao_encerramento:observacao||"-",
-relatorio_chamado:`Chamado #${chamado.id} encerrado pelo QR Code. Resolução: ${observacao||"-"}`
-},
-emailDestino
-);
-}catch(e){
-console.error("Erro ao enviar e-mail de encerramento pelo QR:",e);
+relatorio_chamado:`Chamado #${chamado.id} finalizado pelo operador via QR Code. Resolução: ${observacao||"-"}`
+});
+dadosEmail=aplicarTemplateClienteNosParametros("encerramento",dadosEmail);
+if(typeof enviarEmailListaQR==="function"){
+await enviarEmailListaQR(typeof EMAILJS_TEMPLATE_ENCERRAMENTO_ID!=="undefined"?EMAILJS_TEMPLATE_ENCERRAMENTO_ID:"template_s6ceobz",dadosEmail,emailDestino);
+}else if(typeof emailjs!=="undefined"){
+const lista=String(emailDestino).split(/[,;\n]+/).map(e=>e.trim()).filter(e=>e&&e.includes("@"));
+for(const email of lista){
+await emailjs.send(typeof EMAILJS_SERVICE_ID!=="undefined"?EMAILJS_SERVICE_ID:"service_i6mlqzr",typeof EMAILJS_TEMPLATE_ENCERRAMENTO_ID!=="undefined"?EMAILJS_TEMPLATE_ENCERRAMENTO_ID:"template_s6ceobz",{...dadosEmail,email_destino:email,from_name:"ConetFacility"});
 }
+}
+}catch(e){console.error("Erro ao enviar e-mail de encerramento pelo QR:",e);}
 }
 
 async function encerrarChamadoPeloQR(chamadoId){
@@ -822,51 +823,29 @@ document.getElementById("btnAbrirChamado").style.opacity="1";
 async function registrarHistorico(equipamentoId,chamadoId,tipoEvento,descricao,status){await supabaseClient.from("historico_manutencao").insert([{equipamento_id:equipamentoId,chamado_id:chamadoId,tipo_evento:tipoEvento,descricao,status}])}
 async function enviarEmailNotificacao(chamado,tipoProblema,prioridade,descricao){
 try{
-const emailDestino=academiaAtual?.email_notificacao;
-
-if(!emailDestino){
-console.warn("Nenhum e-mail de notificação configurado para a academia.");
-return;
+const emailDestino=academiaAtual?.email_notificacao||academiaAtual?.email;
+if(!emailDestino)return;
+const dataAbertura=obterDataAberturaChamado(chamado)||agoraISOConetBrasil();
+let dadosEmail=dadosEmailBaseCliente({
+tipo_problema:tipoProblema||"-",
+prioridade:prioridade||"-",
+descricao:descricao||"-",
+status:"ABERTO",
+usuario_abertura:typeof usuarioLogadoChamado!=="undefined"?(usuarioLogadoChamado||"Não informado"):"Não informado",
+data_abertura:formatarDataHoraBrasil(dataAbertura)
+});
+dadosEmail=aplicarTemplateClienteNosParametros("abertura",dadosEmail);
+if(typeof enviarEmailParaLista==="function"){
+await enviarEmailParaLista(EMAILJS_TEMPLATE_ID,dadosEmail,emailDestino);
+}else if(typeof enviarEmailListaQR==="function"){
+await enviarEmailListaQR(typeof EMAILJS_TEMPLATE_ID!=="undefined"?EMAILJS_TEMPLATE_ID:"template_dec814j",dadosEmail,emailDestino);
+}else if(typeof emailjs!=="undefined"){
+const lista=String(emailDestino).split(/[,;\n]+/).map(e=>e.trim()).filter(e=>e&&e.includes("@"));
+for(const email of lista){
+await emailjs.send(typeof EMAILJS_SERVICE_ID!=="undefined"?EMAILJS_SERVICE_ID:"service_i6mlqzr",typeof EMAILJS_TEMPLATE_ID!=="undefined"?EMAILJS_TEMPLATE_ID:"template_dec814j",{...dadosEmail,email_destino:email,from_name:"ConetFacility"});
 }
-
-const dadosEmail={
-academia_nome:academiaAtual?.nome||"Academia",
-equipamento_nome:equipamentoAtual?.nome||"Equipamento",
-equipamento_codigo:equipamentoAtual?.codigo_publico||"-",
-equipamento_localizacao:equipamentoAtual?.localizacao||"-",
-tipo_problema:tipoProblema,
-prioridade:prioridade,
-descricao:descricao,
-status:"Aberto",
-usuario_abertura:usuarioLogadoChamado||"Não informado",
-data_hora:typeof agoraBrasilFormatado==="function"?agoraBrasilFormatado():formatarDataHoraBrasil()
-};
-
-await enviarEmailParaLista(
-EMAILJS_TEMPLATE_ID,
-dadosEmail,
-emailDestino
-);
-
-await registrarHistorico(
-equipamentoAtual.id,
-chamado.id,
-"E-mail enviado",
-"Notificação enviada para "+emailDestino,
-"ABERTO"
-);
-
-}catch(error){
-console.error("Erro ao enviar e-mail:",error);
-
-await registrarHistorico(
-equipamentoAtual.id,
-chamado.id,
-"Falha no envio de e-mail",
-"Erro ao tentar enviar notificação por e-mail.",
-"ABERTO"
-);
 }
+}catch(error){console.error("Erro ao enviar e-mail de abertura:",error);}
 }
 async function abrirChamado(){const tipo=document.getElementById("tipoProblema").value,prior=document.getElementById("prioridade").value,desc=document.getElementById("descricao").value.trim();if(!desc){document.getElementById("mensagem").innerText="Descreva o problema antes de enviar.";document.getElementById("mensagem").className="msg erro";return}const {data:existenteChamados,error:erroExistente}=await supabaseClient
 .from("chamados")
@@ -996,6 +975,123 @@ function preencherDatasEmailBrasil(params,chamado,encerradoEm){
     data_encerramento:formatarDataHoraBrasil(encerramento),
     tempo_total:calcularTempoTotalBrasil(abertura,encerramento)
   };
+}
+
+
+
+/* TEMPLATES DE E-MAIL POR CLIENTE / ACADEMIA_ID */
+function substituirVariaveisTemplateEmail(texto,dados){
+return String(texto||"").replace(/\{\{(\w+)\}\}/g,(m,chave)=>{
+const valor=dados[chave];
+return valor===undefined||valor===null?"":String(valor);
+});
+}
+
+function assuntoTemplateEmailCliente(tipo,dados){
+const assuntoBase=tipo==="encerramento"
+?(academiaAtual?.email_assunto_encerramento||"Chamado encerrado - {{equipamento_nome}}")
+:(academiaAtual?.email_assunto_abertura||"Novo chamado aberto - {{equipamento_nome}}");
+return substituirVariaveisTemplateEmail(assuntoBase,dados);
+}
+
+function corpoTemplatePadraoAbertura(){
+return `Novo chamado aberto no {{academia_nome}}.
+
+Equipamento: {{equipamento_nome}}
+ID do equipamento: {{equipamento_codigo}}
+Localização: {{equipamento_localizacao}}
+
+Tipo do problema:
+{{tipo_problema}}
+
+Prioridade:
+{{prioridade}}
+
+Descrição inicial:
+{{descricao}}
+
+-----------------------------------
+
+Data de abertura:
+{{data_abertura}}
+
+Aberto por:
+{{usuario_abertura}}
+
+Status:
+{{status}}
+
+-----------------------------------
+
+{{rodape}}`;
+}
+
+function corpoTemplatePadraoEncerramento(){
+return `Chamado Encerrado no {{academia_nome}}.
+
+Equipamento: {{equipamento_nome}}
+ID do equipamento: {{equipamento_codigo}}
+Localização: {{equipamento_localizacao}}
+
+Tipo do problema:
+{{tipo_problema}}
+
+Prioridade:
+{{prioridade}}
+
+Descrição inicial:
+{{descricao}}
+
+-----------------------------------
+
+Data de abertura:
+{{data_abertura}}
+
+Data de encerramento:
+{{data_encerramento}}
+
+Tempo total do chamado:
+{{tempo_total}}
+
+Aberto por:
+{{usuario_abertura}}
+
+Encerrado por:
+{{usuario_encerramento}}
+
+Observações técnicas:
+{{observacao_encerramento}}
+
+Relatório técnico:
+{{relatorio_chamado}}
+
+-----------------------------------
+
+{{rodape}}`;
+}
+
+function corpoTemplateEmailCliente(tipo,dados){
+const templateBase=tipo==="encerramento"
+?(academiaAtual?.email_template_encerramento||corpoTemplatePadraoEncerramento())
+:(academiaAtual?.email_template_abertura||corpoTemplatePadraoAbertura());
+return substituirVariaveisTemplateEmail(templateBase,dados);
+}
+
+function dadosEmailBaseCliente(extra={}){
+return {
+academia_nome:academiaAtual?.nome||"Academia",
+equipamento_nome:equipamentoAtual?.nome||"Equipamento",
+equipamento_codigo:equipamentoAtual?.codigo_publico||equipamentoAtual?.id||"-",
+equipamento_localizacao:equipamentoAtual?.localizacao||"-",
+rodape:academiaAtual?.email_rodape||"ConetFacility - Gestão Inteligente de Manutenção",
+...extra
+};
+}
+
+function aplicarTemplateClienteNosParametros(tipo,dados){
+const assunto=assuntoTemplateEmailCliente(tipo,dados);
+const corpo=corpoTemplateEmailCliente(tipo,dados);
+return {...dados,assunto,subject:assunto,titulo_email:assunto,mensagem:corpo,message:corpo,corpo_email:corpo,relatorio_html:String(corpo).replace(/\n/g,"<br>")};
 }
 
 </script></body></html>
