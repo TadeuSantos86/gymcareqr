@@ -594,7 +594,7 @@ return "-";
 }
 
 function agoraBrasilFormatado(){
-return formatarDataHoraBR(new Date().toISOString());
+return formatarDataHoraBR(agoraISOConetBrasil());
 }
 
 function calcularTempoTotal(dataAbertura,dataEncerramento){
@@ -686,7 +686,7 @@ if(usuarioEncerramento===null)return;
 const observacao=prompt("Observações do encerramento / breve relatório técnico:","Chamado encerrado após atendimento técnico.");
 if(observacao===null)return;
 
-const encerradoEm=new Date().toISOString();
+const encerradoEm=agoraISOConetBrasil();
 
 await supabaseClient
 .from("chamados")
@@ -1567,7 +1567,7 @@ tipo_problema:"Exportação de histórico",
 prioridade:"-",
 descricao:`Relatório de históricos do período ${dados.periodo.rotulo}\\n\\n${resumo}`,
 status:"Relatório",
-data_hora:agoraBrasilFormatado ? agoraBrasilFormatado() : new Date().toLocaleString("pt-BR"),
+data_hora:agoraBrasilFormatado ? agoraBrasilFormatado() : formatarDataHoraBrasil(),
 relatorio_chamado:resumo
 },
 emailDestino
@@ -1776,5 +1776,114 @@ document.addEventListener("DOMContentLoaded", function(){
     carregarLogoClienteLogin();
   }
 });
+
+
+
+/* =========================================================
+   PADRONIZAÇÃO DE HORÁRIO - BRASIL GMT-3 / AMERICA_SAO_PAULO
+   ========================================================= */
+const TIMEZONE_BRASIL_CONET = "America/Sao_Paulo";
+
+function normalizarDataConetBrasil(valor){
+  if(!valor)return null;
+
+  if(valor instanceof Date){
+    return isNaN(valor.getTime()) ? null : valor;
+  }
+
+  let texto=String(valor).trim();
+
+  if(!texto || texto==="-" || texto.toLowerCase()==="null" || texto.toLowerCase()==="undefined"){
+    return null;
+  }
+
+  // Supabase costuma retornar ISO com timezone. Mantém o timezone original.
+  if(/[zZ]$|[+-]\d{2}:\d{2}$/.test(texto)){
+    const d=new Date(texto);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // Timestamp sem timezone vindo do banco: trata como UTC para evitar diferença entre histórico/e-mail.
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(texto)){
+    texto = texto.replace(" ","T");
+    const d=new Date(texto+"Z");
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  if(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(texto)){
+    const d=new Date(texto.replace(" ","T")+"Z");
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  const d=new Date(texto);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatarDataHoraBrasil(valor){
+  const d=normalizarDataConetBrasil(valor);
+  if(!d)return "-";
+
+  const partes=new Intl.DateTimeFormat("pt-BR",{
+    timeZone:TIMEZONE_BRASIL_CONET,
+    day:"2-digit",
+    month:"2-digit",
+    year:"numeric",
+    hour:"2-digit",
+    minute:"2-digit",
+    hour12:false
+  }).formatToParts(d);
+
+  const m={};
+  partes.forEach(p=>m[p.type]=p.value);
+
+  return `${m.day}/${m.month}/${m.year} às ${m.hour}h${m.minute}`;
+}
+
+// aliases usados em diferentes arquivos do sistema
+function formatarDataHoraBR(valor){ return formatarDataHoraBrasil(valor); }
+function formatarDataHora(valor){ return formatarDataHoraBrasil(valor); }
+function formatarData(valor){ return formatarDataHoraBrasil(valor); }
+function formatarHorarioBrasil(valor){ return formatarDataHoraBrasil(valor); }
+
+function agoraISOConetBrasil(){
+  // Salva em ISO UTC. A exibição sempre será convertida para America/Sao_Paulo.
+  return agoraISOConetBrasil();
+}
+
+function calcularTempoTotalBrasil(inicio,fim){
+  const d1=normalizarDataConetBrasil(inicio);
+  const d2=normalizarDataConetBrasil(fim);
+  if(!d1||!d2)return "-";
+
+  const diffMs=d2.getTime()-d1.getTime();
+  if(diffMs<0)return "-";
+
+  const minutos=Math.floor(diffMs/60000);
+  if(minutos<60)return `${minutos} minuto(s)`;
+
+  const horas=Math.floor(minutos/60);
+  const min=minutos%60;
+  return `${horas} hora(s) e ${min} minuto(s)`;
+}
+
+function obterDataAberturaChamado(chamado){
+  return chamado?.data_abertura || chamado?.criado_em || chamado?.created_at || chamado?.inserted_at || chamado?.created_at_utc || null;
+}
+
+function obterDataEncerramentoChamado(chamado){
+  return chamado?.data_encerramento || chamado?.encerrado_em || chamado?.finalizado_em || chamado?.updated_at || null;
+}
+
+function preencherDatasEmailBrasil(params,chamado,encerradoEm){
+  const abertura=obterDataAberturaChamado(chamado);
+  const encerramento=encerradoEm || obterDataEncerramentoChamado(chamado);
+
+  return {
+    ...params,
+    data_abertura:formatarDataHoraBrasil(abertura),
+    data_encerramento:formatarDataHoraBrasil(encerramento),
+    tempo_total:calcularTempoTotalBrasil(abertura,encerramento)
+  };
+}
 
 </script></body></html>
