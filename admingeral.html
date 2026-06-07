@@ -300,10 +300,10 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 }
 
 
-/* MÉTRICAS POR CLIENTE SINCRONIZADAS */
-.card-metrica-cliente{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;margin-top:12px}
-.mini-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px;text-align:center}
-.mini-card strong{font-size:22px}
+/* METRICAS CLIENTE SINCRONIZADAS POR EQUIPAMENTO_ID */
+.metricas-cliente-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:12px}
+.metrica-mini-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px;text-align:center}
+.metrica-mini-card strong{display:block;font-size:22px}
 
 </style>
 
@@ -1332,124 +1332,69 @@ setTimeout(atualizarSelectTemplatesEmailCliente,2000);
 
 
 async function carregarMetricasClientes(){
-const container=document.getElementById("metricasClientes") 
-|| document.getElementById("metricasPorCliente") 
-|| document.getElementById("listaMetricasClientes");
-
+const container=document.getElementById("metricasCliente")||document.getElementById("metricasClientes")||document.getElementById("metricasPorCliente")||document.getElementById("listaMetricasClientes");
 if(!container)return;
-
-container.innerHTML='<p style="color:#6b7280;">Carregando métricas por cliente...</p>';
-
+container.innerHTML="Carregando...";
 try{
-const {data:clientes,error:erroClientes}=await supabaseClient
-.from("academias")
-.select("*")
-.order("id",{ascending:true});
-
-if(erroClientes){
-container.innerHTML='<p class="erro">Erro ao carregar clientes para métricas.</p>';
-console.error("Erro clientes métricas:",erroClientes);
-return;
+let clientes=(typeof academias!=="undefined"&&Array.isArray(academias)&&academias.length)?academias:[];
+if(!clientes.length){
+const r=await supabaseClient.from("academias").select("*").order("id",{ascending:true});
+if(r.error){console.error(r.error);container.innerHTML='<p class="erro">Erro ao carregar clientes.</p>';return;}
+clientes=r.data||[];
 }
-
-const listaClientes=clientes||[];
-
-if(!listaClientes.length){
-container.innerHTML='<p style="color:#6b7280;">Nenhum cliente cadastrado.</p>';
-return;
-}
-
-const cards=await Promise.all(listaClientes.map(async cliente=>{
+if(!clientes.length){container.innerHTML='<p style="color:#6b7280;">Nenhum cliente cadastrado.</p>';return;}
+const cards=[];
+for(const cliente of clientes){
 const academiaId=Number(cliente.id);
-
-const [
-equipamentosRes,
-chamadosRes,
-usuariosChamadosRes,
-usuariosPainelRes
-]=await Promise.all([
-supabaseClient.from("equipamentos").select("*").eq("academia_id",academiaId),
-supabaseClient.from("chamados").select("*").eq("academia_id",academiaId),
-supabaseClient.from("usuarios_chamados").select("*").eq("academia_id",academiaId),
-supabaseClient.from("usuarios_painel_cliente").select("*").eq("academia_id",academiaId)
-]);
-
-let equipamentos=equipamentosRes.data||[];
-let chamados=chamadosRes.data||[];
-
-/* fallback: se chamados não tiver academia_id, buscar por equipamentos do cliente */
-if((chamadosRes.error || !chamados.length) && equipamentos.length){
-const ids=equipamentos.map(e=>e.id).filter(Boolean);
+const eqRes=await supabaseClient.from("equipamentos").select("*").eq("academia_id",academiaId).order("id",{ascending:true});
+const equipamentos=eqRes.data||[];
+const ids=equipamentos.map(e=>Number(e.id)).filter(Boolean);
+let chamados=[];
 if(ids.length){
-const chamadosPorEquip=await supabaseClient
-.from("chamados")
-.select("*")
-.in("equipamento_id",ids);
-chamados=chamadosPorEquip.data||[];
+const chRes=await supabaseClient.from("chamados").select("*").in("equipamento_id",ids).order("id",{ascending:false});
+if(chRes.error)console.error("Erro chamados métricas",chRes.error);
+chamados=chRes.data||[];
 }
-}
-
-const abertos=chamados.filter(c=>{
-const s=String(c.status||"").toUpperCase();
-return s==="ABERTO"||s==="REABERTO";
-}).length;
-
-const manutencao=chamados.filter(c=>{
-const s=String(c.status||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-return s.includes("MANUTENCAO")||s==="EM_MANUTENCAO";
-}).length;
-
-const finalizados=chamados.filter(c=>{
-const s=String(c.status||"").toUpperCase();
-return s==="FINALIZADO"||s==="ENCERRADO";
-}).length;
-
-const totalEquip=equipamentos.length;
-const disponiveis=Math.max(totalEquip-abertos-manutencao,0);
-const disponibilidade=totalEquip?Math.round((disponiveis/totalEquip)*100):100;
-
-const statusCliente=String(cliente.status_cliente||cliente.status||"ATIVO").toUpperCase();
-
-return `
-<div class="card-metrica-cliente item">
+const uCham=await supabaseClient.from("usuarios_chamados").select("id").eq("academia_id",academiaId);
+const uPainel=await supabaseClient.from("usuarios_painel_cliente").select("id").eq("academia_id",academiaId);
+const norm=v=>String(v||"").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[_-]+/g," ");
+const abertos=chamados.filter(c=>["ABERTO","REABERTO"].includes(norm(c.status))).length;
+const manut=chamados.filter(c=>["EM MANUTENCAO","MANUTENCAO","EM ANDAMENTO"].includes(norm(c.status))).length;
+const finalizados=chamados.filter(c=>["FINALIZADO","ENCERRADO"].includes(norm(c.status))).length;
+const operacionais=equipamentos.filter(e=>["OPERACIONAL","ATIVO",""].includes(norm(e.status))).length;
+const total=equipamentos.length;
+const disp=total?Math.round((operacionais/total)*100):100;
+cards.push(`
+<div class="item">
 <h3>${cliente.nome||"Cliente sem nome"}</h3>
 <p><strong>ID:</strong> ${cliente.id}</p>
-<p><strong>Status cliente:</strong> ${statusCliente}</p>
-<div class="grid-metricas-cliente" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px;">
-<div class="mini-card"><strong>${totalEquip}</strong><br>Equipamentos</div>
-<div class="mini-card"><strong>${abertos}</strong><br>Abertos</div>
-<div class="mini-card"><strong>${manutencao}</strong><br>Em manutenção</div>
-<div class="mini-card"><strong>${finalizados}</strong><br>Finalizados</div>
-<div class="mini-card"><strong>${disponibilidade}%</strong><br>Disponibilidade</div>
-<div class="mini-card"><strong>${(usuariosChamadosRes.data||[]).length}</strong><br>Usuários Chamados</div>
-<div class="mini-card"><strong>${(usuariosPainelRes.data||[]).length}</strong><br>Usuários Painel</div>
+<div class="metricas-cliente-grid">
+<div class="metrica-mini-card"><strong>${total}</strong>Equipamentos</div>
+<div class="metrica-mini-card"><strong>${operacionais}</strong>Operacionais</div>
+<div class="metrica-mini-card"><strong>${disp}%</strong>Disponibilidade</div>
+<div class="metrica-mini-card"><strong>${chamados.length}</strong>Chamados</div>
+<div class="metrica-mini-card"><strong>${abertos}</strong>Abertos</div>
+<div class="metrica-mini-card"><strong>${manut}</strong>Em manutenção</div>
+<div class="metrica-mini-card"><strong>${finalizados}</strong>Finalizados</div>
+<div class="metrica-mini-card"><strong>${(uCham.data||[]).length}</strong>Usuários chamados</div>
+<div class="metrica-mini-card"><strong>${(uPainel.data||[]).length}</strong>Usuários painel</div>
 </div>
-</div>`;
-}));
-
+</div>`);
+}
 container.innerHTML=cards.join("");
-
-}catch(e){
-container.innerHTML='<p class="erro">Erro ao sincronizar métricas por cliente.</p>';
-console.error("Erro geral métricas:",e);
-}
+}catch(e){console.error("Erro metricas",e);container.innerHTML='<p class="erro">Erro ao sincronizar métricas por cliente.</p>';}
 }
 
 
-async function carregarMetricasPorCliente(){
-return carregarMetricasClientes();
-}
-async function sincronizarMetricasClientes(){
-return carregarMetricasClientes();
-}
-
+async function carregarMetricasPorCliente(){return carregarMetricasClientes();}
+async function sincronizarMetricasClientes(){return carregarMetricasClientes();}
+async function carregarMetricas(){return carregarMetricasClientes();}
 
 
 document.addEventListener("DOMContentLoaded",function(){
-setTimeout(carregarMetricasClientes,1500);
-setTimeout(carregarMetricasClientes,3000);
+setTimeout(carregarMetricasClientes,1200);
+setTimeout(carregarMetricasClientes,2000);
 });
-
 </script>
 
 <div id="modalUsuariosCliente" class="modal">
