@@ -638,7 +638,7 @@ ${a.logo_url?`<img class="logo-preview" src="${a.logo_url}">`:""}
 <div class="botoes">
 <button class="btn-azul" onclick="abrirEditar(${a.id})">Editar Cliente</button>
 <button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir Painel</button>
-<button class="btn-azul" onclick="abrirUsuariosCliente(${a.id})">Usuários Painel Admin</button><button class="btn-cinza" onclick="abrirTemplatesEmailCliente(${a.id})">Templates de E-mail</button>
+<button class="btn-azul" onclick="abrirUsuariosCliente(${a.id})">Usuários Painel Admin</button>
 <button class="btn-vermelho" onclick="abrirModalExcluirCliente(${a.id})">Excluir Cliente</button>
 </div>
 </div>
@@ -648,6 +648,8 @@ const contadorInativos=document.getElementById("contadorClientesInativos");
 if(contadorInativos)contadorInativos.innerText=String((academias||[]).filter(a=>!clienteEstaAtivo(a)).length);
 
 setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
+
+setTimeout(adicionarBotoesTemplatesEmailCliente,100);
 }
 function renderizarMetricasClientes(){let html="";academias.forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);const em=equipamentosDaAcademia(a.id).filter(e=>e.status==="MANUTENCAO"||e.status==="EM MANUTENCAO").length;const disp=qe>0?Math.round(((qe-em)/qe)*100):0;html+=`<div class="item"><h3>${a.nome||"Cliente"}</h3><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><p><strong>Em manutenção:</strong> ${em}</p><p><strong>Disponibilidade estimada:</strong> ${disp}%</p></div>`});document.getElementById("metricasClientes").innerHTML=html||"<p>Sem métricas disponíveis.</p>"}
 function abrirEditar(id){const a=academias.find(x=>x.id===id);if(!a)return;document.getElementById("editId").value=a.id;document.getElementById("editNome").value=a.nome||"";document.getElementById("editEmail").value=a.email_notificacao||"";document.getElementById("editLogoAtual").value=a.logo_url||"";const img=document.getElementById("editLogoPreview");if(a.logo_url){img.src=a.logo_url;img.style.display="block"}else{img.style.display="none"}document.getElementById("editCor").value=a.cor_primaria||"#93D500";document.getElementById("editCorHeader").value=a.cor_header||"#323E48";document.getElementById("editTituloSistema").value=a.titulo_sistema||"ConetFacility";document.getElementById("editSubtituloSistema").value=a.subtitulo_sistema||"";document.getElementById("editStatusCliente").value=a.status_cliente||"ATIVO";document.getElementById("editPlano").value=a.plano||"MVP";document.getElementById("editEndereco").value=a.endereco||"";document.getElementById("editHorario").value=a.horario_funcionamento||"";document.getElementById("editObservacao").value=a.observacoes||"";document.getElementById("modalEditar").style.display="flex"}
@@ -1160,7 +1162,12 @@ Relatório técnico:
 function abrirTemplatesEmailCliente(id){
 clienteTemplateEmailAtualId=Number(id);
 const cliente=(academias||[]).find(a=>Number(a.id)===clienteTemplateEmailAtualId);
-if(!cliente){alert("Cliente não localizado.");return;}
+
+if(!cliente){
+alert("Cliente não localizado.");
+return;
+}
+
 document.getElementById("tituloTemplatesEmailCliente").innerText=`Cliente: ${cliente.nome||"Cliente"} | ID ${cliente.id}`;
 document.getElementById("emailAssuntoAberturaCliente").value=cliente.email_assunto_abertura||"Novo chamado aberto - {{equipamento_nome}}";
 document.getElementById("emailTemplateAberturaCliente").value=cliente.email_template_abertura||templatePadraoAberturaCliente();
@@ -1180,8 +1187,14 @@ clienteTemplateEmailAtualId=null;
 async function salvarTemplatesEmailCliente(){
 const msg=document.getElementById("msgTemplatesEmailCliente");
 const erro=document.getElementById("erroTemplatesEmailCliente");
-msg.innerText="";erro.innerText="";
-if(!clienteTemplateEmailAtualId){erro.innerText="Cliente não identificado.";return;}
+msg.innerText="";
+erro.innerText="";
+
+if(!clienteTemplateEmailAtualId){
+erro.innerText="Cliente não identificado.";
+return;
+}
+
 const payload={
 email_assunto_abertura:document.getElementById("emailAssuntoAberturaCliente").value.trim()||"Novo chamado aberto - {{equipamento_nome}}",
 email_template_abertura:document.getElementById("emailTemplateAberturaCliente").value.trim()||templatePadraoAberturaCliente(),
@@ -1189,12 +1202,50 @@ email_assunto_encerramento:document.getElementById("emailAssuntoEncerramentoClie
 email_template_encerramento:document.getElementById("emailTemplateEncerramentoCliente").value.trim()||templatePadraoEncerramentoCliente(),
 email_rodape:document.getElementById("emailRodapeCliente").value.trim()||"ConetFacility - Gestão Inteligente de Manutenção"
 };
+
 const {error}=await supabaseClient.from("academias").update(payload).eq("id",clienteTemplateEmailAtualId);
-if(error){erro.innerText="Erro ao salvar templates: "+error.message;return;}
+
+if(error){
+erro.innerText="Erro ao salvar templates: "+error.message;
+return;
+}
+
 msg.innerText="Templates salvos com sucesso.";
-if(typeof carregarAcademias==="function")await carregarAcademias();
+
+if(typeof carregarAcademias==="function"){
+await carregarAcademias();
+}
 setTimeout(fecharModalTemplatesEmailCliente,700);
 }
+
+
+
+function adicionarBotoesTemplatesEmailCliente(){
+try{
+  const botoes=document.querySelectorAll("button");
+  botoes.forEach(btn=>{
+    const onclick=btn.getAttribute("onclick")||"";
+    const match=onclick.match(/abrirPainelCliente\((\d+)\)|abrirUsuariosCliente\((\d+)\)|abrirModalExcluirCliente\((\d+)\)|abrirEditar\((\d+)\)/);
+    if(!match)return;
+    const id=match[1]||match[2]||match[3]||match[4];
+    const parent=btn.parentElement;
+    if(!parent || parent.querySelector(`[data-template-email-cliente="${id}"]`))return;
+    const novo=document.createElement("button");
+    novo.className="btn-cinza";
+    novo.innerText="Templates de E-mail";
+    novo.setAttribute("data-template-email-cliente",id);
+    novo.onclick=function(){abrirTemplatesEmailCliente(id);};
+    parent.appendChild(novo);
+  });
+}catch(e){
+  console.warn("Falha ao adicionar botão Templates de E-mail:",e);
+}
+}
+
+document.addEventListener("DOMContentLoaded",function(){
+setTimeout(adicionarBotoesTemplatesEmailCliente,500);
+setTimeout(adicionarBotoesTemplatesEmailCliente,1500);
+});
 
 </script>
 
