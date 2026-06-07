@@ -114,6 +114,52 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
   border-radius:12px;
 }
 
+
+/* TEMPLATES DE E-MAIL POR CLIENTE - MÓDULO ISOLADO */
+.modulo-templates-email{
+  background:white;
+  padding:25px;
+  border-radius:18px;
+  box-shadow:0 4px 15px rgba(0,0,0,.08);
+  margin:25px 0;
+}
+.modulo-templates-email .linha-template{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:12px;
+  align-items:end;
+}
+.email-template-box{
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:14px;
+  margin-top:12px;
+}
+.email-template-box textarea{
+  width:100%;
+  min-height:150px;
+  font-family:Arial,sans-serif;
+}
+.email-template-ajuda{
+  background:#eef2ff;
+  border:1px solid #c7d2fe;
+  color:#3730a3;
+  padding:12px;
+  border-radius:12px;
+  font-size:13px;
+  margin:12px 0;
+}
+
+
+/* VISIBILIDADE DO MÓDULO TEMPLATES APÓS LOGIN */
+#moduloTemplatesEmailCliente{
+  display:none;
+}
+body.admin-geral-logado #moduloTemplatesEmailCliente{
+  display:block;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -184,6 +230,66 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 </div>
 </div>
 
+
+<div class="modulo-templates-email" id="moduloTemplatesEmailCliente">
+  <h2>Templates de E-mail por Cliente</h2>
+  <p style="color:#6b7280;margin:8px 0 16px;">
+    Selecione o cliente para editar os templates personalizados de abertura e encerramento de chamados.
+  </p>
+  <div class="linha-template">
+    <div>
+      <label>Cliente</label>
+      <select id="selectClienteTemplateEmail">
+        <option value="">Selecione um cliente</option>
+      </select>
+    </div>
+    <button class="btn-cinza" onclick="abrirTemplatesEmailClienteSelecionado()">Editar Templates</button>
+  </div>
+</div>
+
+
+<div id="modalTemplatesEmailCliente" class="modal">
+<div class="modal-box">
+<h2>Templates de E-mail do Cliente</h2>
+<p id="tituloTemplatesEmailCliente" style="color:#6b7280;margin:8px 0 12px;"></p>
+
+<div class="email-template-ajuda">
+<strong>Campos disponíveis:</strong><br>
+{{academia_nome}}, {{equipamento_nome}}, {{equipamento_codigo}}, {{equipamento_localizacao}},
+{{tipo_problema}}, {{prioridade}}, {{descricao}}, {{data_abertura}}, {{data_encerramento}},
+{{tempo_total}}, {{usuario_abertura}}, {{usuario_encerramento}}, {{observacao_encerramento}},
+{{relatorio_chamado}}, {{status}}, {{rodape}}
+</div>
+
+<div class="email-template-box">
+<label>Assunto do e-mail de abertura</label>
+<input type="text" id="emailAssuntoAberturaCliente" placeholder="Novo chamado aberto - {{equipamento_nome}}">
+<label>Template do e-mail de abertura</label>
+<textarea id="emailTemplateAberturaCliente"></textarea>
+</div>
+
+<div class="email-template-box">
+<label>Assunto do e-mail de encerramento</label>
+<input type="text" id="emailAssuntoEncerramentoCliente" placeholder="Chamado encerrado - {{equipamento_nome}}">
+<label>Template do e-mail de encerramento</label>
+<textarea id="emailTemplateEncerramentoCliente"></textarea>
+</div>
+
+<div class="email-template-box">
+<label>Rodapé personalizado</label>
+<textarea id="emailRodapeCliente" style="min-height:80px;"></textarea>
+</div>
+
+<p id="msgTemplatesEmailCliente" class="sucesso"></p>
+<p id="erroTemplatesEmailCliente" class="erro"></p>
+
+<div class="botoes">
+<button class="btn-verde" onclick="salvarTemplatesEmailCliente()">Salvar Templates</button>
+<button class="btn-cinza" onclick="fecharModalTemplatesEmailCliente()">Cancelar</button>
+</div>
+</div>
+</div>
+
 <div id="modalEditar" class="modal">
 <div class="modal-box">
 <h2>Editar cliente</h2>
@@ -217,15 +323,27 @@ let academias=[],equipamentos=[],chamados=[],graficoStatusClientes=null,graficoC
 
 function entrarMaster(){const u=document.getElementById("usuario").value.trim();const s=document.getElementById("senha").value.trim();if(u==="master"&&s==="conet2506"){localStorage.setItem("gymcare_master_logado","sim");mostrarAdmin()}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."
 renderizarMetricasClientes();
+
+atualizarSelectTemplatesEmailCliente();
+
+setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
 }
-function verificarLogin(){if(localStorage.getItem("gymcare_master_logado")==="sim")mostrarAdmin()}
+function verificarLogin(){if(localStorage.getItem("gymcare_master_logado")==="sim")mostrarAdmin()
+setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
+}
 function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()}
-function sair(){localStorage.removeItem("gymcare_master_logado");location.reload()}
+function sair(){localStorage.removeItem("gymcare_master_logado");location.reload()
+setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
+}
 function toggleCadastro(){document.getElementById("formCadastro").classList.toggle("oculto")}
 function textoStatusCliente(s){if(s==="ATIVO")return"Ativo";if(s==="PILOTO")return"Piloto";if(s==="INATIVO")return"Inativo";return s||"-"}
 function classeStatusCliente(s){if(s==="ATIVO")return"badge badge-ativo";if(s==="PILOTO")return"badge badge-piloto";return"badge badge-inativo"}
 async function carregarDados(){const {data:acs,error:e1}=await supabaseClient.from("academias").select("*").order("id",{ascending:true});const {data:eqs,error:e2}=await supabaseClient.from("equipamentos").select("*").order("id",{ascending:true});const {data:chs,error:e3}=await supabaseClient.from("chamados").select("*").order("id",{ascending:false});if(e1||e2||e3){console.error(e1||e2||e3);return}academias=acs||[];equipamentos=eqs||[];chamados=chs||[];atualizarCards();renderizarGraficos();renderizarAcademias();renderizarMetricasClientes()
 renderizarMetricasClientes();
+
+atualizarSelectTemplatesEmailCliente();
+
+setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
 }
 function atualizarCards(){document.getElementById("totalClientes").innerText=academias.length;document.getElementById("clientesAtivos").innerText=academias.filter(a=>a.status_cliente==="ATIVO"||!a.status_cliente).length;document.getElementById("totalEquipamentos").innerText=equipamentos.length;document.getElementById("chamadosAbertos").innerText=chamados.filter(c=>c.status==="ABERTO").length}
 function equipamentosDaAcademia(id){return equipamentos.filter(e=>Number(e.academia_id)===Number(id))}
@@ -236,6 +354,10 @@ function renderizarGraficos(){const sc={ATIVO:0,PILOTO:0,INATIVO:0};academias.fo
 async function cadastrarAcademia(){document.getElementById("erroCadastro").innerText="";document.getElementById("sucessoCadastro").innerText="";const nome=document.getElementById("novoNome").value.trim();if(!nome){document.getElementById("erroCadastro").innerText="Informe o nome da academia.";return}const titulo=document.getElementById("novoTituloSistema").value.trim()||"ConetFacility";const item={nome:nome,email_notificacao:document.getElementById("novoEmail").value.trim(),logo_url:"",cor_primaria:document.getElementById("novaCor").value,cor_header:document.getElementById("novaCorHeader").value,titulo_sistema:titulo,subtitulo_sistema:document.getElementById("novoSubtituloSistema").value.trim()||"",status_cliente:document.getElementById("novoStatusCliente").value,plano:document.getElementById("novoPlano").value,endereco:document.getElementById("novoEndereco").value.trim(),horario_funcionamento:document.getElementById("novoHorario").value.trim(),observacoes:document.getElementById("novaObservacao").value.trim()};const {data,error}=await supabaseClient.from("academias").insert([item]).select().single();if(error){document.getElementById("erroCadastro").innerText=error.message;return}try{const file=document.getElementById("novoLogoArquivo").files[0];if(file){const url=await uploadLogo(file,data.id);await supabaseClient.from("academias").update({logo_url:url}).eq("id",data.id)}}catch(e){document.getElementById("erroCadastro").innerText="Cliente criado, mas falhou o upload da logo: "+e.message}document.getElementById("sucessoCadastro").innerText="Cliente cadastrado com sucesso.";["novoNome","novoEmail","novoTituloSistema","novoSubtituloSistema","novoEndereco","novoHorario","novaObservacao"].forEach(id=>document.getElementById(id).value="");document.getElementById("novoLogoArquivo").value="";document.getElementById("novaCor").value="#93D500";document.getElementById("novaCorHeader").value="#323E48";carregarDados()}
 function renderizarAcademias(){const busca=document.getElementById("buscaCliente").value.toLowerCase();const filtro=document.getElementById("filtroStatusCliente").value;let html="";academias.filter(a=>{const st=a.status_cliente||"ATIVO";const mb=(a.nome||"").toLowerCase().includes(busca)||(a.titulo_sistema||"").toLowerCase().includes(busca)||(a.email_notificacao||"").toLowerCase().includes(busca)||(a.plano||"").toLowerCase().includes(busca)||st.toLowerCase().includes(busca);return mb&&(filtro==="TODOS"||st===filtro)}).forEach(a=>{const qe=equipamentosDaAcademia(a.id).length;const qc=contarChamadosPorAcademia(a.id);const qa=contarAbertosPorAcademia(a.id);html+=`<div class="item"><h3>${a.nome||"Cliente sem nome"}</h3>${a.logo_url?`<img class="logo-preview" src="${a.logo_url}" onerror="this.style.display='none'">`:""}<p><strong>Nome do Sistema:</strong> ${a.titulo_sistema||a.nome||"-"}</p><p><strong>Descrição complementar:</strong> ${a.subtitulo_sistema||"-"}</p><p><span class="cor-preview" style="background:${a.cor_primaria||"#93D500"}"></span><strong>Cor principal:</strong> ${a.cor_primaria||"#93D500"}</p><p><span class="cor-preview" style="background:${a.cor_header||"#323E48"}"></span><strong>Cor topo:</strong> ${a.cor_header||"#323E48"}</p><p><strong>E-mail chamados:</strong> ${a.email_notificacao||"-"}</p><p><strong>Plano:</strong> ${a.plano||"-"}</p><p><strong>Equipamentos:</strong> ${qe}</p><p><strong>Chamados totais:</strong> ${qc}</p><p><strong>Chamados abertos:</strong> ${qa}</p><div class="${classeStatusCliente(a.status_cliente||"ATIVO")}">${textoStatusCliente(a.status_cliente||"ATIVO")}</div><div class="botoes"><button class="btn-azul" onclick="abrirEditar(${a.id})">Editar cliente</button><button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir painel cliente</button><button class="btn-verde" onclick="abrirSolicitacaoCliente(${a.id})">Solicitação por ID</button><button class="btn-cinza" onclick="baixarQRCodesCliente(${a.id})">Baixar QR Codes</button></div></div>`});document.getElementById("listaAcademias").innerHTML=html||"<p>Nenhum cliente encontrado.</p>"
 renderizarMetricasClientes();
+
+atualizarSelectTemplatesEmailCliente();
+
+setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
 }
 
 function abrirEditar(id){const a=academias.find(x=>x.id===id);if(!a)return;document.getElementById("editId").value=a.id;document.getElementById("editNome").value=a.nome||"";document.getElementById("editEmail").value=a.email_notificacao||"";document.getElementById("editLogoAtual").value=a.logo_url||"";const img=document.getElementById("editLogoPreview");if(a.logo_url){img.src=a.logo_url;img.style.display="block"}else{img.style.display="none"}document.getElementById("editCor").value=a.cor_primaria||"#93D500";document.getElementById("editCorHeader").value=a.cor_header||"#323E48";document.getElementById("editTituloSistema").value=a.titulo_sistema||"ConetFacility";document.getElementById("editSubtituloSistema").value=a.subtitulo_sistema||"";document.getElementById("editStatusCliente").value=a.status_cliente||"ATIVO";document.getElementById("editPlano").value=a.plano||"MVP";document.getElementById("editEndereco").value=a.endereco||"";document.getElementById("editHorario").value=a.horario_funcionamento||"";document.getElementById("editObservacao").value=a.observacoes||"";document.getElementById("modalEditar").style.display="flex"}
@@ -447,6 +569,232 @@ document.addEventListener("DOMContentLoaded",function(){
 setTimeout(renderizarMetricasClientes,800);
 setTimeout(renderizarMetricasClientes,1600);
 setTimeout(renderizarMetricasClientes,2500);
+});
+
+
+
+/* TEMPLATES DE E-MAIL POR CLIENTE - FUNÇÕES ISOLADAS */
+let clienteTemplateEmailAtualId=null;
+
+function templatePadraoAberturaCliente(){
+return `Novo chamado aberto no {{academia_nome}}.
+
+Equipamento: {{equipamento_nome}}
+ID do equipamento: {{equipamento_codigo}}
+Localização: {{equipamento_localizacao}}
+
+Tipo do problema:
+{{tipo_problema}}
+
+Prioridade:
+{{prioridade}}
+
+Descrição inicial:
+{{descricao}}
+
+-----------------------------------
+
+Data de abertura:
+{{data_abertura}}
+
+Aberto por:
+{{usuario_abertura}}
+
+Status:
+{{status}}
+
+-----------------------------------
+
+{{rodape}}`;
+}
+
+function templatePadraoEncerramentoCliente(){
+return `Chamado Encerrado no {{academia_nome}}.
+
+Equipamento: {{equipamento_nome}}
+ID do equipamento: {{equipamento_codigo}}
+Localização: {{equipamento_localizacao}}
+
+Tipo do problema:
+{{tipo_problema}}
+
+Prioridade:
+{{prioridade}}
+
+Descrição inicial:
+{{descricao}}
+
+-----------------------------------
+
+Data de abertura:
+{{data_abertura}}
+
+Data de encerramento:
+{{data_encerramento}}
+
+Tempo total do chamado:
+{{tempo_total}}
+
+Aberto por:
+{{usuario_abertura}}
+
+Encerrado por:
+{{usuario_encerramento}}
+
+Observações técnicas:
+{{observacao_encerramento}}
+
+Relatório técnico:
+{{relatorio_chamado}}
+
+-----------------------------------
+
+{{rodape}}`;
+}
+
+function atualizarSelectTemplatesEmailCliente(){
+const select=document.getElementById("selectClienteTemplateEmail");
+if(!select)return;
+
+const selecionado=select.value;
+select.innerHTML='<option value="">Selecione um cliente</option>';
+
+(academias||[])
+.slice()
+.sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||"")))
+.forEach(a=>{
+  const opt=document.createElement("option");
+  opt.value=a.id;
+  opt.textContent=`${a.nome||"Cliente"} — ID ${a.id}`;
+  select.appendChild(opt);
+});
+
+if(selecionado)select.value=selecionado;
+}
+
+function abrirTemplatesEmailClienteSelecionado(){
+const select=document.getElementById("selectClienteTemplateEmail");
+const id=select?select.value:"";
+if(!id){
+alert("Selecione um cliente.");
+return;
+}
+abrirTemplatesEmailCliente(Number(id));
+}
+
+function abrirTemplatesEmailCliente(id){
+clienteTemplateEmailAtualId=Number(id);
+const cliente=(academias||[]).find(a=>Number(a.id)===clienteTemplateEmailAtualId);
+
+if(!cliente){
+alert("Cliente não localizado.");
+return;
+}
+
+document.getElementById("tituloTemplatesEmailCliente").innerText=`Cliente: ${cliente.nome||"Cliente"} | ID ${cliente.id}`;
+
+document.getElementById("emailAssuntoAberturaCliente").value=
+cliente.email_assunto_abertura||"Novo chamado aberto - {{equipamento_nome}}";
+
+document.getElementById("emailTemplateAberturaCliente").value=
+cliente.email_template_abertura||templatePadraoAberturaCliente();
+
+document.getElementById("emailAssuntoEncerramentoCliente").value=
+cliente.email_assunto_encerramento||"Chamado encerrado - {{equipamento_nome}}";
+
+document.getElementById("emailTemplateEncerramentoCliente").value=
+cliente.email_template_encerramento||templatePadraoEncerramentoCliente();
+
+document.getElementById("emailRodapeCliente").value=
+cliente.email_rodape||"ConetFacility - Gestão Inteligente de Manutenção";
+
+document.getElementById("msgTemplatesEmailCliente").innerText="";
+document.getElementById("erroTemplatesEmailCliente").innerText="";
+document.getElementById("modalTemplatesEmailCliente").style.display="flex";
+}
+
+function fecharModalTemplatesEmailCliente(){
+document.getElementById("modalTemplatesEmailCliente").style.display="none";
+clienteTemplateEmailAtualId=null;
+}
+
+async function salvarTemplatesEmailCliente(){
+const msg=document.getElementById("msgTemplatesEmailCliente");
+const erro=document.getElementById("erroTemplatesEmailCliente");
+
+msg.innerText="";
+erro.innerText="";
+
+if(!clienteTemplateEmailAtualId){
+erro.innerText="Cliente não identificado.";
+return;
+}
+
+const payload={
+email_assunto_abertura:document.getElementById("emailAssuntoAberturaCliente").value.trim()||"Novo chamado aberto - {{equipamento_nome}}",
+email_template_abertura:document.getElementById("emailTemplateAberturaCliente").value.trim()||templatePadraoAberturaCliente(),
+email_assunto_encerramento:document.getElementById("emailAssuntoEncerramentoCliente").value.trim()||"Chamado encerrado - {{equipamento_nome}}",
+email_template_encerramento:document.getElementById("emailTemplateEncerramentoCliente").value.trim()||templatePadraoEncerramentoCliente(),
+email_rodape:document.getElementById("emailRodapeCliente").value.trim()||"ConetFacility - Gestão Inteligente de Manutenção"
+};
+
+const {error}=await supabaseClient
+.from("academias")
+.update(payload)
+.eq("id",clienteTemplateEmailAtualId);
+
+if(error){
+erro.innerText="Erro ao salvar templates: "+error.message;
+return;
+}
+
+msg.innerText="Templates salvos com sucesso.";
+
+if(typeof carregarAcademias==="function"){
+await carregarAcademias();
+}
+atualizarSelectTemplatesEmailCliente();
+
+setTimeout(fecharModalTemplatesEmailCliente,700);
+}
+
+
+
+document.addEventListener("DOMContentLoaded",function(){
+setTimeout(atualizarSelectTemplatesEmailCliente,800);
+setTimeout(atualizarSelectTemplatesEmailCliente,1500);
+setTimeout(atualizarSelectTemplatesEmailCliente,2500);
+});
+
+
+
+/* CONTROLE DE VISIBILIDADE DO MÓDULO TEMPLATES APÓS LOGIN */
+function atualizarVisibilidadeTemplatesEmailAdmin(){
+  const modulo=document.getElementById("moduloTemplatesEmailCliente");
+  const telaLogin=document.getElementById("telaLogin");
+  const telaAdmin=document.getElementById("telaAdmin");
+
+  if(!modulo)return;
+
+  const adminVisivel=telaAdmin && !telaAdmin.classList.contains("oculto") && getComputedStyle(telaAdmin).display!=="none";
+  const loginVisivel=telaLogin && !telaLogin.classList.contains("oculto") && getComputedStyle(telaLogin).display!=="none";
+
+  if(adminVisivel && !loginVisivel){
+    document.body.classList.add("admin-geral-logado");
+    modulo.style.display="block";
+    if(typeof atualizarSelectTemplatesEmailCliente==="function"){
+      atualizarSelectTemplatesEmailCliente();
+    }
+  }else{
+    document.body.classList.remove("admin-geral-logado");
+    modulo.style.display="none";
+  }
+}
+
+document.addEventListener("DOMContentLoaded",function(){
+  atualizarVisibilidadeTemplatesEmailAdmin();
+  setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,300);
+  setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,1000);
 });
 
 </script>
