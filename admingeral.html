@@ -262,6 +262,12 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
   color:#991b1b;
 }
 
+
+/* TEMPLATES DE E-MAIL POR CLIENTE */
+.email-template-box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-top:12px}
+.email-template-box textarea{width:100%;min-height:150px;font-family:Arial,sans-serif}
+.email-template-ajuda{background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;padding:12px;border-radius:12px;font-size:13px;margin:12px 0}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -346,6 +352,43 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
     <button class="btn-cinza" onclick="toggleClientesInativos()" id="btnToggleInativos">Mostrar Inativos</button>
   </div>
   <div id="areaClientesInativos" class="clientes-inativos-container oculto"></div>
+</div>
+
+
+<div id="modalTemplatesEmailCliente" class="modal">
+<div class="modal-box">
+<h2>Templates de E-mail do Cliente</h2>
+<p id="tituloTemplatesEmailCliente" style="color:#6b7280;margin:8px 0 12px;"></p>
+<div class="email-template-ajuda">
+<strong>Campos disponíveis:</strong><br>
+{{academia_nome}}, {{equipamento_nome}}, {{equipamento_codigo}}, {{equipamento_localizacao}},
+{{tipo_problema}}, {{prioridade}}, {{descricao}}, {{data_abertura}}, {{data_encerramento}},
+{{tempo_total}}, {{usuario_abertura}}, {{usuario_encerramento}}, {{observacao_encerramento}},
+{{relatorio_chamado}}, {{status}}, {{rodape}}
+</div>
+<div class="email-template-box">
+<label>Assunto do e-mail de abertura</label>
+<input type="text" id="emailAssuntoAberturaCliente" placeholder="Novo chamado aberto - {{equipamento_nome}}">
+<label>Template do e-mail de abertura</label>
+<textarea id="emailTemplateAberturaCliente"></textarea>
+</div>
+<div class="email-template-box">
+<label>Assunto do e-mail de encerramento</label>
+<input type="text" id="emailAssuntoEncerramentoCliente" placeholder="Chamado encerrado - {{equipamento_nome}}">
+<label>Template do e-mail de encerramento</label>
+<textarea id="emailTemplateEncerramentoCliente"></textarea>
+</div>
+<div class="email-template-box">
+<label>Rodapé personalizado</label>
+<textarea id="emailRodapeCliente" style="min-height:80px;"></textarea>
+</div>
+<p id="msgTemplatesEmailCliente" class="sucesso"></p>
+<p id="erroTemplatesEmailCliente" class="erro"></p>
+<div class="botoes">
+<button class="btn-verde" onclick="salvarTemplatesEmailCliente()">Salvar Templates</button>
+<button class="btn-cinza" onclick="fecharModalTemplatesEmailCliente()">Cancelar</button>
+</div>
+</div>
 </div>
 
 <div id="modalEditar" class="modal">
@@ -595,7 +638,7 @@ ${a.logo_url?`<img class="logo-preview" src="${a.logo_url}">`:""}
 <div class="botoes">
 <button class="btn-azul" onclick="abrirEditar(${a.id})">Editar Cliente</button>
 <button class="btn-cinza" onclick="abrirPainelCliente(${a.id})">Abrir Painel</button>
-<button class="btn-azul" onclick="abrirUsuariosCliente(${a.id})">Usuários Painel Admin</button>
+<button class="btn-azul" onclick="abrirUsuariosCliente(${a.id})">Usuários Painel Admin</button><button class="btn-cinza" onclick="abrirTemplatesEmailCliente(${a.id})">Templates de E-mail</button>
 <button class="btn-vermelho" onclick="abrirModalExcluirCliente(${a.id})">Excluir Cliente</button>
 </div>
 </div>
@@ -1032,6 +1075,125 @@ function preencherDatasEmailBrasil(params,chamado,encerradoEm){
     data_encerramento:formatarDataHoraBrasil(encerramento),
     tempo_total:calcularTempoTotalBrasil(abertura,encerramento)
   };
+}
+
+
+
+let clienteTemplateEmailAtualId=null;
+
+function templatePadraoAberturaCliente(){
+return `Novo chamado aberto no {{academia_nome}}.
+
+Equipamento: {{equipamento_nome}}
+ID do equipamento: {{equipamento_codigo}}
+Localização: {{equipamento_localizacao}}
+
+Tipo do problema:
+{{tipo_problema}}
+
+Prioridade:
+{{prioridade}}
+
+Descrição inicial:
+{{descricao}}
+
+-----------------------------------
+
+Data de abertura:
+{{data_abertura}}
+
+Aberto por:
+{{usuario_abertura}}
+
+Status:
+{{status}}
+
+-----------------------------------
+
+{{rodape}}`;
+}
+
+function templatePadraoEncerramentoCliente(){
+return `Chamado Encerrado no {{academia_nome}}.
+
+Equipamento: {{equipamento_nome}}
+ID do equipamento: {{equipamento_codigo}}
+Localização: {{equipamento_localizacao}}
+
+Tipo do problema:
+{{tipo_problema}}
+
+Prioridade:
+{{prioridade}}
+
+Descrição inicial:
+{{descricao}}
+
+-----------------------------------
+
+Data de abertura:
+{{data_abertura}}
+
+Data de encerramento:
+{{data_encerramento}}
+
+Tempo total do chamado:
+{{tempo_total}}
+
+Aberto por:
+{{usuario_abertura}}
+
+Encerrado por:
+{{usuario_encerramento}}
+
+Observações técnicas:
+{{observacao_encerramento}}
+
+Relatório técnico:
+{{relatorio_chamado}}
+
+-----------------------------------
+
+{{rodape}}`;
+}
+
+function abrirTemplatesEmailCliente(id){
+clienteTemplateEmailAtualId=Number(id);
+const cliente=(academias||[]).find(a=>Number(a.id)===clienteTemplateEmailAtualId);
+if(!cliente){alert("Cliente não localizado.");return;}
+document.getElementById("tituloTemplatesEmailCliente").innerText=`Cliente: ${cliente.nome||"Cliente"} | ID ${cliente.id}`;
+document.getElementById("emailAssuntoAberturaCliente").value=cliente.email_assunto_abertura||"Novo chamado aberto - {{equipamento_nome}}";
+document.getElementById("emailTemplateAberturaCliente").value=cliente.email_template_abertura||templatePadraoAberturaCliente();
+document.getElementById("emailAssuntoEncerramentoCliente").value=cliente.email_assunto_encerramento||"Chamado encerrado - {{equipamento_nome}}";
+document.getElementById("emailTemplateEncerramentoCliente").value=cliente.email_template_encerramento||templatePadraoEncerramentoCliente();
+document.getElementById("emailRodapeCliente").value=cliente.email_rodape||"ConetFacility - Gestão Inteligente de Manutenção";
+document.getElementById("msgTemplatesEmailCliente").innerText="";
+document.getElementById("erroTemplatesEmailCliente").innerText="";
+document.getElementById("modalTemplatesEmailCliente").style.display="flex";
+}
+
+function fecharModalTemplatesEmailCliente(){
+document.getElementById("modalTemplatesEmailCliente").style.display="none";
+clienteTemplateEmailAtualId=null;
+}
+
+async function salvarTemplatesEmailCliente(){
+const msg=document.getElementById("msgTemplatesEmailCliente");
+const erro=document.getElementById("erroTemplatesEmailCliente");
+msg.innerText="";erro.innerText="";
+if(!clienteTemplateEmailAtualId){erro.innerText="Cliente não identificado.";return;}
+const payload={
+email_assunto_abertura:document.getElementById("emailAssuntoAberturaCliente").value.trim()||"Novo chamado aberto - {{equipamento_nome}}",
+email_template_abertura:document.getElementById("emailTemplateAberturaCliente").value.trim()||templatePadraoAberturaCliente(),
+email_assunto_encerramento:document.getElementById("emailAssuntoEncerramentoCliente").value.trim()||"Chamado encerrado - {{equipamento_nome}}",
+email_template_encerramento:document.getElementById("emailTemplateEncerramentoCliente").value.trim()||templatePadraoEncerramentoCliente(),
+email_rodape:document.getElementById("emailRodapeCliente").value.trim()||"ConetFacility - Gestão Inteligente de Manutenção"
+};
+const {error}=await supabaseClient.from("academias").update(payload).eq("id",clienteTemplateEmailAtualId);
+if(error){erro.innerText="Erro ao salvar templates: "+error.message;return;}
+msg.innerText="Templates salvos com sucesso.";
+if(typeof carregarAcademias==="function")await carregarAcademias();
+setTimeout(fecharModalTemplatesEmailCliente,700);
 }
 
 </script>
