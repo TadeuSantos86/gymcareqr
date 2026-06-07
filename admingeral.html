@@ -300,35 +300,7 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
 }
 
 
-/* METRICAS CLIENTE SINCRONIZADAS POR EQUIPAMENTO_ID */
-.metricas-cliente-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:12px}
-.metrica-mini-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px;text-align:center}
-.metrica-mini-card strong{display:block;font-size:22px}
-
-
-/* MÉTRICAS ADMIN GERAL - USANDO ARRAYS JÁ CARREGADOS */
-.metricas-cliente-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
-  gap:10px;
-  margin-top:12px;
-}
-.metrica-mini-card{
-  background:#f9fafb;
-  border:1px solid #e5e7eb;
-  border-radius:12px;
-  padding:10px;
-  text-align:center;
-}
-.metrica-mini-card strong{
-  display:block;
-  font-size:22px;
-  color:#111827;
-}
-
-</style>
-
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+</script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
@@ -600,7 +572,199 @@ return `
 </table>`;
 }
 function baixarRelatorioClienteHtml(cliente,conteudo){
-const blob=new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório ${cliente.nome}</title></head><body>${conteudo}</body></html>`],{type:"text/html;charset=utf-8"});
+const blob=new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório ${cliente.nome}</title></head><body>${conteudo}
+<script>
+/* MÉTRICAS POR CLIENTE - PATCH ISOLADO DEFINITIVO */
+(function(){
+  function normStatus(v){
+    return String(v||"").trim().toUpperCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[_-]+/g," ");
+  }
+
+  function obterSupabaseMetricas(){
+    try{
+      if(typeof supabaseClient!=="undefined" && supabaseClient)return supabaseClient;
+    }catch(e){}
+
+    try{
+      if(window.supabaseClient)return window.supabaseClient;
+    }catch(e){}
+
+    try{
+      if(typeof supabase!=="undefined"){
+        var url = window.SUPABASE_URL || (typeof SUPABASE_URL!=="undefined" ? SUPABASE_URL : null);
+        var key = window.SUPABASE_ANON_KEY || window.SUPABASE_KEY || (typeof SUPABASE_ANON_KEY!=="undefined" ? SUPABASE_ANON_KEY : null) || (typeof SUPABASE_KEY!=="undefined" ? SUPABASE_KEY : null);
+        if(url && key)return supabase.createClient(url,key);
+      }
+    }catch(e){}
+
+    return null;
+  }
+
+  function encontrarContainerMetricas(){
+    var c = document.getElementById("metricasClientes") ||
+            document.getElementById("metricasCliente") ||
+            document.getElementById("metricasPorCliente") ||
+            document.getElementById("listaMetricasClientes");
+
+    if(c)return c;
+
+    var titulos = Array.from(document.querySelectorAll("h1,h2,h3,strong"));
+    var titulo = titulos.find(function(el){
+      var t = String(el.textContent||"").toLowerCase();
+      return t.includes("métricas por cliente") || t.includes("metricas por cliente");
+    });
+
+    if(titulo){
+      var card = titulo.closest(".bloco,.card,section,div") || titulo.parentElement;
+      if(card){
+        var carregando = Array.from(card.querySelectorAll("p,div,span")).find(function(el){
+          return String(el.textContent||"").trim().toLowerCase()==="carregando...";
+        });
+        var alvo = document.createElement("div");
+        alvo.id = "metricasClientes";
+        alvo.setAttribute("data-metricas-clientes","true");
+        if(carregando)carregando.replaceWith(alvo);
+        else card.appendChild(alvo);
+        return alvo;
+      }
+    }
+    return null;
+  }
+
+  async function carregarDadosMetricas(){
+    var sb = obterSupabaseMetricas();
+
+    // Primeiro tenta usar arrays globais já carregados
+    var a = [];
+    var e = [];
+    var c = [];
+    try{ if(Array.isArray(window.academias))a = window.academias; }catch(err){}
+    try{ if(Array.isArray(window.equipamentos))e = window.equipamentos; }catch(err){}
+    try{ if(Array.isArray(window.chamados))c = window.chamados; }catch(err){}
+
+    // Em muitos arquivos os arrays foram declarados como let/const; tenta acesso direto também
+    try{ if(!a.length && Array.isArray(academias))a = academias; }catch(err){}
+    try{ if(!e.length && Array.isArray(equipamentos))e = equipamentos; }catch(err){}
+    try{ if(!c.length && Array.isArray(chamados))c = chamados; }catch(err){}
+
+    if(a.length && e.length){
+      return {academias:a,equipamentos:e,chamados:c};
+    }
+
+    if(!sb)throw new Error("Supabase não encontrado no arquivo.");
+
+    var res = await Promise.all([
+      sb.from("academias").select("*").order("id",{ascending:true}),
+      sb.from("equipamentos").select("*").order("id",{ascending:true}),
+      sb.from("chamados").select("*").order("id",{ascending:false})
+    ]);
+
+    if(res[0].error)throw res[0].error;
+    if(res[1].error)throw res[1].error;
+    if(res[2].error)console.warn("Erro ao buscar chamados para métricas:",res[2].error);
+
+    return {
+      academias:res[0].data||[],
+      equipamentos:res[1].data||[],
+      chamados:res[2].data||[]
+    };
+  }
+
+  async function renderizarMetricasClientesPatch(){
+    var container = encontrarContainerMetricas();
+    if(!container)return;
+
+    container.innerHTML = '<p style="color:#6b7280;">Sincronizando métricas...</p>';
+
+    try{
+      var dados = await carregarDadosMetricas();
+      var academiasLista = dados.academias || [];
+      var equipamentosLista = dados.equipamentos || [];
+      var chamadosLista = dados.chamados || [];
+
+      if(!academiasLista.length){
+        container.innerHTML = '<p style="color:#6b7280;">Nenhum cliente cadastrado.</p>';
+        return;
+      }
+
+      var html = "";
+
+      academiasLista.forEach(function(a){
+        var academiaId = Number(a.id);
+        var eqs = equipamentosLista.filter(function(e){ return Number(e.academia_id)===academiaId; });
+        var ids = eqs.map(function(e){ return Number(e.id); }).filter(Boolean);
+        var chs = chamadosLista.filter(function(ch){ return ids.includes(Number(ch.equipamento_id)); });
+
+        var totalEquip = eqs.length;
+        var abertos = chs.filter(function(ch){
+          var s = normStatus(ch.status);
+          return s==="ABERTO" || s==="REABERTO";
+        }).length;
+
+        var manut = chs.filter(function(ch){
+          var s = normStatus(ch.status);
+          return s==="EM MANUTENCAO" || s==="MANUTENCAO" || s==="EM ANDAMENTO";
+        }).length;
+
+        var fin = chs.filter(function(ch){
+          var s = normStatus(ch.status);
+          return s==="FINALIZADO" || s==="ENCERRADO";
+        }).length;
+
+        var operacionais = eqs.filter(function(e){
+          var s = normStatus(e.status);
+          return s==="OPERACIONAL" || s==="ATIVO" || s==="";
+        }).length;
+
+        var disp = totalEquip ? Math.round((operacionais/totalEquip)*100) : 0;
+
+        html += `
+          <div class="item">
+            <h3>${a.nome || "Cliente"}</h3>
+            <p><strong>ID:</strong> ${a.id}</p>
+            <div class="metricas-cliente-grid">
+              <div class="metrica-mini-card"><strong>${totalEquip}</strong>Equipamentos</div>
+              <div class="metrica-mini-card"><strong>${operacionais}</strong>Operacionais</div>
+              <div class="metrica-mini-card"><strong>${disp}%</strong>Disponibilidade</div>
+              <div class="metrica-mini-card"><strong>${chs.length}</strong>Chamados</div>
+              <div class="metrica-mini-card"><strong>${abertos}</strong>Abertos</div>
+              <div class="metrica-mini-card"><strong>${manut}</strong>Em manutenção</div>
+              <div class="metrica-mini-card"><strong>${fin}</strong>Finalizados</div>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html || "<p>Sem métricas disponíveis.</p>";
+    }catch(err){
+      console.error("Erro no patch definitivo de métricas:",err);
+      container.innerHTML = '<p class="erro">Erro ao carregar métricas. Verifique o console do navegador.</p>';
+    }
+  }
+
+  window.renderizarMetricasClientes = renderizarMetricasClientesPatch;
+  window.carregarMetricasClientes = renderizarMetricasClientesPatch;
+  window.carregarMetricasPorCliente = renderizarMetricasClientesPatch;
+  window.sincronizarMetricasClientes = renderizarMetricasClientesPatch;
+  window.carregarMetricas = renderizarMetricasClientesPatch;
+
+  document.addEventListener("DOMContentLoaded",function(){
+    setTimeout(renderizarMetricasClientesPatch,300);
+    setTimeout(renderizarMetricasClientesPatch,900);
+    setTimeout(renderizarMetricasClientesPatch,1800);
+    setTimeout(renderizarMetricasClientesPatch,3000);
+  });
+
+  // Também tenta após qualquer clique/login/render.
+  document.addEventListener("click",function(){
+    setTimeout(renderizarMetricasClientesPatch,400);
+  });
+})();
+</script>
+
+</body></html>`],{type:"text/html;charset=utf-8"});
 const url=URL.createObjectURL(blob);
 const a=document.createElement("a");
 a.href=url;
@@ -1393,90 +1557,6 @@ setTimeout(renderizarMetricasClientes,2500);
 });
 
 
-
-/* MÉTRICAS POR CLIENTE - LÓGICA ANTIGA FUNCIONAL RESTAURADA */
-function equipamentosDaAcademia(id){
-  return (equipamentos||[]).filter(e=>Number(e.academia_id)===Number(id));
-}
-
-function idsEquipamentosDaAcademia(id){
-  return equipamentosDaAcademia(id).map(e=>Number(e.id)).filter(Boolean);
-}
-
-function chamadosDaAcademia(id){
-  const ids=idsEquipamentosDaAcademia(id);
-  return (chamados||[]).filter(c=>ids.includes(Number(c.equipamento_id)));
-}
-
-function contarChamadosPorAcademia(id){
-  return chamadosDaAcademia(id).length;
-}
-
-function contarAbertosPorAcademia(id){
-  return chamadosDaAcademia(id).filter(c=>{
-    const s=String(c.status||"").trim().toUpperCase();
-    return s==="ABERTO" || s==="REABERTO";
-  }).length;
-}
-
-function contarManutencaoPorAcademia(id){
-  return chamadosDaAcademia(id).filter(c=>{
-    const s=String(c.status||"").trim().toUpperCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-      .replace(/[_-]+/g," ");
-    return s==="EM MANUTENCAO" || s==="MANUTENCAO" || s==="EM ANDAMENTO";
-  }).length;
-}
-
-function contarFinalizadosPorAcademia(id){
-  return chamadosDaAcademia(id).filter(c=>{
-    const s=String(c.status||"").trim().toUpperCase();
-    return s==="FINALIZADO" || s==="ENCERRADO";
-  }).length;
-}
-
-function renderizarMetricasClientes(){
-  const el=document.getElementById("metricasClientes");
-  if(!el)return;
-
-  let html="";
-
-  (academias||[]).forEach(a=>{
-    const qe=equipamentosDaAcademia(a.id).length;
-    const qc=contarChamadosPorAcademia(a.id);
-    const qa=contarAbertosPorAcademia(a.id);
-    const em=contarManutencaoPorAcademia(a.id);
-    const fin=contarFinalizadosPorAcademia(a.id);
-    const disp=qe>0?Math.round(((qe-em)/qe)*100):0;
-
-    html+=`
-      <div class="item">
-        <h3>${a.nome||"Cliente"}</h3>
-        <p><strong>Equipamentos:</strong> ${qe}</p>
-        <p><strong>Chamados totais:</strong> ${qc}</p>
-        <p><strong>Chamados abertos:</strong> ${qa}</p>
-        <p><strong>Em manutenção:</strong> ${em}</p>
-        <p><strong>Finalizados:</strong> ${fin}</p>
-        <p><strong>Disponibilidade estimada:</strong> ${disp}%</p>
-      </div>
-    `;
-  });
-
-  el.innerHTML=html||"<p>Sem métricas disponíveis.</p>";
-}
-
-function carregarMetricasClientes(){renderizarMetricasClientes();}
-function carregarMetricasPorCliente(){renderizarMetricasClientes();}
-function sincronizarMetricasClientes(){renderizarMetricasClientes();}
-function carregarMetricas(){renderizarMetricasClientes();}
-
-
-
-document.addEventListener("DOMContentLoaded",function(){
-  setTimeout(renderizarMetricasClientes,800);
-  setTimeout(renderizarMetricasClientes,1500);
-  setTimeout(renderizarMetricasClientes,2200);
-});
 
 </script>
 
