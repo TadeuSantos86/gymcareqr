@@ -326,6 +326,27 @@ header{background:#323E48;color:white;padding:22px 40px;display:flex;justify-con
   color:#111827;
 }
 
+
+/* MÉTRICAS POR CLIENTE - CORREÇÃO VISUAL DEFINITIVA */
+.metricas-cliente-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+.metrica-mini-card{
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:10px;
+  text-align:center;
+}
+.metrica-mini-card strong{
+  display:block;
+  font-size:22px;
+  color:#111827;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -514,6 +535,8 @@ setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
 setTimeout(carregarMetricasClientes,300);
 
 renderizarMetricasClientes();
+
+setTimeout(renderizarMetricasClientes,300);
 }
 function verificarLogin(){if(localStorage.getItem("gymcare_master_logado")==="sim")mostrarAdmin()
 setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
@@ -523,6 +546,8 @@ setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
 setTimeout(carregarMetricasClientes,300);
 
 renderizarMetricasClientes();
+
+setTimeout(renderizarMetricasClientes,300);
 }
 function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()}
 function sair(){localStorage.removeItem("gymcare_master_logado");location.reload()}
@@ -533,6 +558,8 @@ async function carregarDados(){const {data:acs,error:e1}=await supabaseClient.fr
 setTimeout(atualizarVisibilidadeBlocoInativosLogin,100);
 
 renderizarMetricasClientes();
+
+setTimeout(renderizarMetricasClientes,300);
 }
 function atualizarCards(){document.getElementById("totalClientes").innerText=academias.length;document.getElementById("clientesAtivos").innerText=academias.filter(a=>a.status_cliente==="ATIVO"||!a.status_cliente).length;document.getElementById("totalEquipamentos").innerText=equipamentos.length;document.getElementById("chamadosAbertos").innerText=chamados.filter(c=>c.status==="ABERTO").length}
 function equipamentosDaAcademia(id){return equipamentos.filter(e=>Number(e.academia_id)===Number(id))}
@@ -745,6 +772,8 @@ atualizarSelectTemplatesEmailCliente();
 setTimeout(carregarMetricasClientes,300);
 
 renderizarMetricasClientes();
+
+setTimeout(renderizarMetricasClientes,300);
 }
 
 function abrirEditar(id){const a=academias.find(x=>x.id===id);if(!a)return;document.getElementById("editId").value=a.id;document.getElementById("editNome").value=a.nome||"";document.getElementById("editEmail").value=a.email_notificacao||"";document.getElementById("editLogoAtual").value=a.logo_url||"";const img=document.getElementById("editLogoPreview");if(a.logo_url){img.src=a.logo_url;img.style.display="block"}else{img.style.display="none"}document.getElementById("editCor").value=a.cor_primaria||"#93D500";document.getElementById("editCorHeader").value=a.cor_header||"#323E48";document.getElementById("editTituloSistema").value=a.titulo_sistema||"ConetFacility";document.getElementById("editSubtituloSistema").value=a.subtitulo_sistema||"";document.getElementById("editStatusCliente").value=a.status_cliente||"ATIVO";document.getElementById("editPlano").value=a.plano||"MVP";document.getElementById("editEndereco").value=a.endereco||"";document.getElementById("editHorario").value=a.horario_funcionamento||"";document.getElementById("editObservacao").value=a.observacoes||"";document.getElementById("modalEditar").style.display="flex"}
@@ -1373,39 +1402,130 @@ setTimeout(carregarMetricasClientes,1200);
 setTimeout(carregarMetricasClientes,2000);
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+document.addEventListener("DOMContentLoaded",function(){
+setTimeout(renderizarMetricasClientes,1500);
+setTimeout(renderizarMetricasClientes,2500);
+});
+
+
+
 function normalizarStatusMetrica(valor){
 return String(valor||"").trim().toUpperCase()
 .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
 .replace(/[_-]+/g," ");
 }
 
-function renderizarMetricasClientes(){
-const container=document.getElementById("metricasClientes")
-||document.getElementById("metricasCliente")
-||document.getElementById("metricasPorCliente")
-||document.getElementById("listaMetricasClientes");
+function encontrarContainerMetricasClientes(){
+/* 1. Tenta pelos IDs conhecidos */
+let container=
+document.getElementById("metricasClientes")||
+document.getElementById("metricasCliente")||
+document.getElementById("metricasPorCliente")||
+document.getElementById("listaMetricasClientes");
 
+if(container)return container;
+
+/* 2. Procura visualmente pelo card que contém o título "Métricas por cliente" */
+const titulos=[...document.querySelectorAll("h1,h2,h3,strong")];
+const titulo=titulos.find(el=>String(el.textContent||"").trim().toLowerCase().includes("métricas por cliente")||String(el.textContent||"").trim().toLowerCase().includes("metricas por cliente"));
+
+if(titulo){
+const card=titulo.closest(".bloco,.card,.item,section,div");
+if(card){
+let alvo=card.querySelector("[data-metricas-clientes='true']");
+if(!alvo){
+alvo=document.createElement("div");
+alvo.setAttribute("data-metricas-clientes","true");
+alvo.id="metricasClientes";
+const carregando=[...card.querySelectorAll("p,div,span")].find(el=>String(el.textContent||"").trim().toLowerCase()==="carregando...");
+if(carregando){
+carregando.replaceWith(alvo);
+}else{
+card.appendChild(alvo);
+}
+}
+return alvo;
+}
+}
+
+/* 3. Último fallback: cria bloco antes do módulo de templates ou no final */
+const bloco=document.createElement("div");
+bloco.className="bloco";
+bloco.innerHTML='<h2>Métricas por cliente</h2><div id="metricasClientes" data-metricas-clientes="true"></div>';
+
+const referencia=document.getElementById("moduloTemplatesEmailCliente")||document.querySelector("main")||document.body;
+if(referencia.parentElement){
+referencia.parentElement.insertBefore(bloco,referencia);
+}else{
+document.body.appendChild(bloco);
+}
+
+return bloco.querySelector("#metricasClientes");
+}
+
+async function buscarDadosMetricasAdminGeral(){
+/* Busca direta no Supabase para não depender de arrays globais */
+const [clientesRes,equipamentosRes,chamadosRes,usuariosChamadosRes,usuariosPainelRes]=await Promise.all([
+supabaseClient.from("academias").select("*").order("id",{ascending:true}),
+supabaseClient.from("equipamentos").select("*").order("id",{ascending:true}),
+supabaseClient.from("chamados").select("*").order("id",{ascending:false}),
+supabaseClient.from("usuarios_chamados").select("*"),
+supabaseClient.from("usuarios_painel_cliente").select("*")
+]);
+
+if(clientesRes.error)throw clientesRes.error;
+if(equipamentosRes.error)console.warn("Erro equipamentos métricas:",equipamentosRes.error);
+if(chamadosRes.error)console.warn("Erro chamados métricas:",chamadosRes.error);
+
+return {
+clientes:clientesRes.data||[],
+equipamentos:equipamentosRes.data||[],
+chamados:chamadosRes.data||[],
+usuariosChamados:usuariosChamadosRes.data||[],
+usuariosPainel:usuariosPainelRes.data||[]
+};
+}
+
+async function renderizarMetricasClientes(){
+const container=encontrarContainerMetricasClientes();
 if(!container)return;
 
-try{
-const listaAcademias=Array.isArray(academias)?academias:[];
-const listaEquipamentos=Array.isArray(equipamentos)?equipamentos:[];
-const listaChamados=Array.isArray(chamados)?chamados:[];
+container.innerHTML='<p style="color:#6b7280;">Sincronizando métricas...</p>';
 
-if(!listaAcademias.length){
+try{
+const dados=await buscarDadosMetricasAdminGeral();
+const clientes=dados.clientes;
+const equipamentos=dados.equipamentos;
+const chamados=dados.chamados;
+
+if(!clientes.length){
 container.innerHTML='<p style="color:#6b7280;">Nenhum cliente cadastrado.</p>';
 return;
 }
 
 let htmlMetricas="";
 
-listaAcademias.forEach(a=>{
-const academiaId=Number(a.id);
+clientes.forEach(cliente=>{
+const academiaId=Number(cliente.id);
 
-const equipamentosCliente=listaEquipamentos.filter(e=>Number(e.academia_id)===academiaId);
+const equipamentosCliente=equipamentos.filter(e=>Number(e.academia_id)===academiaId);
 const idsEquipamentos=equipamentosCliente.map(e=>Number(e.id)).filter(Boolean);
 
-const chamadosCliente=listaChamados.filter(c=>idsEquipamentos.includes(Number(c.equipamento_id)));
+const chamadosCliente=chamados.filter(c=>idsEquipamentos.includes(Number(c.equipamento_id)));
 
 const totalEquip=equipamentosCliente.length;
 
@@ -1421,7 +1541,7 @@ return s==="ABERTO"||s==="REABERTO";
 
 const manutencao=chamadosCliente.filter(c=>{
 const s=normalizarStatusMetrica(c.status);
-return s==="EM MANUTENCAO"||s==="MANUTENCAO"||s==="EM ANDAMENTO"||s==="EM MANUT";
+return s==="EM MANUTENCAO"||s==="MANUTENCAO"||s==="EM ANDAMENTO";
 }).length;
 
 const finalizados=chamadosCliente.filter(c=>{
@@ -1431,11 +1551,13 @@ return s==="FINALIZADO"||s==="ENCERRADO";
 
 const disponibilidade=totalEquip?Math.round((operacionais/totalEquip)*100):100;
 
-htmlMetricas+=`
-<div class="item">
-<h3>${a.nome||"Cliente sem nome"}</h3>
-<p><strong>ID:</strong> ${a.id}</p>
+const usuariosChamadosCliente=dados.usuariosChamados.filter(u=>Number(u.academia_id)===academiaId).length;
+const usuariosPainelCliente=dados.usuariosPainel.filter(u=>Number(u.academia_id)===academiaId).length;
 
+htmlMetricas+=`
+<div class="item" style="margin-top:14px;">
+<h3>${cliente.nome||"Cliente sem nome"}</h3>
+<p><strong>ID:</strong> ${cliente.id}</p>
 <div class="metricas-cliente-grid">
 <div class="metrica-mini-card"><strong>${totalEquip}</strong>Equipamentos</div>
 <div class="metrica-mini-card"><strong>${operacionais}</strong>Operacionais</div>
@@ -1444,39 +1566,29 @@ htmlMetricas+=`
 <div class="metrica-mini-card"><strong>${abertos}</strong>Abertos</div>
 <div class="metrica-mini-card"><strong>${manutencao}</strong>Em manutenção</div>
 <div class="metrica-mini-card"><strong>${finalizados}</strong>Finalizados</div>
+<div class="metrica-mini-card"><strong>${usuariosChamadosCliente}</strong>Usuários chamados</div>
+<div class="metrica-mini-card"><strong>${usuariosPainelCliente}</strong>Usuários painel</div>
 </div>
 </div>`;
 });
 
-container.innerHTML=htmlMetricas||'<p>Sem métricas disponíveis.</p>';
+container.innerHTML=htmlMetricas || '<p style="color:#6b7280;">Sem métricas disponíveis.</p>';
 
 }catch(e){
-console.error("Erro ao renderizar métricas por cliente:",e);
-container.innerHTML='<p class="erro">Erro ao renderizar métricas por cliente.</p>';
+console.error("Erro definitivo métricas por cliente:",e);
+container.innerHTML='<p class="erro">Erro ao sincronizar métricas por cliente. Verifique o console do navegador.</p>';
 }
 }
 
-function carregarMetricasClientes(){
-renderizarMetricasClientes();
-}
-
-function carregarMetricasPorCliente(){
-renderizarMetricasClientes();
-}
-
-function sincronizarMetricasClientes(){
-renderizarMetricasClientes();
-}
-
-function carregarMetricas(){
-renderizarMetricasClientes();
-}
-
-
+function carregarMetricasClientes(){return renderizarMetricasClientes();}
+function carregarMetricasPorCliente(){return renderizarMetricasClientes();}
+function sincronizarMetricasClientes(){return renderizarMetricasClientes();}
+function carregarMetricas(){return renderizarMetricasClientes();}
 
 document.addEventListener("DOMContentLoaded",function(){
-setTimeout(renderizarMetricasClientes,1500);
-setTimeout(renderizarMetricasClientes,2500);
+setTimeout(renderizarMetricasClientes,800);
+setTimeout(renderizarMetricasClientes,1800);
+setTimeout(renderizarMetricasClientes,3000);
 });
 
 </script>
