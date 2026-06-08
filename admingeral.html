@@ -510,6 +510,22 @@ body:not(.admin-geral-logado) #telaLogin{
   display:flex!important;
 }
 
+
+/* MODULOS ADMIN GERAL SOMENTE APOS LOGIN */
+body:not(.admin-geral-logado) #moduloUsuariosPainelCliente,
+body:not(.admin-geral-logado) #moduloTemplatesEmailCliente,
+body:not(.admin-geral-logado) #moduloExcluirClienteSelecionado,
+body:not(.admin-geral-logado) #moduloDominioQRCodes{
+  display:none!important;
+}
+
+body.admin-geral-logado #moduloUsuariosPainelCliente,
+body.admin-geral-logado #moduloTemplatesEmailCliente,
+body.admin-geral-logado #moduloExcluirClienteSelecionado,
+body.admin-geral-logado #moduloDominioQRCodes{
+  display:block;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -824,6 +840,8 @@ async function entrarMaster(){
   if(typeof atualizarSelectUsuariosPainelCliente==="function")setTimeout(atualizarSelectUsuariosPainelCliente,150);
   if(typeof atualizarSelectTemplatesEmailCliente==="function")setTimeout(atualizarSelectTemplatesEmailCliente,150);
   if(typeof atualizarSelectExcluirCliente==="function")setTimeout(atualizarSelectExcluirCliente,150);
+
+setTimeout(sincronizarModulosAdminGeralAposLogin,150);
 }
 function verificarLogin(){if(localStorage.getItem("gymcare_master_logado")==="sim")mostrarAdmin()
 setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
@@ -869,6 +887,8 @@ function sair(){
   if(usuario)usuario.value="";
   if(senha)senha.value="";
   if(erro)erro.innerText="";
+
+setTimeout(sincronizarModulosAdminGeralAposLogin,150);
 }
 function toggleCadastro(){document.getElementById("formCadastro").classList.toggle("oculto")}
 function textoStatusCliente(s){if(s==="ATIVO")return"Ativo";if(s==="PILOTO")return"Piloto";if(s==="INATIVO")return"Inativo";return s||"-"}
@@ -1766,6 +1786,23 @@ document.addEventListener("DOMContentLoaded",function(){
     login.classList.remove("oculto");
     login.style.setProperty("display","flex","important");
   }
+});
+
+
+
+/* MODULOS ADMIN GERAL SOMENTE APOS LOGIN */
+function sincronizarModulosAdminGeralAposLogin(){
+  const logado=document.body.classList.contains("admin-geral-logado");
+  ["moduloUsuariosPainelCliente","moduloTemplatesEmailCliente","moduloExcluirClienteSelecionado","moduloDominioQRCodes"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+      el.style.display=logado?"block":"none";
+    }
+  });
+}
+document.addEventListener("DOMContentLoaded",function(){
+  setTimeout(sincronizarModulosAdminGeralAposLogin,300);
+  setTimeout(sincronizarModulosAdminGeralAposLogin,1200);
 });
 
 </script>
