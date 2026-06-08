@@ -526,6 +526,23 @@ body.admin-geral-logado #moduloDominioQRCodes{
   display:block;
 }
 
+
+/* LOGO CONETFACILITY NO LOGIN ADMIN GERAL */
+.logo-conet-login{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin:0 auto 22px auto;
+}
+.logo-conet-login img{
+  width:220px;
+  max-width:82%;
+  height:auto;
+  object-fit:contain;
+  border-radius:18px;
+  box-shadow:0 8px 22px rgba(0,0,0,.12);
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -538,11 +555,11 @@ body.admin-geral-logado #moduloDominioQRCodes{
 
 <div id="telaLogin" class="login">
   <div class="login-card-admin">
-    <div class="logo-conet-login" id="logoConetLoginAdmin">
-      <img src="./logo_conetfacility.png" alt="ConetFacility">
-    </div>
-
-    <h1>ConetFacility</h1>
+    
+<div class="logo-conet-login" id="logoConetLoginAdmin">
+  <img src="./logo_conetfacility.png" alt="ConetFacility">
+</div>
+<h1>ConetFacility</h1>
     <p class="subtitulo-login-admin">Admin Geral</p>
 
     <label>Usuário</label>
