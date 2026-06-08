@@ -244,6 +244,272 @@ body.admin-geral-logado .modulo-excluir-cliente{
 #moduloDominioQRCodes{display:none;}
 body.admin-geral-logado #moduloDominioQRCodes{display:block;}
 
+
+/* USUÁRIOS DO PAINEL CLIENTE - MÓDULO ISOLADO */
+#moduloUsuariosPainelCliente{
+  background:white;
+  padding:25px;
+  border-radius:18px;
+  box-shadow:0 4px 15px rgba(0,0,0,.08);
+  margin:25px 0;
+}
+#moduloUsuariosPainelCliente .grid-usuarios-painel{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:12px;
+  margin-top:12px;
+}
+.usuario-painel-card{
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:14px;
+  margin-top:12px;
+}
+.usuario-painel-card .botoes{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+.badge-ativo-painel{
+  background:#dcfce7;
+  color:#166534;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:bold;
+}
+.badge-inativo-painel{
+  background:#fee2e2;
+  color:#991b1b;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:bold;
+}
+
+
+/* LOGIN ADMIN GERAL - CENTRALIZADO PROFISSIONAL */
+#telaLogin{
+  min-height:100vh!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:32px!important;
+  box-sizing:border-box!important;
+  background:#f3f4f6!important;
+}
+
+#telaLogin.oculto,
+body.admin-geral-logado #telaLogin{
+  display:none!important;
+}
+
+#telaLogin > div{
+  width:100%!important;
+  max-width:620px!important;
+  margin:0 auto!important;
+  background:#ffffff!important;
+  border-radius:28px!important;
+  box-shadow:0 18px 45px rgba(0,0,0,.08)!important;
+  padding:42px!important;
+  box-sizing:border-box!important;
+}
+
+#telaLogin h1{
+  font-size:46px!important;
+  line-height:1.05!important;
+  margin:0 0 8px 0!important;
+  color:#111827!important;
+  font-weight:800!important;
+}
+
+#telaLogin label,
+#telaLogin p{
+  font-size:20px!important;
+  color:#111827!important;
+}
+
+#telaLogin input{
+  width:100%!important;
+  box-sizing:border-box!important;
+  height:58px!important;
+  border:1px solid #d1d5db!important;
+  border-radius:16px!important;
+  padding:0 18px!important;
+  font-size:18px!important;
+  margin:8px 0 22px 0!important;
+  background:#ffffff!important;
+}
+
+#telaLogin button{
+  min-width:110px!important;
+  height:58px!important;
+  border-radius:16px!important;
+  font-size:18px!important;
+  font-weight:700!important;
+  padding:0 28px!important;
+}
+
+#telaAdmin.oculto{
+  display:none!important;
+}
+
+body.admin-geral-logado #telaAdmin{
+  display:block!important;
+}
+
+.logo-conet-login{
+  display:flex!important;
+  justify-content:center!important;
+  align-items:center!important;
+  margin:0 auto 24px auto!important;
+}
+
+.logo-conet-login img{
+  width:210px!important;
+  max-width:80%!important;
+  height:auto!important;
+  object-fit:contain!important;
+  border-radius:18px!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.12)!important;
+}
+
+
+/* LOGIN ADMIN GERAL - LAYOUT FINAL CENTRALIZADO */
+#telaLogin.login{
+  min-height:100vh!important;
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:32px!important;
+  box-sizing:border-box!important;
+  background:#f3f4f6!important;
+}
+
+#telaLogin.oculto,
+body.admin-geral-logado #telaLogin{
+  display:none!important;
+}
+
+.login-card-admin{
+  width:100%!important;
+  max-width:620px!important;
+  background:#ffffff!important;
+  border-radius:28px!important;
+  box-shadow:0 18px 45px rgba(0,0,0,.08)!important;
+  padding:42px!important;
+  box-sizing:border-box!important;
+  margin:0 auto!important;
+}
+
+.login-card-admin .logo-conet-login{
+  display:flex!important;
+  justify-content:center!important;
+  align-items:center!important;
+  margin:0 auto 24px auto!important;
+}
+
+.login-card-admin .logo-conet-login img{
+  width:220px!important;
+  max-width:82%!important;
+  height:auto!important;
+  object-fit:contain!important;
+  border-radius:18px!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.12)!important;
+}
+
+.login-card-admin h1{
+  font-size:46px!important;
+  line-height:1.05!important;
+  margin:0 0 6px 0!important;
+  color:#111827!important;
+  font-weight:800!important;
+}
+
+.login-card-admin .subtitulo-login-admin{
+  font-size:22px!important;
+  color:#111827!important;
+  margin:0 0 8px 0!important;
+}
+
+.login-card-admin label{
+  display:block!important;
+  font-size:22px!important;
+  color:#111827!important;
+  margin:18px 0 8px 0!important;
+}
+
+.login-card-admin input{
+  width:100%!important;
+  height:58px!important;
+  box-sizing:border-box!important;
+  border:1px solid #d1d5db!important;
+  border-radius:16px!important;
+  padding:0 18px!important;
+  font-size:18px!important;
+  background:#ffffff!important;
+  color:#111827!important;
+  margin:0 0 14px 0!important;
+}
+
+.login-card-admin button{
+  min-width:110px!important;
+  height:58px!important;
+  border-radius:16px!important;
+  font-size:18px!important;
+  font-weight:700!important;
+  padding:0 28px!important;
+  margin-top:6px!important;
+}
+
+#telaAdmin.oculto{
+  display:none!important;
+}
+
+body.admin-geral-logado #telaAdmin{
+  display:block!important;
+}
+
+
+/* LOGIN / LOGOUT ADMIN GERAL - FLUXO DEFINITIVO */
+#telaLogin{
+  min-height:100vh!important;
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:32px!important;
+  box-sizing:border-box!important;
+  background:#f3f4f6!important;
+}
+
+#telaLogin.oculto{
+  display:none!important;
+}
+
+#telaAdmin.oculto{
+  display:none!important;
+}
+
+body.admin-geral-logado #telaLogin{
+  display:none!important;
+}
+
+body.admin-geral-logado #telaAdmin{
+  display:block!important;
+}
+
+body:not(.admin-geral-logado) #telaAdmin{
+  display:none!important;
+}
+
+body:not(.admin-geral-logado) #telaLogin{
+  display:flex!important;
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
@@ -251,23 +517,27 @@ body.admin-geral-logado #moduloDominioQRCodes{display:block;}
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
 </head>
+
 <body>
 
 <div id="telaLogin" class="login">
+  <div class="login-card-admin">
+    <div class="logo-conet-login" id="logoConetLoginAdmin">
+      <img src="./logo_conetfacility.png" alt="ConetFacility">
+    </div>
 
+    <h1>ConetFacility</h1>
+    <p class="subtitulo-login-admin">Admin Geral</p>
 
+    <label>Usuário</label>
+    <input type="text" id="usuario" placeholder="Digite seu usuário" autocomplete="username">
 
+    <label>Senha</label>
+    <input type="password" id="senha" placeholder="Digite sua senha" autocomplete="current-password">
 
-</div>
-
-<div class="logo-conet-login" id="logoConetLoginAdmin">
-    <img src="./logo_conetfacility.png" alt="ConetFacility">
-</div>
-<h1>ConetFacility</h1><p>Admin Geral</p>
-<label>Usuário</label><input type="text" id="usuario" placeholder="Digite seu usuário">
-<label>Senha</label><input type="password" id="senha" placeholder="Digite sua senha">
-<button class="btn-verde" onclick="entrarMaster()">Entrar</button>
-<p id="erroLogin" class="erro"></p>
+    <button class="btn-verde" onclick="entrarMaster()">Entrar</button>
+    <p id="erroLogin" class="erro"></p>
+  </div>
 </div>
 
 <div id="telaAdmin" class="oculto">
@@ -324,6 +594,59 @@ body.admin-geral-logado #moduloDominioQRCodes{display:block;}
 </div>
 
 
+
+
+
+
+<div id="moduloUsuariosPainelCliente">
+  <h2>Usuários do Painel Admin do Cliente</h2>
+  <p style="color:#6b7280;margin:8px 0 16px;">
+    Adicione, edite, ative, desative ou exclua usuários com acesso ao Painel Admin do Cliente.
+  </p>
+
+  <div class="grid-usuarios-painel">
+    <div>
+      <label>Cliente</label>
+      <select id="selectClienteUsuarioPainel" onchange="carregarUsuariosPainelClienteSelecionado()">
+        <option value="">Selecione um cliente</option>
+      </select>
+    </div>
+    <div>
+      <label>Nome</label>
+      <input type="text" id="nomeUsuarioPainelCliente" placeholder="Nome do usuário">
+    </div>
+    <div>
+      <label>Usuário</label>
+      <input type="text" id="loginUsuarioPainelCliente" placeholder="Ex: suporte">
+    </div>
+    <div>
+      <label>Senha</label>
+      <input type="text" id="senhaUsuarioPainelCliente" placeholder="Senha de acesso">
+    </div>
+    <div>
+      <label>Status</label>
+      <select id="statusUsuarioPainelCliente">
+        <option value="ATIVO">ATIVO</option>
+        <option value="INATIVO">INATIVO</option>
+      </select>
+    </div>
+  </div>
+
+  <input type="hidden" id="idUsuarioPainelClienteEditando">
+
+  <div class="botoes" style="margin-top:14px;">
+    <button class="btn-verde" onclick="salvarUsuarioPainelClienteAdminGeral()">Salvar Usuário</button>
+    <button class="btn-cinza" onclick="limparFormularioUsuarioPainelCliente()">Limpar</button>
+  </div>
+
+  <p id="msgUsuarioPainelCliente" class="sucesso"></p>
+  <p id="erroUsuarioPainelCliente" class="erro"></p>
+
+  <h3 style="margin-top:22px;">Usuários cadastrados</h3>
+  <div id="listaUsuariosPainelClienteAdminGeral">
+    <p style="color:#6b7280;">Selecione um cliente para listar os usuários.</p>
+  </div>
+</div>
 <div class="modulo-templates-email" id="moduloTemplatesEmailCliente">
   <h2>Templates de E-mail por Cliente</h2>
   <p style="color:#6b7280;margin:8px 0 16px;">
@@ -454,21 +777,98 @@ const SUPABASE_KEY="sb_publishable_Ziop6jmXiNjC12Dr2JL2Yg_kMskWuEA";
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let academias=[],equipamentos=[],chamados=[],graficoStatusClientes=null,graficoChamadosCliente=null;
 
-function entrarMaster(){const u=document.getElementById("usuario").value.trim();const s=document.getElementById("senha").value.trim();if(u==="master"&&s==="conet2506"){localStorage.setItem("gymcare_master_logado","sim");mostrarAdmin()}else document.getElementById("erroLogin").innerText="Usuário ou senha inválidos."
-renderizarMetricasClientes();
+async function entrarMaster(){
+  const usuario=(document.getElementById("usuario")?.value||"").trim();
+  const senha=(document.getElementById("senha")?.value||"").trim();
+  const erro=document.getElementById("erroLogin");
 
-atualizarSelectTemplatesEmailCliente();
+  if(erro)erro.innerText="";
 
-setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
+  const loginValido =
+    (usuario==="master" && senha==="conet2506") ||
+    (usuario==="master" && senha==="gymcare01");
 
-atualizarSelectExcluirCliente();
+  if(!loginValido){
+    if(erro)erro.innerText="Usuário ou senha inválidos.";
+    return;
+  }
+
+  try{
+    localStorage.setItem("conetfacility_admin_geral_logado","sim");
+    sessionStorage.setItem("conetfacility_admin_geral_logado","sim");
+  }catch(e){}
+
+  const login=document.getElementById("telaLogin");
+  const admin=document.getElementById("telaAdmin");
+
+  document.body.classList.add("admin-geral-logado");
+
+  if(login){
+    login.classList.add("oculto");
+    login.style.setProperty("display","none","important");
+  }
+
+  if(admin){
+    admin.classList.remove("oculto");
+    admin.style.setProperty("display","block","important");
+  }
+
+  if(typeof carregarDados==="function"){
+    await carregarDados();
+  }else{
+    if(typeof carregarAcademias==="function")await carregarAcademias();
+    if(typeof renderizarAcademias==="function")renderizarAcademias();
+  }
+
+  if(typeof renderizarMetricasClientes==="function")setTimeout(renderizarMetricasClientes,150);
+  if(typeof atualizarSelectUsuariosPainelCliente==="function")setTimeout(atualizarSelectUsuariosPainelCliente,150);
+  if(typeof atualizarSelectTemplatesEmailCliente==="function")setTimeout(atualizarSelectTemplatesEmailCliente,150);
+  if(typeof atualizarSelectExcluirCliente==="function")setTimeout(atualizarSelectExcluirCliente,150);
 }
 function verificarLogin(){if(localStorage.getItem("gymcare_master_logado")==="sim")mostrarAdmin()
 setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
+
+setTimeout(ajustarModuloUsuariosPainelClienteDentroLogin,100);
+
+
 }
-function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()}
-function sair(){localStorage.removeItem("gymcare_master_logado");location.reload()
-setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
+function mostrarAdmin(){document.getElementById("telaLogin").classList.add("oculto");document.getElementById("telaLogin").style.display="none";document.getElementById("telaAdmin").classList.remove("oculto");document.getElementById("telaAdmin").style.display="block";carregarDados()
+
+}
+function sair(){
+  try{
+    localStorage.removeItem("conetfacility_admin_geral_logado");
+    localStorage.removeItem("adminLogado");
+    localStorage.removeItem("admin_logado");
+    localStorage.removeItem("gymcare_admin_geral_logado");
+    sessionStorage.removeItem("conetfacility_admin_geral_logado");
+    sessionStorage.removeItem("adminLogado");
+    sessionStorage.removeItem("admin_logado");
+    sessionStorage.removeItem("gymcare_admin_geral_logado");
+  }catch(e){}
+
+  const login=document.getElementById("telaLogin");
+  const admin=document.getElementById("telaAdmin");
+
+  document.body.classList.remove("admin-geral-logado");
+
+  if(admin){
+    admin.classList.add("oculto");
+    admin.style.setProperty("display","none","important");
+  }
+
+  if(login){
+    login.classList.remove("oculto");
+    login.style.setProperty("display","flex","important");
+  }
+
+  const usuario=document.getElementById("usuario");
+  const senha=document.getElementById("senha");
+  const erro=document.getElementById("erroLogin");
+
+  if(usuario)usuario.value="";
+  if(senha)senha.value="";
+  if(erro)erro.innerText="";
 }
 function toggleCadastro(){document.getElementById("formCadastro").classList.toggle("oculto")}
 function textoStatusCliente(s){if(s==="ATIVO")return"Ativo";if(s==="PILOTO")return"Piloto";if(s==="INATIVO")return"Inativo";return s||"-"}
@@ -481,6 +881,10 @@ atualizarSelectTemplatesEmailCliente();
 setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
 
 atualizarSelectExcluirCliente();
+
+atualizarSelectUsuariosPainelCliente();
+
+setTimeout(ajustarModuloUsuariosPainelClienteDentroLogin,100);
 }
 function atualizarCards(){document.getElementById("totalClientes").innerText=academias.length;document.getElementById("clientesAtivos").innerText=academias.filter(a=>a.status_cliente==="ATIVO"||!a.status_cliente).length;document.getElementById("totalEquipamentos").innerText=equipamentos.length;document.getElementById("chamadosAbertos").innerText=chamados.filter(c=>c.status==="ABERTO").length}
 function equipamentosDaAcademia(id){return equipamentos.filter(e=>Number(e.academia_id)===Number(id))}
@@ -497,6 +901,10 @@ atualizarSelectTemplatesEmailCliente();
 setTimeout(atualizarVisibilidadeTemplatesEmailAdmin,100);
 
 atualizarSelectExcluirCliente();
+
+atualizarSelectUsuariosPainelCliente();
+
+setTimeout(ajustarModuloUsuariosPainelClienteDentroLogin,100);
 }
 
 function abrirEditar(id){const a=academias.find(x=>x.id===id);if(!a)return;document.getElementById("editId").value=a.id;document.getElementById("editNome").value=a.nome||"";document.getElementById("editEmail").value=a.email_notificacao||"";document.getElementById("editLogoAtual").value=a.logo_url||"";const img=document.getElementById("editLogoPreview");if(a.logo_url){img.src=a.logo_url;img.style.display="block"}else{img.style.display="none"}document.getElementById("editCor").value=a.cor_primaria||"#93D500";document.getElementById("editCorHeader").value=a.cor_header||"#323E48";document.getElementById("editTituloSistema").value=a.titulo_sistema||"ConetFacility";document.getElementById("editSubtituloSistema").value=a.subtitulo_sistema||"";document.getElementById("editStatusCliente").value=a.status_cliente||"ATIVO";document.getElementById("editPlano").value=a.plano||"MVP";document.getElementById("editEndereco").value=a.endereco||"";document.getElementById("editHorario").value=a.horario_funcionamento||"";document.getElementById("editObservacao").value=a.observacoes||"";document.getElementById("modalEditar").style.display="flex"}
@@ -1058,9 +1466,9 @@ function normalizarUrlQRCodeConet(url, equipamento){
     if(equipamento && equipamento.id && equipamento.academia_id){
       return montarUrlQRCodeEquipamentoConet(equipamento.id, equipamento.academia_id);
     }
-    return String(url||"").replace("https://"+"conetfacility.vercel.app", DOMINIO_OFICIAL_CONETFACILITY);
+    return String(url||"").replace("https://conetfacility.vercel.app", DOMINIO_OFICIAL_CONETFACILITY);
   }catch(e){
-    return String(url||"").replace("https://"+"conetfacility.vercel.app", DOMINIO_OFICIAL_CONETFACILITY);
+    return String(url||"").replace("https://conetfacility.vercel.app", DOMINIO_OFICIAL_CONETFACILITY);
   }
 }
 
@@ -1105,6 +1513,260 @@ async function ressincronizarUrlsQRCodesDominioOficial(){
     alert("Erro ao ressincronizar QR Codes.");
   }
 }
+
+
+
+/* USUÁRIOS PAINEL CLIENTE - CRUD ISOLADO */
+function atualizarSelectUsuariosPainelCliente(){
+  const select=document.getElementById("selectClienteUsuarioPainel");
+  if(!select)return;
+
+  const atual=select.value;
+  select.innerHTML='<option value="">Selecione um cliente</option>';
+
+  (academias||[])
+    .filter(a=>!["INATIVO","EXCLUIDO","EXCLUÍDO","CANCELADO"].includes(String(a.status_cliente||a.status||"ATIVO").toUpperCase()))
+    .sort((a,b)=>String(a.nome||"").localeCompare(String(b.nome||"")))
+    .forEach(a=>{
+      const opt=document.createElement("option");
+      opt.value=a.id;
+      opt.textContent=`${a.nome||"Cliente"} — ID ${a.id}`;
+      select.appendChild(opt);
+    });
+
+  if(atual)select.value=atual;
+}
+
+function limparFormularioUsuarioPainelCliente(){
+  ["idUsuarioPainelClienteEditando","nomeUsuarioPainelCliente","loginUsuarioPainelCliente","senhaUsuarioPainelCliente"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.value="";
+  });
+
+  const st=document.getElementById("statusUsuarioPainelCliente");
+  if(st)st.value="ATIVO";
+
+  const msg=document.getElementById("msgUsuarioPainelCliente");
+  const erro=document.getElementById("erroUsuarioPainelCliente");
+  if(msg)msg.innerText="";
+  if(erro)erro.innerText="";
+}
+
+async function carregarUsuariosPainelClienteSelecionado(){
+  const select=document.getElementById("selectClienteUsuarioPainel");
+  const lista=document.getElementById("listaUsuariosPainelClienteAdminGeral");
+  if(!select||!lista)return;
+
+  const academiaId=Number(select.value);
+  limparFormularioUsuarioPainelCliente();
+
+  if(!academiaId){
+    lista.innerHTML='<p style="color:#6b7280;">Selecione um cliente para listar os usuários.</p>';
+    return;
+  }
+
+  lista.innerHTML='<p style="color:#6b7280;">Carregando usuários...</p>';
+
+  const {data,error}=await supabaseClient
+    .from("usuarios_painel_cliente")
+    .select("*")
+    .eq("academia_id",academiaId)
+    .order("id",{ascending:true});
+
+  if(error){
+    lista.innerHTML='<p class="erro">Erro ao carregar usuários: '+error.message+'</p>';
+    return;
+  }
+
+  const usuarios=data||[];
+
+  if(!usuarios.length){
+    lista.innerHTML='<p style="color:#6b7280;">Nenhum usuário cadastrado para este cliente.</p>';
+    return;
+  }
+
+  lista.innerHTML=usuarios.map(u=>{
+    const status=String(u.status||"ATIVO").toUpperCase();
+    const badge=status==="ATIVO"
+      ? '<span class="badge-ativo-painel">ATIVO</span>'
+      : '<span class="badge-inativo-painel">INATIVO</span>';
+
+    return `
+      <div class="usuario-painel-card">
+        <h4>${u.nome||"Usuário sem nome"}</h4>
+        <p><strong>ID:</strong> ${u.id}</p>
+        <p><strong>Usuário:</strong> ${u.usuario||"-"}</p>
+        <p><strong>Status:</strong> ${badge}</p>
+        <p><strong>Cliente ID:</strong> ${u.academia_id}</p>
+        <div class="botoes">
+          <button class="btn-azul" onclick="editarUsuarioPainelClienteAdminGeral(${u.id})">Editar</button>
+          <button class="btn-cinza" onclick="alternarStatusUsuarioPainelCliente(${u.id},'${status==="ATIVO"?"INATIVO":"ATIVO"}')">${status==="ATIVO"?"Desativar":"Ativar"}</button>
+          <button class="btn-vermelho" onclick="excluirUsuarioPainelClienteAdminGeral(${u.id})">Excluir</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+async function salvarUsuarioPainelClienteAdminGeral(){
+  const academiaId=Number(document.getElementById("selectClienteUsuarioPainel")?.value||0);
+  const idEditando=Number(document.getElementById("idUsuarioPainelClienteEditando")?.value||0);
+  const nome=document.getElementById("nomeUsuarioPainelCliente")?.value.trim()||"";
+  const usuario=document.getElementById("loginUsuarioPainelCliente")?.value.trim()||"";
+  const senha=document.getElementById("senhaUsuarioPainelCliente")?.value.trim()||"";
+  const status=document.getElementById("statusUsuarioPainelCliente")?.value||"ATIVO";
+
+  const msg=document.getElementById("msgUsuarioPainelCliente");
+  const erro=document.getElementById("erroUsuarioPainelCliente");
+  if(msg)msg.innerText="";
+  if(erro)erro.innerText="";
+
+  if(!academiaId){
+    if(erro)erro.innerText="Selecione um cliente.";
+    return;
+  }
+
+  if(!nome||!usuario||!senha){
+    if(erro)erro.innerText="Preencha nome, usuário e senha.";
+    return;
+  }
+
+  const payload={academia_id:academiaId,nome,usuario,senha,status};
+
+  const result=idEditando
+    ? await supabaseClient.from("usuarios_painel_cliente").update(payload).eq("id",idEditando)
+    : await supabaseClient.from("usuarios_painel_cliente").insert([payload]);
+
+  if(result.error){
+    if(erro)erro.innerText="Erro ao salvar usuário: "+result.error.message;
+    return;
+  }
+
+  if(msg)msg.innerText=idEditando?"Usuário atualizado com sucesso.":"Usuário criado com sucesso.";
+
+  limparFormularioUsuarioPainelCliente();
+  const select=document.getElementById("selectClienteUsuarioPainel");
+  if(select)select.value=academiaId;
+  await carregarUsuariosPainelClienteSelecionado();
+}
+
+async function editarUsuarioPainelClienteAdminGeral(id){
+  const {data,error}=await supabaseClient
+    .from("usuarios_painel_cliente")
+    .select("*")
+    .eq("id",id)
+    .maybeSingle();
+
+  if(error||!data){
+    alert("Usuário não localizado.");
+    return;
+  }
+
+  document.getElementById("selectClienteUsuarioPainel").value=data.academia_id;
+  document.getElementById("idUsuarioPainelClienteEditando").value=data.id;
+  document.getElementById("nomeUsuarioPainelCliente").value=data.nome||"";
+  document.getElementById("loginUsuarioPainelCliente").value=data.usuario||"";
+  document.getElementById("senhaUsuarioPainelCliente").value=data.senha||"";
+  document.getElementById("statusUsuarioPainelCliente").value=data.status||"ATIVO";
+
+  document.getElementById("moduloUsuariosPainelCliente").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function alternarStatusUsuarioPainelCliente(id,novoStatus){
+  const {error}=await supabaseClient
+    .from("usuarios_painel_cliente")
+    .update({status:novoStatus})
+    .eq("id",id);
+
+  if(error){
+    alert("Erro ao alterar status: "+error.message);
+    return;
+  }
+
+  await carregarUsuariosPainelClienteSelecionado();
+}
+
+async function excluirUsuarioPainelClienteAdminGeral(id){
+  if(!confirm("Tem certeza que deseja excluir este usuário do Painel Admin do Cliente?"))return;
+
+  const {error}=await supabaseClient
+    .from("usuarios_painel_cliente")
+    .delete()
+    .eq("id",id);
+
+  if(error){
+    alert("Erro ao excluir usuário: "+error.message);
+    return;
+  }
+
+  await carregarUsuariosPainelClienteSelecionado();
+}
+
+
+
+document.addEventListener("DOMContentLoaded",function(){
+  setTimeout(atualizarSelectUsuariosPainelCliente,800);
+  setTimeout(atualizarSelectUsuariosPainelCliente,1500);
+  setTimeout(atualizarSelectUsuariosPainelCliente,2500);
+});
+
+
+
+/* GARANTE MÓDULO USUÁRIOS APENAS DENTRO DO PAINEL LOGADO */
+function ajustarModuloUsuariosPainelClienteDentroLogin(){
+  const modulo=document.getElementById("moduloUsuariosPainelCliente");
+  const telaLogin=document.getElementById("telaLogin")||document.getElementById("loginArea")||document.getElementById("login");
+  const telaAdmin=document.getElementById("telaAdmin")||document.getElementById("painelAdmin")||document.getElementById("conteudoAdmin");
+
+  if(!modulo)return;
+
+  const loginVisivel=telaLogin && getComputedStyle(telaLogin).display!=="none" && !telaLogin.classList.contains("oculto");
+  const adminVisivel=telaAdmin && getComputedStyle(telaAdmin).display!=="none" && !telaAdmin.classList.contains("oculto");
+
+  if(adminVisivel && !loginVisivel){
+    modulo.style.display="block";
+    if(typeof atualizarSelectUsuariosPainelCliente==="function"){
+      atualizarSelectUsuariosPainelCliente();
+    }
+  }else{
+    modulo.style.display="none";
+  }
+}
+
+document.addEventListener("DOMContentLoaded",function(){
+  setTimeout(ajustarModuloUsuariosPainelClienteDentroLogin,300);
+  setTimeout(ajustarModuloUsuariosPainelClienteDentroLogin,1000);
+  setTimeout(ajustarModuloUsuariosPainelClienteDentroLogin,2000);
+});
+
+
+
+
+
+
+
+
+
+function logout(){sair();}
+function sairMaster(){sair();}
+
+
+/* ESTADO INICIAL ADMIN GERAL - SEM AUTOLOGIN */
+document.addEventListener("DOMContentLoaded",function(){
+  const login=document.getElementById("telaLogin");
+  const admin=document.getElementById("telaAdmin");
+
+  document.body.classList.remove("admin-geral-logado");
+
+  if(admin){
+    admin.classList.add("oculto");
+    admin.style.setProperty("display","none","important");
+  }
+
+  if(login){
+    login.classList.remove("oculto");
+    login.style.setProperty("display","flex","important");
+  }
+});
 
 </script>
 </body>
