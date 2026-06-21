@@ -721,47 +721,78 @@ await emailjs.send(typeof EMAILJS_SERVICE_ID!=="undefined"?EMAILJS_SERVICE_ID:"s
 }
 
 async function encerrarChamadoPeloQR(chamadoId){
-const campo=document.getElementById("descricaoFechamentoQR_"+chamadoId)
-  || document.getElementById("obs_"+chamadoId)
-  || document.getElementById("observacaoFechamento_"+chamadoId);
-
-const observacao=(campo?.value||"").trim();
-
+const campo=document.getElementById("descricaoFechamentoQR_"+chamadoId);
+const observacao=campo?campo.value.trim():"";
 if(!observacao){
 alert("Descreva o que foi feito antes de encerrar o chamado.");
 return;
 }
 
-try{
+const {data:chamado,error:erroBusca}=await supabaseClient
+.from("chamados")
+.select("*")
+.eq("id",chamadoId)
+.maybeSingle();
+
+if(erroBusca||!chamado){
+alert("Não foi possível localizar o chamado.");
+return;
+}
+
+const encerradoEm=agoraISOConetBrasil();
 const usuarioEncerramento=typeof usuarioLogadoChamado!=="undefined"?(usuarioLogadoChamado||"Operador"):"Operador";
 
-const resultado=await finalizarChamadoConetSeguro(
-  chamadoId,
-  null,
-  observacao,
-  usuarioEncerramento,
-  "Chamado encerrado pelo QR Code"
+const {error}=await supabaseClient
+.from("chamados")
+.update({
+status:"FINALIZADO",
+encerrado_em:encerradoEm,
+encerrado_por:usuarioEncerramento,
+observacao_encerramento:observacao
+})
+.eq("id",chamadoId);
+
+if(error){
+alert("Erro ao encerrar chamado: "+error.message);
+return;
+}
+
+/* Atualiza o equipamento correto do chamado encerrado */
+if(chamado.equipamento_id){
+await supabaseClient.from("equipamentos").update({status:"OPERACIONAL"}).eq("id",chamado.equipamento_id);
+}
+
+if(typeof registrarHistorico==="function"){
+await registrarHistorico(
+chamado.equipamento_id||equipamentoAtual.id,
+chamadoId,
+"Chamado encerrado pelo QR Code",
+"Encerrado por "+usuarioEncerramento+". Resolução: "+observacao,
+"FINALIZADO"
+);
+}else{
+await supabaseClient.from("historico_manutencao").insert([{
+equipamento_id:chamado.equipamento_id||equipamentoAtual.id,
+chamado_id:chamadoId,
+tipo_evento:"Chamado encerrado pelo QR Code",
+descricao:"Encerrado por "+usuarioEncerramento+". Resolução: "+observacao,
+status:"FINALIZADO",
+criado_em:encerradoEm
+}]);
+}
+
+await enviarEmailEncerramentoQR(
+{...chamado,status:"FINALIZADO",encerrado_em:encerradoEm,observacao_encerramento:observacao},
+observacao,
+encerradoEm
 );
 
-if(typeof enviarEmailEncerramentoQR==="function"){
-  await enviarEmailEncerramentoQR(
-    resultado.chamadoAtualizado,
-    observacao,
-    resultado.encerradoEm
-  );
-}
-
-alert("Chamado encerrado com sucesso e enviado para o histórico.");
-
-if(typeof carregarChamadosEmAndamentoQR==="function")await carregarChamadosEmAndamentoQR();
-if(typeof sincronizarChamadosGeraisQRComAtraso==="function")sincronizarChamadosGeraisQRComAtraso();
-if(typeof carregarTodosChamadosAbertosAcademiaQR==="function")await carregarTodosChamadosAbertosAcademiaQR();
+alert("Chamado encerrado com sucesso.");
+if(typeof carregarChamadosOperador==="function")await carregarChamadosOperador();
+await carregarChamadosEmAndamentoQR();
+sincronizarChamadosGeraisQRComAtraso();
+await carregarTodosChamadosAbertosAcademiaQR();
 if(typeof verificarChamadoAberto==="function")verificarChamadoAberto();
-
-}catch(error){
-console.error(error);
-alert(error.message||"Erro ao encerrar chamado.");
-}
 }
 
 async function verificarChamadoAberto(){
@@ -791,8 +822,20 @@ document.getElementById("btnAbrirChamado").style.opacity="1";
 }
 
 async function registrarHistorico(equipamentoId,chamadoId,tipoEvento,descricao,status){
-return await registrarHistoricoConetSeguro(equipamentoId,chamadoId,tipoEvento,descricao,status);
-}])}
+const {error}=await supabaseClient.from("historico_manutencao").insert([{
+equipamento_id:equipamentoId,
+chamado_id:chamadoId,
+tipo_evento:tipoEvento,
+descricao:descricao,
+status:status,
+criado_em:agoraISOConetBrasil()
+}]);
+
+if(error){
+console.error("Erro ao registrar histórico:",error);
+throw error;
+}
+}
 async function enviarEmailNotificacao(chamado,tipoProblema,prioridade,descricao){
 try{
 const emailDestino=academiaAtual?.email_notificacao||academiaAtual?.email;
@@ -909,8 +952,7 @@ function formatarData(valor){ return formatarDataHoraBrasil(valor); }
 function formatarHorarioBrasil(valor){ return formatarDataHoraBrasil(valor); }
 
 function agoraISOConetBrasil(){
-  // Salva em ISO UTC. A exibição sempre será convertida para America/Sao_Paulo.
-  return agoraISOConetBrasil();
+  return new Date().toISOString();
 }
 
 function calcularTempoTotalBrasil(inicio,fim){
@@ -1064,116 +1106,6 @@ function aplicarTemplateClienteNosParametros(tipo,dados){
 const assunto=assuntoTemplateEmailCliente(tipo,dados);
 const corpo=corpoTemplateEmailCliente(tipo,dados);
 return {...dados,assunto,subject:assunto,titulo_email:assunto,mensagem:corpo,message:corpo,corpo_email:corpo,relatorio_html:String(corpo).replace(/\n/g,"<br>")};
-}
-
-
-
-/* =========================================================
-   PATCH CONETFACILITY - SINCRONISMO FINALIZAR CHAMADO/HISTÓRICO
-   ========================================================= */
-function agoraISOConetCompat(){
-  try{
-    if(typeof agoraISOConetBrasil==="function") return agoraISOConetBrasil();
-  }catch(e){}
-  return new Date().toISOString();
-}
-
-function normalizarStatusConetCompat(status){
-  return String(status||"").trim().toUpperCase().replace(/\s+/g,"_");
-}
-
-function statusConetAbertoCompat(status){
-  const s=normalizarStatusConetCompat(status);
-  return ["ABERTO","EM_MANUTENCAO","EM_ANDAMENTO","MANUTENCAO"].includes(s);
-}
-
-async function registrarHistoricoConetSeguro(equipamentoId,chamadoId,tipoEvento,descricao,status){
-  const criadoEm=agoraISOConetCompat();
-  const payload={
-    equipamento_id:Number(equipamentoId),
-    chamado_id:Number(chamadoId),
-    tipo_evento:tipoEvento||"Evento",
-    descricao:descricao||"-",
-    status:status||"FINALIZADO",
-    criado_em:criadoEm
-  };
-
-  const {error}=await supabaseClient
-    .from("historico_manutencao")
-    .insert([payload]);
-
-  if(error){
-    console.error("Erro ao registrar histórico:",error);
-    throw new Error("Chamado atualizado, mas falhou ao registrar histórico: "+error.message);
-  }
-
-  return payload;
-}
-
-async function finalizarChamadoConetSeguro(chamadoId,equipamentoId,observacao,usuarioEncerramento,origem){
-  const encerradoEm=agoraISOConetCompat();
-  const usuario=usuarioEncerramento||"Operador";
-  const obs=observacao||"Chamado encerrado.";
-
-  const {data:chamadoAntes,error:erroBusca}=await supabaseClient
-    .from("chamados")
-    .select("*")
-    .eq("id",chamadoId)
-    .maybeSingle();
-
-  if(erroBusca || !chamadoAntes){
-    console.error("Erro ao buscar chamado antes de finalizar:",erroBusca);
-    throw new Error("Não foi possível localizar o chamado para finalizar.");
-  }
-
-  const equipamentoFinal=Number(equipamentoId || chamadoAntes.equipamento_id);
-
-  const {error:erroUpdate}=await supabaseClient
-    .from("chamados")
-    .update({
-      status:"FINALIZADO",
-      encerrado_em:encerradoEm,
-      encerrado_por:usuario,
-      observacao_encerramento:obs
-    })
-    .eq("id",chamadoId);
-
-  if(erroUpdate){
-    console.error("Erro ao atualizar chamado:",erroUpdate);
-    throw new Error("Erro ao finalizar chamado: "+erroUpdate.message);
-  }
-
-  if(equipamentoFinal){
-    const {error:erroEquip}=await supabaseClient
-      .from("equipamentos")
-      .update({status:"OPERACIONAL"})
-      .eq("id",equipamentoFinal);
-
-    if(erroEquip){
-      console.warn("Chamado finalizado, mas falhou ao atualizar equipamento:",erroEquip);
-    }
-  }
-
-  await registrarHistoricoConetSeguro(
-    equipamentoFinal,
-    chamadoId,
-    origem || "Chamado finalizado",
-    "Encerrado por "+usuario+". Observações: "+obs,
-    "FINALIZADO"
-  );
-
-  return {
-    chamadoAntes,
-    chamadoAtualizado:{
-      ...chamadoAntes,
-      status:"FINALIZADO",
-      encerrado_em:encerradoEm,
-      encerrado_por:usuario,
-      observacao_encerramento:obs
-    },
-    encerradoEm,
-    equipamentoId:equipamentoFinal
-  };
 }
 
 </script></body></html>
