@@ -1108,4 +1108,213 @@ const corpo=corpoTemplateEmailCliente(tipo,dados);
 return {...dados,assunto,subject:assunto,titulo_email:assunto,mensagem:corpo,message:corpo,corpo_email:corpo,relatorio_html:String(corpo).replace(/\n/g,"<br>")};
 }
 
+
+
+/* =========================================================
+   CORREÇÃO DEFINITIVA - FINALIZAÇÃO DE CHAMADOS QR
+   ========================================================= */
+
+function agoraISOConetBrasil(){
+  return new Date().toISOString();
+}
+
+function statusChamadoAtivo(status){
+  const s=String(status||"").trim().toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[_-]+/g," ");
+  return ["ABERTO","EM MANUTENCAO","MANUTENCAO","REABERTO","EM ANDAMENTO"].includes(s);
+}
+
+async function registrarHistorico(equipamentoId,chamadoId,tipoEvento,descricao,status){
+  const {error}=await supabaseClient.from("historico_manutencao").insert([{
+    equipamento_id:Number(equipamentoId),
+    chamado_id:Number(chamadoId),
+    tipo_evento:tipoEvento,
+    descricao:descricao,
+    status:status,
+    criado_em:agoraISOConetBrasil()
+  }]);
+
+  if(error){
+    console.error("Erro ao registrar histórico:",error);
+    throw error;
+  }
+}
+
+async function finalizarChamadoBancoConet(chamadoId, observacao, origem){
+  const obs=String(observacao||"").trim();
+  if(!obs){
+    alert("Descreva o que foi feito antes de finalizar o chamado.");
+    return null;
+  }
+
+  const {data:chamado,error:erroBusca}=await supabaseClient
+    .from("chamados")
+    .select("*")
+    .eq("id",Number(chamadoId))
+    .maybeSingle();
+
+  if(erroBusca||!chamado){
+    console.error("Erro ao buscar chamado:",erroBusca);
+    alert("Não foi possível localizar o chamado.");
+    return null;
+  }
+
+  const encerradoEm=agoraISOConetBrasil();
+  const usuarioEncerramento=(typeof usuarioLogadoChamado!=="undefined" && usuarioLogadoChamado)
+    ? usuarioLogadoChamado
+    : "Operador";
+
+  const {data:chamadoAtualizado,error:erroUpdate}=await supabaseClient
+    .from("chamados")
+    .update({
+      status:"FINALIZADO",
+      encerrado_em:encerradoEm,
+      encerrado_por:usuarioEncerramento,
+      observacao_encerramento:obs
+    })
+    .eq("id",Number(chamadoId))
+    .select("*")
+    .maybeSingle();
+
+  if(erroUpdate){
+    console.error("Erro ao finalizar chamado:",erroUpdate);
+    alert("Erro ao finalizar chamado: "+erroUpdate.message);
+    return null;
+  }
+
+  const equipamentoId=Number(chamado.equipamento_id || chamadoAtualizado?.equipamento_id || equipamentoAtual?.id);
+
+  if(equipamentoId){
+    const {error:erroEq}=await supabaseClient
+      .from("equipamentos")
+      .update({status:"OPERACIONAL"})
+      .eq("id",equipamentoId);
+
+    if(erroEq){
+      console.warn("Chamado finalizado, mas não atualizou equipamento:",erroEq);
+    }
+  }
+
+  await registrarHistorico(
+    equipamentoId,
+    chamadoId,
+    origem||"Chamado finalizado",
+    "Encerrado por "+usuarioEncerramento+". Resolução: "+obs,
+    "FINALIZADO"
+  );
+
+  return {
+    chamadoOriginal:chamado,
+    chamadoAtualizado:chamadoAtualizado||{
+      ...chamado,
+      status:"FINALIZADO",
+      encerrado_em:encerradoEm,
+      encerrado_por:usuarioEncerramento,
+      observacao_encerramento:obs
+    },
+    encerradoEm,
+    observacao:obs,
+    usuarioEncerramento,
+    equipamentoId
+  };
+}
+
+async function atualizarTelaAposFinalizacaoConet(){
+  try{
+    if(equipamentoAtual?.id){
+      const {data:eqAtual}=await supabaseClient
+        .from("equipamentos")
+        .select("*")
+        .eq("id",Number(equipamentoAtual.id))
+        .maybeSingle();
+
+      if(eqAtual){
+        equipamentoAtual=eqAtual;
+        const se=document.getElementById("status");
+        if(se){
+          se.innerText=textoStatus(eqAtual.status);
+          se.className=classeStatus(eqAtual.status);
+        }
+      }
+    }
+
+    if(typeof carregarChamadosOperador==="function") await carregarChamadosOperador();
+    if(typeof carregarChamadosEmAndamentoQR==="function") await carregarChamadosEmAndamentoQR();
+    if(typeof carregarTodosChamadosAbertosAcademiaQR==="function") await carregarTodosChamadosAbertosAcademiaQR();
+    if(typeof verificarChamadoAberto==="function") await verificarChamadoAberto();
+
+  }catch(e){
+    console.error("Erro ao atualizar tela após finalização:",e);
+  }
+}
+
+/* Botão da lista 'Chamados em andamento' do equipamento */
+async function finalizarChamadoOperador(chamadoId){
+  const obs=document.getElementById("obsFinalizacaoOperador_"+chamadoId)?.value?.trim()||"";
+
+  const resultado=await finalizarChamadoBancoConet(
+    chamadoId,
+    obs,
+    "Chamado finalizado pelo operador"
+  );
+
+  if(!resultado)return;
+
+  try{
+    if(typeof enviarEmailEncerramentoOperador==="function"){
+      await enviarEmailEncerramentoOperador(
+        resultado.chamadoAtualizado,
+        resultado.observacao,
+        resultado.encerradoEm
+      );
+    }
+  }catch(e){
+    console.error("Erro ao enviar e-mail de encerramento operador:",e);
+  }
+
+  alert("Chamado finalizado com sucesso.");
+  await atualizarTelaAposFinalizacaoConet();
+}
+
+/* Botão da lista geral 'Todos os chamados abertos da unidade' */
+async function encerrarChamadoPeloQR(chamadoId){
+  const campo=document.getElementById("descricaoFechamentoQR_"+chamadoId)
+    || document.getElementById("obs_"+chamadoId)
+    || document.getElementById("observacaoFechamento_"+chamadoId);
+
+  const obs=campo?.value?.trim()||"";
+
+  const resultado=await finalizarChamadoBancoConet(
+    chamadoId,
+    obs,
+    "Chamado encerrado pelo QR Code"
+  );
+
+  if(!resultado)return;
+
+  try{
+    if(typeof enviarEmailEncerramentoQR==="function"){
+      await enviarEmailEncerramentoQR(
+        resultado.chamadoAtualizado,
+        resultado.observacao,
+        resultado.encerradoEm
+      );
+    }
+  }catch(e){
+    console.error("Erro ao enviar e-mail de encerramento QR:",e);
+  }
+
+  alert("Chamado encerrado com sucesso.");
+  await atualizarTelaAposFinalizacaoConet();
+}
+
+/* Garante que as listas não exibam FINALIZADO */
+function statusAbertoQR(status){
+  const s=String(status||"").trim().toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[_-]+/g," ");
+  return ["ABERTO","EM MANUTENCAO","MANUTENCAO","REABERTO","EM ANDAMENTO"].includes(s);
+}
+
 </script></body></html>
